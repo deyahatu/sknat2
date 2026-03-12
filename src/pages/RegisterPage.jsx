@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiUser, FiEye, FiEyeOff, FiPhone } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
 import './AuthPages.css';
 
-// TODO: implement authentication
 function RegisterPage() {
   const [formData, setFormData] = useState({
     name: '',
@@ -15,23 +15,37 @@ function RegisterPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const { register } = useAuth();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert('كلمات المرور غير متطابقة');
+      setError('كلمات المرور غير متطابقة');
       return;
     }
     setLoading(true);
-    // TODO: connect API — send registration request
-    setTimeout(() => {
-      alert('تم إنشاء الحساب بنجاح (محاكاة)');
+    setError(null);
+    try {
+      await register({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        role: formData.role.toUpperCase(),
+      });
+      navigate('/');
+    } catch (err) {
+      setError(err.message || 'حدث خطأ أثناء إنشاء الحساب');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -151,6 +165,8 @@ function RegisterPage() {
                 />
               </div>
             </div>
+
+            {error && <div className="auth-error">{error}</div>}
 
             <button
               type="submit"

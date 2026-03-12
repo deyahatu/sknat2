@@ -1,23 +1,31 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
 import './AuthPages.css';
 
-// TODO: implement authentication
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleSubmit = (e) => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // TODO: connect API — send login request
-    setTimeout(() => {
-      alert('تم تسجيل الدخول بنجاح (محاكاة)');
+    setError(null);
+    try {
+      await login(email, password);
+      navigate('/');
+    } catch (err) {
+      setError(err.message || 'حدث خطأ أثناء تسجيل الدخول');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -74,8 +82,10 @@ function LoginPage() {
                 <input type="checkbox" />
                 <span>تذكرني</span>
               </label>
-              <a href="#" className="forgot-link">نسيت كلمة المرور؟</a>
+              <Link to="/forgot-password" className="forgot-link">نسيت كلمة المرور؟</Link>
             </div>
+
+            {error && <div className="auth-error">{error}</div>}
 
             <button
               type="submit"
