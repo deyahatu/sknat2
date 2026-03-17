@@ -64,6 +64,20 @@
   padding: 8px;
 }
 
+.navbar-logout-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--error);
+}
+
+.navbar-logout-btn:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 @media (max-width: 768px) {
   .navbar-toggle {
     display: block;
