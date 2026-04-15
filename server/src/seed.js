@@ -38,7 +38,7 @@ async function seed() {
     create: {
       name: 'أحمد نصار',
       email: 'owner@test.com',
-      phone: '0591234567',
+      phone: '0591234568',
       password: userPassword,
       role: 'OWNER',
     },

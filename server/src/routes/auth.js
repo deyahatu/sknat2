@@ -8,29 +8,81 @@ import { authenticate } from '../middleware/auth.js';
 const router = Router();
 
 const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ID_NUMBER_REGEX = /^\d{9}$/;
+const ID_PHOTO_REGEX = /^data:image\/(jpeg|jpg|png|webp);base64,/i;
 
-router.post('/register', async (req, res, next) => {
+const userSelect = {
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  role: true,
+  avatar: true,
+  idNumber: true,
+  createdAt: true,
+};
+
+router.post('/register', async (req, res) => {
   try {
-    const { name, email, phone, password, role } = req.body;
+    const { name, email, phone, password, role, idNumber, idPhoto } = req.body;
+    const userRole = role?.toUpperCase() === 'OWNER' ? 'OWNER' : 'STUDENT';
+    const isOwner = userRole === 'OWNER';
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'الاسم والبريد الإلكتروني وكلمة المرور مطلوبة' });
+    if (!name || !email || !phone || !password || (isOwner && (!idNumber || !idPhoto))) {
+      return res.status(400).json({ error: 'Please fill all required fields.' });
+    }
+
+    if (!EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ error: 'Please enter a valid email address (e.g., name@university.com).' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    }
+
+    if (isOwner && !ID_NUMBER_REGEX.test(idNumber)) {
+      return res.status(400).json({ error: 'ID number must contain only digits and follow the required format.' });
+    }
+
+    if (isOwner && !ID_PHOTO_REGEX.test(idPhoto)) {
+      return res.status(400).json({ error: 'Please re-upload the image.' });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return res.status(409).json({ error: 'البريد الإلكتروني مسجل مسبقاً' });
+      return res.status(409).json({ error: 'This email is already registered. Please log in.' });
     }
 
-    const validRoles = ['STUDENT', 'OWNER'];
-    const userRole = validRoles.includes(role?.toUpperCase()) ? role.toUpperCase() : 'STUDENT';
+    const existingPhone = await prisma.user.findUnique({ where: { phone } });
+    if (existingPhone) {
+      return res.status(409).json({ error: 'This phone number is linked to another account.' });
+    }
+
+    if (isOwner) {
+      const existingIdNumber = await prisma.user.findUnique({ where: { idNumber } });
+      if (existingIdNumber) {
+        return res.status(409).json({ error: 'This ID number is already registered.' });
+      }
+    }
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const user = await prisma.user.create({
-      data: { name, email, phone, password: hashedPassword, role: userRole },
-      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, createdAt: true },
+      data: {
+        name,
+        email,
+        phone,
+        password: hashedPassword,
+        role: userRole,
+        ...(isOwner && { idNumber, idPhoto }),
+      },
+      select: userSelect,
     });
+
+    if (isOwner) {
+      return res.status(201).json({ message: 'Registration successful. Please log in.', user });
+    }
 
     const token = generateToken(user.id);
 
@@ -43,7 +95,21 @@ router.post('/register', async (req, res, next) => {
 
     res.status(201).json({ user, token });
   } catch (err) {
-    next(err);
+    if (err?.code === 'P2002') {
+      const target = err.meta?.target || [];
+
+      if (target.includes('email')) {
+        return res.status(409).json({ error: 'This email is already registered. Please log in.' });
+      }
+      if (target.includes('phone')) {
+        return res.status(409).json({ error: 'This phone number is linked to another account.' });
+      }
+      if (target.includes('idNumber')) {
+        return res.status(409).json({ error: 'This ID number is already registered.' });
+      }
+    }
+
+    return res.status(500).json({ error: 'Registration failed. Please try again later.' });
   }
 });
 
