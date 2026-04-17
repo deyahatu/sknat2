@@ -18,8 +18,10 @@ generator client {
   enum BookingStatus {
     PENDING
     APPROVED
-    REJECTED                                                                                                                                                                                                                                        
+    REJECTED
     CANCELLED
+    PAID
+    COMPLETED
   }                                                                                                                                                                                                                                                 
                   
   enum PaymentStatus {

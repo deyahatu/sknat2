@@ -6,6 +6,8 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import propertyRoutes from './routes/properties.js';
 import studentRatingRoutes from './routes/studentRatings.js';
+import bookingRoutes from './routes/bookings.js';
+import paymentRoutes from './routes/payments.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,6 +25,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/student-ratings', studentRatingRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

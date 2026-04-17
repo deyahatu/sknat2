@@ -1,0 +1,164 @@
+import { Router } from 'express';
+import prisma from '../utils/prisma.js';
+import { authenticate, authorize } from '../middleware/auth.js';
+
+const router = Router();
+
+// ──────────────────────────────────────────────
+// UC-8: Pay Booking Fee (Student)
+// ──────────────────────────────────────────────
+router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
+  try {
+    const { bookingId } = req.body;
+
+    if (!bookingId) {
+      return res.status(400).json({ error: 'Booking ID is required.' });
+    }
+
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        property: {
+          select: { id: true, title: true, price: true, ownerId: true },
+        },
+        payment: true,
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found.' });
+    }
+
+    if (booking.studentId !== req.user.id) {
+      return res.status(403).json({ error: 'You do not have permission to pay for this booking.' });
+    }
+
+    if (booking.status !== 'APPROVED') {
+      return res.status(400).json({ error: 'Only approved bookings can be paid.' });
+    }
+
+    if (booking.payment) {
+      return res.status(400).json({ error: 'This booking has already been paid.' });
+    }
+
+    // Calculate total price
+    const diffMs = booking.endDate.getTime() - booking.startDate.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const months = Math.max(1, Math.ceil(diffDays / 30));
+    const totalAmount = Number(booking.property.price) * months;
+
+    // Process payment + update booking status + add to owner wallet in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Create payment record
+      const payment = await tx.payment.create({
+        data: {
+          amount: totalAmount,
+          status: 'COMPLETED',
+          bookingId: booking.id,
+          studentId: req.user.id,
+        },
+      });
+
+      // Update booking status to PAID
+      const updatedBooking = await tx.booking.update({
+        where: { id: booking.id },
+        data: { status: 'PAID' },
+        include: {
+          property: {
+            select: { id: true, title: true, city: true, price: true },
+          },
+        },
+      });
+
+      // Add amount to owner wallet (create wallet if doesn't exist)
+      await tx.wallet.upsert({
+        where: { ownerId: booking.property.ownerId },
+        create: {
+          ownerId: booking.property.ownerId,
+          balance: totalAmount,
+        },
+        update: {
+          balance: { increment: totalAmount },
+        },
+      });
+
+      return { payment, booking: updatedBooking };
+    });
+
+    res.status(201).json({
+      message: 'Payment successful. Your booking is Accepted.',
+      payment: result.payment,
+      booking: result.booking,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ──────────────────────────────────────────────
+// Get student's payment history
+// ──────────────────────────────────────────────
+router.get('/student', authenticate, authorize('STUDENT'), async (req, res, next) => {
+  try {
+    const payments = await prisma.payment.findMany({
+      where: { studentId: req.user.id },
+      include: {
+        booking: {
+          include: {
+            property: {
+              select: { id: true, title: true, city: true, images: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ payments });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ──────────────────────────────────────────────
+// Get owner's earnings summary
+// ──────────────────────────────────────────────
+router.get('/owner/earnings', authenticate, authorize('OWNER'), async (req, res, next) => {
+  try {
+    // Get wallet balance
+    const wallet = await prisma.wallet.findUnique({
+      where: { ownerId: req.user.id },
+    });
+
+    // Get all payments for owner's properties
+    const payments = await prisma.payment.findMany({
+      where: {
+        booking: {
+          property: { ownerId: req.user.id },
+        },
+      },
+      include: {
+        booking: {
+          include: {
+            property: {
+              select: { id: true, title: true },
+            },
+            student: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      wallet: wallet || { balance: 0 },
+      payments,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;
