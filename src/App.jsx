@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -11,11 +11,21 @@ import AdminDashboard from './pages/AdminDashboard';
 import ProfilePage from './pages/ProfilePage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import OwnerLayout from './pages/owner/OwnerLayout';
+import OwnerDashboard from './pages/owner/OwnerDashboard';
+import OwnerProperties from './pages/owner/OwnerProperties';
+import AddEditProperty from './pages/owner/AddEditProperty';
+import OwnerBookings from './pages/owner/OwnerBookings';
+import OwnerRatings from './pages/owner/OwnerRatings';
+import RateStudents from './pages/owner/RateStudents';
+import BankAccount from './pages/owner/BankAccount';
+import Withdrawals from './pages/owner/Withdrawals';
 
 function GuestRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return null;
-  return user ? <Navigate to="/" replace /> : children;
+  if (user) return <Navigate to={user.role === 'OWNER' ? '/owner' : '/'} replace />;
+  return children;
 }
 
 function ProtectedRoute({ children, roles }) {
@@ -26,23 +36,56 @@ function ProtectedRoute({ children, roles }) {
   return children;
 }
 
+function PublicLayout() {
+  const { user } = useAuth();
+  if (user?.role === 'OWNER') return <Navigate to="/owner" replace />;
+  return (
+    <>
+      <Navbar />
+      <Outlet />
+      <Footer />
+    </>
+  );
+}
+
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <Navbar />
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-          <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
-          <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
-          <Route path="/reset-password/:token" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/property/:id" element={<PropertyDetailsPage />} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
+          {/* Owner section — uses its own layout (no global Navbar/Footer) */}
+          <Route
+            path="/owner"
+            element={
+              <ProtectedRoute roles={['OWNER']}>
+                <OwnerLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<OwnerDashboard />} />
+            <Route path="properties" element={<OwnerProperties />} />
+            <Route path="properties/add" element={<AddEditProperty />} />
+            <Route path="properties/:id/edit" element={<AddEditProperty />} />
+            <Route path="bookings" element={<OwnerBookings />} />
+            <Route path="ratings" element={<OwnerRatings />} />
+            <Route path="rate-students" element={<RateStudents />} />
+            <Route path="bank-account" element={<BankAccount />} />
+            <Route path="withdrawals" element={<Withdrawals />} />
+          </Route>
+
+          {/* Public + student/admin routes — global Navbar/Footer layout */}
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+            <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+            <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+            <Route path="/reset-password/:token" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/property/:id" element={<PropertyDetailsPage />} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
+          </Route>
         </Routes>
-        <Footer />
       </AuthProvider>
     </Router>
   );

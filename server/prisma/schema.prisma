@@ -34,6 +34,7 @@ generator client {
     PENDING
     APPROVED
     REJECTED
+    COMPLETED
   }
 
   enum TargetGender {
@@ -53,10 +54,13 @@ generator client {
     avatar           String?
     idNumber         String?   @unique
     idPhoto          String?   @db.Text
-    resetToken       String?                                                                                                                                                                                                                        
-    resetTokenExpiry DateTime?
-    createdAt        DateTime  @default(now())                                                                                                                                                                                                      
-    updatedAt        DateTime  @updatedAt
+    resetToken          String?
+    resetTokenExpiry    DateTime?
+    bankName            String?
+    bankAccountHolder   String?
+    bankAccountNumber   String?
+    createdAt           DateTime  @default(now())
+    updatedAt           DateTime  @updatedAt
 
     properties       Property[]
     bookings         Booking[]
@@ -180,16 +184,20 @@ generator client {
 
 
   model WithdrawRequest {
-    id        String         @id @default(uuid())
-    amount    Decimal        @db.Decimal(10, 2)
-    status    WithdrawStatus @default(PENDING)                                                                                                                                                                                                      
-    ownerId   String
-    createdAt DateTime       @default(now())                                                                                                                                                                                                        
-    updatedAt DateTime       @updatedAt
+    id                 String         @id @default(uuid())
+    amount             Decimal        @db.Decimal(10, 2)
+    status             WithdrawStatus @default(PENDING)
+    ownerId            String
+    rejectionReason    String?
+    bankName           String?
+    bankAccountHolder  String?
+    bankAccountNumber  String?
+    createdAt          DateTime       @default(now())
+    updatedAt          DateTime       @updatedAt
 
-    owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)                                                                                                                                                                    
-   
-    @@index([ownerId])                                                                                                                                                                                                                              
+    owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+    @@index([ownerId])
     @@index([status])
     @@map("withdraw_requests")
   }

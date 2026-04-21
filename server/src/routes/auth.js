@@ -37,8 +37,8 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Please enter a valid email address (e.g., name@university.com).' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters.' });
     }
 
     if (isOwner && !ID_NUMBER_REGEX.test(idNumber)) {
@@ -79,10 +79,6 @@ router.post('/register', async (req, res) => {
       },
       select: userSelect,
     });
-
-    if (isOwner) {
-      return res.status(201).json({ message: 'Registration successful. Please log in.', user });
-    }
 
     const token = generateToken(user.id);
 
@@ -197,8 +193,8 @@ router.post('/reset-password', async (req, res, next) => {
       return res.status(400).json({ error: 'الرمز وكلمة المرور الجديدة مطلوبان' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' });
     }
 
     const hashedToken = hashToken(token);
@@ -239,8 +235,8 @@ router.put('/change-password', authenticate, async (req, res, next) => {
       return res.status(400).json({ error: 'كلمة المرور الحالية والجديدة مطلوبتان' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل' });
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل' });
     }
 
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });

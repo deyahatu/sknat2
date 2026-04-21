@@ -456,6 +456,17 @@ router.delete('/:id', authenticate, authorize('OWNER'), async (req, res, next) =
       return res.status(404).json({ error: 'Accommodation not found.' });
     }
 
+    const activeBookings = await prisma.booking.count({
+      where: {
+        propertyId: existing.id,
+        status: { in: ['PENDING', 'APPROVED', 'PAID'] },
+      },
+    });
+
+    if (activeBookings > 0) {
+      return res.status(400).json({ error: 'This accommodation has active bookings. Cannot delete.' });
+    }
+
     await prisma.property.delete({ where: { id: existing.id } });
     res.json({ message: 'Accommodation deleted successfully.' });
   } catch (err) {

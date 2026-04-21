@@ -33,4 +33,33 @@ export const api = {
     list: () => request('/users'),
     delete: (id) => request(`/users/${id}`, { method: 'DELETE' }),
   },
+  properties: {
+    create: (body) => request('/properties', { method: 'POST', body: JSON.stringify(body) }),
+    mine: () => request('/properties/mine'),
+    get: (id) => request(`/properties/${id}`),
+    update: (id, body) => request(`/properties/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    delete: (id) => request(`/properties/${id}`, { method: 'DELETE' }),
+    toggleAvailability: (id, available) => request(`/properties/${id}/availability`, { method: 'PATCH', body: JSON.stringify({ available }) }),
+    myRatings: () => request('/properties/ratings'),
+    propertyRatings: (id) => request(`/properties/${id}/ratings`),
+  },
+  bookings: {
+    ownerList: (status) => request(`/bookings/owner${status ? `?status=${status}` : ''}`),
+    accept: (id) => request(`/bookings/${id}/accept`, { method: 'PATCH' }),
+    reject: (id) => request(`/bookings/${id}/reject`, { method: 'PATCH' }),
+  },
+  payments: {
+    ownerEarnings: () => request('/payments/owner/earnings'),
+  },
+  studentRatings: {
+    rate: (body) => request('/student-ratings', { method: 'POST', body: JSON.stringify(body) }),
+    given: () => request('/student-ratings/given'),
+  },
+  withdrawals: {
+    getBankAccount: () => request('/withdrawals/bank-account'),
+    saveBankAccount: (body) => request('/withdrawals/bank-account', { method: 'PUT', body: JSON.stringify(body) }),
+    deleteBankAccount: () => request('/withdrawals/bank-account', { method: 'DELETE' }),
+    request: (amount) => request('/withdrawals', { method: 'POST', body: JSON.stringify({ amount }) }),
+    history: (status) => request(`/withdrawals${status ? `?status=${status}` : ''}`),
+  },
 };

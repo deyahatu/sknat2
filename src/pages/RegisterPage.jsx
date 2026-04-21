@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiMail, FiLock, FiUser, FiEye, FiEyeOff, FiPhone } from 'react-icons/fi';
+import { FiMail, FiLock, FiUser, FiEye, FiEyeOff, FiPhone, FiCreditCard } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import './AuthPages.css';
 
@@ -12,22 +12,39 @@ function RegisterPage() {
     password: '',
     confirmPassword: '',
     role: 'student',
+    idNumber: '',
+    idPhoto: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const fileInputRef = useRef(null);
 
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const isOwner = formData.role === 'owner';
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleIdPhoto = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setFormData((prev) => ({ ...prev, idPhoto: ev.target.result }));
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       setError('كلمات المرور غير متطابقة');
+      return;
+    }
+    if (isOwner && !formData.idNumber.trim()) {
+      setError('رقم الهوية مطلوب للتسجيل كمالك عقار');
       return;
     }
     setLoading(true);
@@ -39,8 +56,10 @@ function RegisterPage() {
         phone: formData.phone,
         password: formData.password,
         role: formData.role.toUpperCase(),
+        ...(isOwner && { idNumber: formData.idNumber, idPhoto: formData.idPhoto }),
       });
-      navigate('/');
+
+      navigate(isOwner ? '/owner' : '/');
     } catch (err) {
       setError(err.message || 'حدث خطأ أثناء إنشاء الحساب');
     } finally {
@@ -125,6 +144,45 @@ function RegisterPage() {
               </div>
             </div>
 
+            {isOwner && (
+              <>
+                <div className="form-group">
+                  <label htmlFor="idNumber">رقم الهوية *</label>
+                  <div className="input-wrapper">
+                    <FiCreditCard className="input-icon" />
+                    <input
+                      id="idNumber"
+                      type="text"
+                      name="idNumber"
+                      placeholder="أدخل رقم الهوية الوطنية"
+                      value={formData.idNumber}
+                      onChange={handleChange}
+                      required
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>صورة الهوية (اختياري)</label>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    style={{ width: '100%', marginBottom: 8 }}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {formData.idPhoto ? 'تم رفع الصورة ✓' : 'رفع صورة الهوية'}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handleIdPhoto}
+                  />
+                </div>
+              </>
+            )}
+
             <div className="form-group">
               <label htmlFor="reg-password">كلمة المرور</label>
               <div className="input-wrapper">
@@ -133,7 +191,7 @@ function RegisterPage() {
                   id="reg-password"
                   type={showPassword ? 'text' : 'password'}
                   name="password"
-                  placeholder="••••••••"
+                  placeholder="8 أحرف على الأقل"
                   value={formData.password}
                   onChange={handleChange}
                   required

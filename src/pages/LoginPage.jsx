@@ -19,8 +19,8 @@ function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      await login(email, password);
-      navigate('/');
+      const data = await login(email, password);
+      navigate(data.user?.role === 'OWNER' ? '/owner' : '/');
     } catch (err) {
       setError(err.message || 'حدث خطأ أثناء تسجيل الدخول');
     } finally {

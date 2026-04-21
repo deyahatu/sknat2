@@ -20,9 +20,11 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const register = async ({ name, email, phone, password, role }) => {
-    const data = await api.auth.register({ name, email, phone, password, role });
-    setUser(data.user);
+  const register = async ({ name, email, phone, password, role, ...extraFields }) => {
+    const data = await api.auth.register({ name, email, phone, password, role, ...extraFields });
+    if (data.token) {
+      setUser(data.user);
+    }
     return data;
   };
 

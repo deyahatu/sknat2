@@ -72,8 +72,8 @@ router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
       return res.status(404).json({ error: 'Booking not found.' });
     }
 
-    if (booking.status !== 'APPROVED') {
-      return res.status(400).json({ error: 'Only approved bookings can be rated.' });
+    if (booking.status !== 'COMPLETED') {
+      return res.status(400).json({ error: 'Only completed bookings can be rated.' });
     }
 
     if (booking.student.role !== 'STUDENT') {
