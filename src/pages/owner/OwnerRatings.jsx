@@ -27,7 +27,9 @@ export default function OwnerRatings() {
 
   return (
     <>
-      <h1 className="owner-page-title">تقييمات العقارات</h1>
+      <div className="owner-section-hero">
+        <h1 className="owner-page-title owner-section-hero-title">تقييمات العقارات</h1>
+      </div>
       {error && <div className="owner-form-error">{error}</div>}
 
       <div className="owner-card">

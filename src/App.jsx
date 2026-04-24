@@ -20,6 +20,7 @@ import OwnerRatings from './pages/owner/OwnerRatings';
 import RateStudents from './pages/owner/RateStudents';
 import BankAccount from './pages/owner/BankAccount';
 import Withdrawals from './pages/owner/Withdrawals';
+import ManageProfile from './pages/owner/ManageProfile';
 
 function GuestRoute({ children }) {
   const { user, loading } = useAuth();
@@ -71,6 +72,7 @@ function App() {
             <Route path="rate-students" element={<RateStudents />} />
             <Route path="bank-account" element={<BankAccount />} />
             <Route path="withdrawals" element={<Withdrawals />} />
+            <Route path="manage-profile" element={<ManageProfile />} />
           </Route>
 
           {/* Public + student/admin routes — global Navbar/Footer layout */}

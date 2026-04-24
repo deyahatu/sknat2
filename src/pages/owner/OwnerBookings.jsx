@@ -71,7 +71,9 @@ export default function OwnerBookings() {
 
   return (
     <>
-      <h1 className="owner-page-title">الحجوزات</h1>
+      <div className="owner-section-hero">
+        <h1 className="owner-page-title owner-section-hero-title">الحجوزات</h1>
+      </div>
 
       {error && <div className="owner-form-error">{error}</div>}
 

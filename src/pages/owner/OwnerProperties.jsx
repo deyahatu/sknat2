@@ -1,6 +1,34 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { api } from '../../utils/api';
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { FiEdit2, FiMapPin, FiShield, FiTrash2 } from "react-icons/fi";
+import { api } from "../../utils/api";
+
+function formatDate(value) {
+  if (!value) return "غير محدد";
+  try {
+    return new Date(value).toLocaleDateString("ar-SA", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return value;
+  }
+}
+
+function getTargetGenderLabel(targetGender) {
+  if (targetGender === "FEMALE") return "مخصص للإناث";
+  if (targetGender === "MALE") return "مخصص للذكور";
+  return "غير محدد";
+}
+
+function getPropertySummary(property) {
+  const text =
+    property.address?.trim() ||
+    property.description?.trim() ||
+    "تفاصيل العقار جاهزة للتحديث والإدارة من هنا.";
+  return text.length > 90 ? `${text.slice(0, 90)}...` : text;
+}
 
 export default function OwnerProperties() {
   const [properties, setProperties] = useState([]);
@@ -21,7 +49,9 @@ export default function OwnerProperties() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   async function handleDelete(id, title) {
     if (!window.confirm(`هل أنت متأكد من حذف "${title}"؟`)) return;
@@ -36,20 +66,17 @@ export default function OwnerProperties() {
     }
   }
 
-  async function handleToggleAvailability(id, current) {
-    try {
-      await api.properties.toggleAvailability(id, !current);
-      await load();
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
   return (
     <>
-      <div className="owner-page-header">
-        <h1 className="owner-page-title">عقاراتي</h1>
-        <Link to="/owner/properties/add" className="owner-btn owner-btn-primary">
+      <div className="owner-properties-hero">
+        <div className="owner-properties-copy">
+          <span className="owner-properties-eyebrow">إدارة العقارات</span>
+          <h1 className="owner-page-title owner-properties-title">عقاراتي</h1>
+        </div>
+        <Link
+          to="/owner/properties/add"
+          className="owner-btn owner-btn-primary owner-properties-hero-add-btn"
+        >
           + إضافة عقار
         </Link>
       </div>
@@ -63,54 +90,63 @@ export default function OwnerProperties() {
           <div className="owner-empty">لا توجد عقارات. أضف عقارك الأول!</div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {properties.map((p) => (
-            <div key={p.id} className="owner-card">
-              <div style={{ display: 'flex', gap: 16, padding: '16px 20px', alignItems: 'center', flexWrap: 'wrap' }}>
-                {p.images?.[0] && (
-                  <img
-                    src={p.images[0]}
-                    alt={p.title}
-                    style={{ width: 90, height: 70, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }}
-                  />
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontWeight: 600, color: 'var(--owner-text)' }}>{p.title}</p>
-                  <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--owner-text-muted)' }}>
-                    {p.city} · {Number(p.price).toFixed(0)} ريال/شهر
-                  </p>
-                  <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--owner-text-muted)' }}>
-                    {p.rooms} غرف · {p.studentsCount}/{p.rooms * p.capacityPerRoom} طالب
-                  </p>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+        <div className="owner-properties-grid">
+          {properties.map((p, index) => {
+            return (
+              <article key={p.id} className="owner-property-panel">
+                <div className="owner-property-panel-head">
                   <span
-                    className={`owner-badge ${p.available ? 'approved' : 'rejected'}`}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => handleToggleAvailability(p.id, p.available)}
-                    title="اضغط للتغيير"
+                    className={`owner-property-status ${p.available ? "available" : "offline"}`}
                   >
-                    {p.available ? 'متاح' : 'غير متاح'}
+                    {p.available ? "متاح للحجز" : "متوقف حالياً"}
                   </span>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <span className="owner-property-order">
+                    #{String(index + 1).padStart(2, "0")}
+                  </span>
+                </div>
+
+                <div className="owner-property-tag-row">
+                  <span className="owner-property-tag">
+                    <FiMapPin />
+                    <span>{p.city || "بدون مدينة"}</span>
+                  </span>
+                  <span className="owner-property-tag">
+                    <FiShield />
+                    <span>{getTargetGenderLabel(p.targetGender)}</span>
+                  </span>
+                </div>
+
+                <h2 className="owner-property-card-title">{p.title}</h2>
+                <p className="owner-property-card-summary">
+                  {getPropertySummary(p)}
+                </p>
+
+                <div className="owner-property-footer">
+                  <p className="owner-property-updated">
+                    آخر تحديث: {formatDate(p.updatedAt)}
+                  </p>
+
+                  <div className="owner-property-tools">
                     <button
-                      className="owner-btn owner-btn-outline owner-btn-sm"
+                      className="owner-property-tool owner-property-tool-primary"
                       onClick={() => navigate(`/owner/properties/${p.id}/edit`)}
                     >
-                      تعديل
+                      <FiEdit2 />
+                      <span>تعديل</span>
                     </button>
                     <button
-                      className="owner-btn owner-btn-danger owner-btn-sm"
+                      className="owner-property-tool owner-property-tool-danger"
                       disabled={deleting === p.id}
                       onClick={() => handleDelete(p.id, p.title)}
                     >
-                      {deleting === p.id ? '...' : 'حذف'}
+                      <FiTrash2 />
+                      <span>{deleting === p.id ? "جاري الحذف..." : "حذف"}</span>
                     </button>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
     </>

@@ -58,10 +58,10 @@ router.put(
           .json({ error: "Account numbers do not match. Please re-enter." });
       }
 
-      if (!/^\d+$/.test(bankAccountNumber)) {
+      if (!/^[A-Za-z0-9]+$/.test(bankAccountNumber)) {
         return res
           .status(400)
-          .json({ error: "Account number must contain digits only." });
+          .json({ error: "Account number must contain letters or digits only." });
       }
 
       const updated = await prisma.user.update({
