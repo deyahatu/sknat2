@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FiHome, FiSearch, FiLogIn, FiUserPlus, FiMenu, FiX, FiUser, FiLogOut, FiSettings } from 'react-icons/fi';
+import { FiHome, FiSearch, FiLogIn, FiUserPlus, FiMenu, FiX, FiUser, FiLogOut, FiSettings, FiCalendar, FiHeart } from 'react-icons/fi';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
@@ -18,10 +18,14 @@ function Navbar() {
     navLinks.push({ path: '/login', label: 'تسجيل الدخول', icon: <FiLogIn /> });
     navLinks.push({ path: '/register', label: 'إنشاء حساب', icon: <FiUserPlus /> });
   } else {
+    if (user?.role === 'STUDENT') {
+      navLinks.push({ path: '/bookings', label: 'حجوزاتي', icon: <FiCalendar /> });
+      navLinks.push({ path: '/favorites', label: 'المفضلة', icon: <FiHeart /> });
+      navLinks.push({ path: '/profile', label: 'الملف الشخصي', icon: <FiUser /> });
+    }
     if (user?.role === 'ADMIN') {
       navLinks.push({ path: '/admin', label: 'لوحة التحكم', icon: <FiSettings /> });
     }
-    navLinks.push({ path: '/profile', label: 'الملف الشخصي', icon: <FiUser /> });
   }
 
   const isActive = (path) => location.pathname === path;

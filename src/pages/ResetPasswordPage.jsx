@@ -69,7 +69,7 @@ function ResetPasswordPage() {
                     id="password"
                     type="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => setPassword(e.target.value.replace(/[؀-ۿ]/g, ''))}
                     required
                     dir="ltr"
                   />
@@ -84,7 +84,7 @@ function ResetPasswordPage() {
                     id="confirmPassword"
                     type="password"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => setConfirmPassword(e.target.value.replace(/[؀-ۿ]/g, ''))}
                     required
                     dir="ltr"
                   />

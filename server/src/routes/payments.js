@@ -1,18 +1,15 @@
-import { Router } from 'express';
-import prisma from '../utils/prisma.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { Router } from "express";
+import prisma from "../utils/prisma.js";
+import { authenticate, authorize } from "../middleware/auth.js";
 
 const router = Router();
 
-// ──────────────────────────────────────────────
-// UC-8: Pay Booking Fee (Student)
-// ──────────────────────────────────────────────
-router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
+router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
   try {
     const { bookingId } = req.body;
 
     if (!bookingId) {
-      return res.status(400).json({ error: 'Booking ID is required.' });
+      return res.status(400).json({ error: "معرّف الحجز مطلوب." });
     }
 
     const booking = await prisma.booking.findUnique({
@@ -26,19 +23,25 @@ router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
     });
 
     if (!booking) {
-      return res.status(404).json({ error: 'Booking not found.' });
+      return res.status(404).json({ error: "الحجز غير موجود." });
     }
 
     if (booking.studentId !== req.user.id) {
-      return res.status(403).json({ error: 'You do not have permission to pay for this booking.' });
+      return res
+        .status(403)
+        .json({ error: "ليس لديك صلاحية لدفع هذا الحجز." });
     }
 
-    if (booking.status !== 'APPROVED') {
-      return res.status(400).json({ error: 'Only approved bookings can be paid.' });
+    if (booking.status !== "APPROVED") {
+      return res
+        .status(400)
+        .json({ error: "يمكن دفع الحجوزات المقبولة فقط." });
     }
 
     if (booking.payment) {
-      return res.status(400).json({ error: 'This booking has already been paid.' });
+      return res
+        .status(400)
+        .json({ error: "تم دفع هذا الحجز مسبقاً." });
     }
 
     // Calculate total price
@@ -53,7 +56,7 @@ router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
       const payment = await tx.payment.create({
         data: {
           amount: totalAmount,
-          status: 'COMPLETED',
+          status: "COMPLETED",
           bookingId: booking.id,
           studentId: req.user.id,
         },
@@ -62,7 +65,7 @@ router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
       // Update booking status to PAID
       const updatedBooking = await tx.booking.update({
         where: { id: booking.id },
-        data: { status: 'PAID' },
+        data: { status: "PAID" },
         include: {
           property: {
             select: { id: true, title: true, city: true, price: true },
@@ -86,7 +89,7 @@ router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
     });
 
     res.status(201).json({
-      message: 'Payment successful. Your booking is Accepted.',
+      message: "تم الدفع بنجاح. تم قبول حجزك.",
       payment: result.payment,
       booking: result.booking,
     });
@@ -95,70 +98,74 @@ router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
   }
 });
 
-// ──────────────────────────────────────────────
-// Get student's payment history
-// ──────────────────────────────────────────────
-router.get('/student', authenticate, authorize('STUDENT'), async (req, res, next) => {
-  try {
-    const payments = await prisma.payment.findMany({
-      where: { studentId: req.user.id },
-      include: {
-        booking: {
-          include: {
-            property: {
-              select: { id: true, title: true, city: true, images: true },
+router.get(
+  "/student",
+  authenticate,
+  authorize("STUDENT"),
+  async (req, res, next) => {
+    try {
+      const payments = await prisma.payment.findMany({
+        where: { studentId: req.user.id },
+        include: {
+          booking: {
+            include: {
+              property: {
+                select: { id: true, title: true, city: true, images: true },
+              },
             },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: "desc" },
+      });
 
-    res.json({ payments });
-  } catch (err) {
-    next(err);
-  }
-});
+      res.json({ payments });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
-// ──────────────────────────────────────────────
-// Get owner's earnings summary
-// ──────────────────────────────────────────────
-router.get('/owner/earnings', authenticate, authorize('OWNER'), async (req, res, next) => {
-  try {
-    // Get wallet balance
-    const wallet = await prisma.wallet.findUnique({
-      where: { ownerId: req.user.id },
-    });
+router.get(
+  "/owner/earnings",
+  authenticate,
+  authorize("OWNER"),
+  async (req, res, next) => {
+    try {
+      // Get wallet balance
+      const wallet = await prisma.wallet.findUnique({
+        where: { ownerId: req.user.id },
+      });
 
-    // Get all payments for owner's properties
-    const payments = await prisma.payment.findMany({
-      where: {
-        booking: {
-          property: { ownerId: req.user.id },
+      // Get all payments for owner's properties
+      const payments = await prisma.payment.findMany({
+        where: {
+          booking: {
+            property: { ownerId: req.user.id },
+          },
         },
-      },
-      include: {
-        booking: {
-          include: {
-            property: {
-              select: { id: true, title: true },
-            },
-            student: {
-              select: { id: true, name: true },
+        include: {
+          booking: {
+            include: {
+              property: {
+                select: { id: true, title: true },
+              },
+              student: {
+                select: { id: true, name: true },
+              },
             },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: "desc" },
+      });
 
-    res.json({
-      wallet: wallet || { balance: 0 },
-      payments,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
+      res.json({
+        wallet: wallet || { balance: 0 },
+        payments,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 export default router;

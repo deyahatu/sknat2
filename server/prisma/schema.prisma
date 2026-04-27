@@ -37,7 +37,19 @@ generator client {
     COMPLETED
   }
 
+  enum RefundStatus {
+    PENDING
+    APPROVED
+    REJECTED
+    COMPLETED
+  }
+
   enum TargetGender {
+    MALE
+    FEMALE
+  }
+
+  enum Gender {
     MALE
     FEMALE
   }
@@ -54,6 +66,8 @@ generator client {
     avatar           String?
     idNumber         String?   @unique
     idPhoto          String?   @db.Text
+    gender           Gender?
+    major            String?
     resetToken          String?
     resetTokenExpiry    DateTime?
     bankName            String?
@@ -64,10 +78,12 @@ generator client {
 
     properties       Property[]
     bookings         Booking[]
-    reviews          Review[]                                                                                                                                                                                                                       
+    reviews          Review[]
     payments         Payment[]
-    wallet           Wallet?                                                                                                                                                                                                                        
+    wallet           Wallet?
     withdrawRequests WithdrawRequest[]
+    favorites        Favorite[]
+    refundRequests   RefundRequest[]
     studentRatingsGiven    StudentRating[] @relation("StudentRatingsGiven")
     studentRatingsReceived StudentRating[] @relation("StudentRatingsReceived")
 
@@ -99,13 +115,14 @@ generator client {
     updatedAt   DateTime @updatedAt
                                                                                                                                                                                                                                                     
     owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-    bookings Booking[]                                                                                                                                                                                                                              
+    bookings Booking[]
     reviews  Review[]
+    favoritedBy Favorite[]
 
     @@index([ownerId])
     @@index([city])
     @@index([price])
-    @@index([available])                                                                                                                                                                                                                            
+    @@index([available])
     @@map("properties")
   }                                                                                                                                                                                                                                                 
                   
@@ -122,13 +139,14 @@ generator client {
     updatedAt  DateTime      @updatedAt
                                                                                                                                                                                                                                                     
     property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-    student  User     @relation(fields: [studentId], references: [id], onDelete: Cascade)                                                                                                                                                           
+    student  User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
     payment  Payment?
     studentRating StudentRating?
+    refundRequest RefundRequest?
 
-    @@index([studentId])                                                                                                                                                                                                                            
+    @@index([studentId])
     @@index([propertyId])
-    @@index([status])                                                                                                                                                                                                                               
+    @@index([status])
     @@map("bookings")
   }
 
@@ -220,4 +238,42 @@ generator client {
     @@index([ownerId])
     @@index([studentId])
     @@map("student_ratings")
+  }
+
+
+  model Favorite {
+    id         String   @id @default(uuid())
+    userId     String
+    propertyId String
+    createdAt  DateTime @default(now())
+
+    user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, propertyId])
+    @@index([userId])
+    @@index([propertyId])
+    @@map("favorites")
+  }
+
+
+  model RefundRequest {
+    id               String       @id @default(uuid())
+    bookingId        String       @unique
+    studentId        String
+    originalAmount   Decimal      @db.Decimal(10, 2)
+    refundAmount     Decimal      @db.Decimal(10, 2)
+    refundPercentage Int
+    reason           String?
+    status           RefundStatus @default(PENDING)
+    rejectionReason  String?
+    createdAt        DateTime     @default(now())
+    updatedAt        DateTime     @updatedAt
+
+    booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+    student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+    @@index([studentId])
+    @@index([status])
+    @@map("refund_requests")
   }

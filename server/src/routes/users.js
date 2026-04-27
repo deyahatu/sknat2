@@ -16,6 +16,8 @@ router.get('/profile', authenticate, async (req, res, next) => {
         role: true,
         avatar: true,
         idNumber: true,
+        gender: true,
+        major: true,
         bankName: true,
         bankAccountHolder: true,
         bankAccountNumber: true,
@@ -25,7 +27,7 @@ router.get('/profile', authenticate, async (req, res, next) => {
     });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found.' });
+      return res.status(404).json({ error: 'المستخدم غير موجود.' });
     }
 
     res.json({ user });
@@ -47,23 +49,23 @@ router.put('/profile', authenticate, async (req, res, next) => {
     if (typeof email === 'string' && email.trim() !== req.user.email) {
       const nextEmail = email.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
-        return res.status(400).json({ error: 'Please enter a valid email address.' });
+        return res.status(400).json({ error: 'يرجى إدخال بريد إلكتروني صحيح.' });
       }
       const existing = await prisma.user.findUnique({ where: { email: nextEmail } });
       if (existing && existing.id !== req.user.id) {
-        return res.status(409).json({ error: 'This email is already registered to another account.' });
+        return res.status(409).json({ error: 'هذا البريد الإلكتروني مسجّل لحساب آخر.' });
       }
       data.email = nextEmail;
     }
 
     if (typeof phone === 'string' && phone.trim() && phone.trim() !== req.user.phone) {
       const nextPhone = phone.trim();
-      if (!/^\d+$/.test(nextPhone)) {
-        return res.status(400).json({ error: 'Phone must contain digits only.' });
+      if (!/^\d{10}$/.test(nextPhone)) {
+        return res.status(400).json({ error: 'رقم الجوال يجب أن يتكوّن من 10 أرقام بالضبط.' });
       }
       const existing = await prisma.user.findUnique({ where: { phone: nextPhone } });
       if (existing && existing.id !== req.user.id) {
-        return res.status(409).json({ error: 'This phone number is linked to another account.' });
+        return res.status(409).json({ error: 'رقم الجوال هذا مرتبط بحساب آخر.' });
       }
       data.phone = nextPhone;
     }
@@ -73,7 +75,7 @@ router.put('/profile', authenticate, async (req, res, next) => {
     }
 
     if (Object.keys(data).length === 0) {
-      return res.status(400).json({ error: 'No changes to save.' });
+      return res.status(400).json({ error: 'لا توجد تغييرات للحفظ.' });
     }
 
     const updated = await prisma.user.update({
@@ -87,10 +89,10 @@ router.put('/profile', authenticate, async (req, res, next) => {
     if (err?.code === 'P2002') {
       const target = err.meta?.target || [];
       if (target.includes('email')) {
-        return res.status(409).json({ error: 'This email is already registered to another account.' });
+        return res.status(409).json({ error: 'هذا البريد الإلكتروني مسجّل لحساب آخر.' });
       }
       if (target.includes('phone')) {
-        return res.status(409).json({ error: 'This phone number is linked to another account.' });
+        return res.status(409).json({ error: 'رقم الجوال هذا مرتبط بحساب آخر.' });
       }
     }
     next(err);

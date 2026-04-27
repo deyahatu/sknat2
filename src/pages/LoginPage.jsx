@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import './AuthPages.css';
 
 function LoginPage() {
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(location.state?.successMessage || null);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -18,6 +20,7 @@ function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMessage(null);
     try {
       const data = await login(email, password);
       navigate(data.user?.role === 'OWNER' ? '/owner' : '/');
@@ -36,6 +39,23 @@ function LoginPage() {
             <h1>تسجيل الدخول</h1>
             <p>أدخل بياناتك للوصول إلى حسابك</p>
           </div>
+
+          {successMessage && (
+            <div
+              style={{
+                background: '#d4edda',
+                color: '#155724',
+                padding: '12px',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                textAlign: 'center',
+                fontSize: '14px',
+                border: '1px solid #c3e6cb',
+              }}
+            >
+              {successMessage}
+            </div>
+          )}
 
           <form className="auth-form" onSubmit={handleSubmit}>
             <div className="form-group">
@@ -63,7 +83,7 @@ function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value.replace(/[؀-ۿ]/g, ''))}
                   required
                   dir="ltr"
                 />
@@ -78,10 +98,6 @@ function LoginPage() {
             </div>
 
             <div className="form-actions">
-              <label className="checkbox-label">
-                <input type="checkbox" />
-                <span>تذكرني</span>
-              </label>
               <Link to="/forgot-password" className="forgot-link">نسيت كلمة المرور؟</Link>
             </div>
 

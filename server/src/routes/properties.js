@@ -43,7 +43,7 @@ function asPositiveInteger(value, fieldName) {
   const number = Number(value);
 
   if (!Number.isInteger(number) || number <= 0) {
-    throw new Error(`${fieldName} must be a positive number.`);
+    throw new Error(`${fieldName} يجب أن يكون رقماً موجباً.`);
   }
 
   return number;
@@ -53,7 +53,7 @@ function asNonNegativeInteger(value, fieldName) {
   const number = Number(value);
 
   if (!Number.isInteger(number) || number < 0) {
-    throw new Error(`${fieldName} must be zero or more.`);
+    throw new Error(`${fieldName} يجب أن يكون صفراً أو أكثر.`);
   }
 
   return number;
@@ -63,7 +63,7 @@ function asPositivePrice(value) {
   const number = Number(value);
 
   if (!Number.isFinite(number) || number <= 0) {
-    throw new Error('Price must be a positive number.');
+    throw new Error('السعر يجب أن يكون رقماً موجباً.');
   }
 
   return number;
@@ -80,12 +80,12 @@ function asBoolean(value) {
     return false;
   }
 
-  throw new Error('Availability status must be true or false.');
+  throw new Error('حالة التوفر يجب أن تكون true أو false.');
 }
 
 function validateImages(images) {
   if (!Array.isArray(images) || images.length === 0) {
-    throw new Error('At least one accommodation photo is required.');
+    throw new Error('يجب رفع صورة واحدة على الأقل للسكن.');
   }
 
   const invalidImage = images.some((image) => (
@@ -93,7 +93,7 @@ function validateImages(images) {
   ));
 
   if (invalidImage) {
-    throw new Error('Please upload valid accommodation photos.');
+    throw new Error('يرجى رفع صور صحيحة للسكن.');
   }
 
   return images;
@@ -101,7 +101,7 @@ function validateImages(images) {
 
 function validateServices(services, otherServices) {
   if (!Array.isArray(services)) {
-    throw new Error('Services must be a list.');
+    throw new Error('الخدمات يجب أن تكون قائمة.');
   }
 
   const cleanServices = services
@@ -110,11 +110,11 @@ function validateServices(services, otherServices) {
     .filter(Boolean);
 
   if (cleanServices.length !== services.length) {
-    throw new Error('Services must contain text values only.');
+    throw new Error('الخدمات يجب أن تحتوي على قيم نصية فقط.');
   }
 
   if (cleanServices.length === 0 && !otherServices) {
-    throw new Error('Please select at least one service or add other services.');
+    throw new Error('يرجى اختيار خدمة واحدة على الأقل أو إضافة خدمات أخرى.');
   }
 
   return cleanServices;
@@ -130,20 +130,20 @@ function buildCreateData(body, ownerId) {
   const targetGender = asRequiredString(body.targetGender).toUpperCase();
 
   if (!title || !city || !address || !description || !policy) {
-    throw new Error('Please fill all required accommodation fields.');
+    throw new Error('يرجى تعبئة جميع حقول السكن المطلوبة.');
   }
 
   if (!VALID_GENDERS.includes(targetGender)) {
-    throw new Error('Target gender must be MALE or FEMALE.');
+    throw new Error('الجنس المستهدف يجب أن يكون MALE أو FEMALE.');
   }
 
   const price = asPositivePrice(body.price);
-  const rooms = asPositiveInteger(body.rooms, 'Number of rooms');
-  const capacityPerRoom = asPositiveInteger(body.capacityPerRoom, 'Capacity per room');
-  const studentsCount = asNonNegativeInteger(body.studentsCount, 'Number of students');
+  const rooms = asPositiveInteger(body.rooms, 'عدد الغرف');
+  const capacityPerRoom = asPositiveInteger(body.capacityPerRoom, 'سعة الغرفة');
+  const studentsCount = asNonNegativeInteger(body.studentsCount, 'عدد الطلاب');
 
   if (studentsCount > rooms * capacityPerRoom) {
-    throw new Error('Number of students cannot exceed total accommodation capacity.');
+    throw new Error('عدد الطلاب لا يمكن أن يتجاوز السعة الإجمالية للسكن.');
   }
 
   const services = validateServices(body.services, otherServices);
@@ -166,9 +166,9 @@ function buildCreateData(body, ownerId) {
     images,
     available,
     ownerId,
-    ...(body.bathrooms !== undefined && { bathrooms: asPositiveInteger(body.bathrooms, 'Number of bathrooms') }),
+    ...(body.bathrooms !== undefined && { bathrooms: asPositiveInteger(body.bathrooms, 'عدد الحمامات') }),
     ...(body.area !== undefined && body.area !== null && body.area !== '' && {
-      area: asPositiveInteger(body.area, 'Area'),
+      area: asPositiveInteger(body.area, 'المساحة'),
     }),
   };
 }
@@ -178,45 +178,45 @@ function buildUpdateData(body) {
 
   if (body.title !== undefined || body.name !== undefined) {
     const title = asRequiredString(body.title || body.name);
-    if (!title) throw new Error('Accommodation name cannot be empty.');
+    if (!title) throw new Error('اسم السكن لا يمكن أن يكون فارغاً.');
     data.title = title;
   }
 
   if (body.city !== undefined) {
     const city = asRequiredString(body.city);
-    if (!city) throw new Error('City cannot be empty.');
+    if (!city) throw new Error('المدينة لا يمكن أن تكون فارغة.');
     data.city = city;
   }
 
   if (body.address !== undefined) {
     const address = asRequiredString(body.address);
-    if (!address) throw new Error('Address cannot be empty.');
+    if (!address) throw new Error('العنوان لا يمكن أن يكون فارغاً.');
     data.address = address;
   }
 
   if (body.description !== undefined) {
     const description = asRequiredString(body.description);
-    if (!description) throw new Error('Description cannot be empty.');
+    if (!description) throw new Error('الوصف لا يمكن أن يكون فارغاً.');
     data.description = description;
   }
 
   if (body.policy !== undefined) {
     const policy = asRequiredString(body.policy);
-    if (!policy) throw new Error('Accommodation policy cannot be empty.');
+    if (!policy) throw new Error('سياسة السكن لا يمكن أن تكون فارغة.');
     data.policy = policy;
   }
 
   if (body.price !== undefined) data.price = asPositivePrice(body.price);
-  if (body.rooms !== undefined) data.rooms = asPositiveInteger(body.rooms, 'Number of rooms');
-  if (body.capacityPerRoom !== undefined) data.capacityPerRoom = asPositiveInteger(body.capacityPerRoom, 'Capacity per room');
-  if (body.studentsCount !== undefined) data.studentsCount = asNonNegativeInteger(body.studentsCount, 'Number of students');
-  if (body.bathrooms !== undefined) data.bathrooms = asPositiveInteger(body.bathrooms, 'Number of bathrooms');
-  if (body.area !== undefined) data.area = body.area === null || body.area === '' ? null : asPositiveInteger(body.area, 'Area');
+  if (body.rooms !== undefined) data.rooms = asPositiveInteger(body.rooms, 'عدد الغرف');
+  if (body.capacityPerRoom !== undefined) data.capacityPerRoom = asPositiveInteger(body.capacityPerRoom, 'سعة الغرفة');
+  if (body.studentsCount !== undefined) data.studentsCount = asNonNegativeInteger(body.studentsCount, 'عدد الطلاب');
+  if (body.bathrooms !== undefined) data.bathrooms = asPositiveInteger(body.bathrooms, 'عدد الحمامات');
+  if (body.area !== undefined) data.area = body.area === null || body.area === '' ? null : asPositiveInteger(body.area, 'المساحة');
 
   if (body.targetGender !== undefined) {
     const targetGender = asRequiredString(body.targetGender).toUpperCase();
     if (!VALID_GENDERS.includes(targetGender)) {
-      throw new Error('Target gender must be MALE or FEMALE.');
+      throw new Error('الجنس المستهدف يجب أن يكون MALE أو FEMALE.');
     }
     data.targetGender = targetGender;
   }
@@ -251,7 +251,7 @@ function buildUpdateData(body) {
     Number.isInteger(studentsCount) &&
     studentsCount > rooms * capacityPerRoom
   ) {
-    throw new Error('Number of students cannot exceed total accommodation capacity.');
+    throw new Error('عدد الطلاب لا يمكن أن يتجاوز السعة الإجمالية للسكن.');
   }
 
   return data;
@@ -267,6 +267,66 @@ async function findOwnerProperty(propertyId, ownerId) {
   });
 }
 
+// ───────────────────────────────────────────────
+// Public: list available properties with filters
+// ───────────────────────────────────────────────
+router.get('/', async (req, res, next) => {
+  try {
+    const {
+      q,
+      city,
+      minPrice,
+      maxPrice,
+      rooms,
+      bathrooms,
+      targetGender,
+      services,
+    } = req.query;
+
+    const where = { available: true };
+
+    if (q) {
+      where.OR = [
+        { title: { contains: q, mode: 'insensitive' } },
+        { city: { contains: q, mode: 'insensitive' } },
+        { address: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    if (city) where.city = { contains: city, mode: 'insensitive' };
+
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price.gte = Number(minPrice);
+      if (maxPrice) where.price.lte = Number(maxPrice);
+    }
+
+    if (rooms) where.rooms = Number(rooms);
+    if (bathrooms) where.bathrooms = Number(bathrooms);
+    if (targetGender) where.targetGender = targetGender;
+
+    if (services) {
+      const list = Array.isArray(services) ? services : services.split(',');
+      const cleaned = list.map((s) => s.trim()).filter(Boolean);
+      if (cleaned.length > 0) where.services = { hasEvery: cleaned };
+    }
+
+    const properties = await prisma.property.findMany({
+      where,
+      select: {
+        ...propertySelect,
+        owner: { select: { id: true, name: true, phone: true, email: true } },
+        _count: { select: { reviews: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ properties });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
   try {
     const property = await prisma.property.create({
@@ -275,7 +335,7 @@ router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
     });
 
     res.status(201).json({
-      message: 'Accommodation created successfully.',
+      message: 'تم إنشاء السكن بنجاح.',
       property,
     });
   } catch (err) {
@@ -347,7 +407,7 @@ router.get('/:id/ratings', authenticate, authorize('OWNER'), async (req, res, ne
     const property = await findOwnerProperty(req.params.id, req.user.id);
 
     if (!property) {
-      return res.status(404).json({ error: 'Accommodation not found.' });
+      return res.status(404).json({ error: 'السكن غير موجود.' });
     }
 
     const ratings = await prisma.review.findMany({
@@ -370,12 +430,30 @@ router.get('/:id/ratings', authenticate, authorize('OWNER'), async (req, res, ne
   }
 });
 
-router.get('/:id', authenticate, authorize('OWNER'), async (req, res, next) => {
+// Public: view single property details
+router.get('/:id', async (req, res, next) => {
   try {
-    const property = await findOwnerProperty(req.params.id, req.user.id);
+    const property = await prisma.property.findUnique({
+      where: { id: req.params.id },
+      select: {
+        ...propertySelect,
+        owner: { select: { id: true, name: true, phone: true, email: true } },
+        reviews: {
+          select: {
+            id: true,
+            rating: true,
+            comment: true,
+            createdAt: true,
+            student: { select: { id: true, name: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: { select: { reviews: true } },
+      },
+    });
 
     if (!property) {
-      return res.status(404).json({ error: 'Accommodation not found.' });
+      return res.status(404).json({ error: 'السكن غير موجود.' });
     }
 
     res.json({ property });
@@ -389,7 +467,7 @@ router.put('/:id', authenticate, authorize('OWNER'), async (req, res, next) => {
     const existing = await findOwnerProperty(req.params.id, req.user.id);
 
     if (!existing) {
-      return res.status(404).json({ error: 'Accommodation not found.' });
+      return res.status(404).json({ error: 'السكن غير موجود.' });
     }
 
     const updateData = buildUpdateData({
@@ -401,7 +479,7 @@ router.put('/:id', authenticate, authorize('OWNER'), async (req, res, next) => {
     });
 
     if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ error: 'No accommodation data provided for update.' });
+      return res.status(400).json({ error: 'لا توجد بيانات سكن للتحديث.' });
     }
 
     const property = await prisma.property.update({
@@ -411,7 +489,7 @@ router.put('/:id', authenticate, authorize('OWNER'), async (req, res, next) => {
     });
 
     res.json({
-      message: 'Accommodation updated successfully.',
+      message: 'تم تحديث السكن بنجاح.',
       property,
     });
   } catch (err) {
@@ -427,7 +505,7 @@ router.patch('/:id/availability', authenticate, authorize('OWNER'), async (req, 
     const existing = await findOwnerProperty(req.params.id, req.user.id);
 
     if (!existing) {
-      return res.status(404).json({ error: 'Accommodation not found.' });
+      return res.status(404).json({ error: 'السكن غير موجود.' });
     }
 
     const property = await prisma.property.update({
@@ -437,7 +515,7 @@ router.patch('/:id/availability', authenticate, authorize('OWNER'), async (req, 
     });
 
     res.json({
-      message: 'Availability status updated successfully.',
+      message: 'تم تحديث حالة التوفر بنجاح.',
       property,
     });
   } catch (err) {
@@ -453,7 +531,7 @@ router.delete('/:id', authenticate, authorize('OWNER'), async (req, res, next) =
     const existing = await findOwnerProperty(req.params.id, req.user.id);
 
     if (!existing) {
-      return res.status(404).json({ error: 'Accommodation not found.' });
+      return res.status(404).json({ error: 'السكن غير موجود.' });
     }
 
     const activeBookings = await prisma.booking.count({
@@ -464,11 +542,11 @@ router.delete('/:id', authenticate, authorize('OWNER'), async (req, res, next) =
     });
 
     if (activeBookings > 0) {
-      return res.status(400).json({ error: 'This accommodation has active bookings. Cannot delete.' });
+      return res.status(400).json({ error: 'هذا السكن لديه حجوزات نشطة. لا يمكن حذفه.' });
     }
 
     await prisma.property.delete({ where: { id: existing.id } });
-    res.json({ message: 'Accommodation deleted successfully.' });
+    res.json({ message: 'تم حذف السكن بنجاح.' });
   } catch (err) {
     next(err);
   }

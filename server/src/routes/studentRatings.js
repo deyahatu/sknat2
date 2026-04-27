@@ -8,7 +8,7 @@ function validateRating(value) {
   const rating = Number(value);
 
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    throw new Error('Rating must be a number from 1 to 5.');
+    throw new Error('التقييم يجب أن يكون رقماً من 1 إلى 5.');
   }
 
   return rating;
@@ -49,7 +49,7 @@ async function findOwnerBooking(bookingId, ownerId) {
     }
 
     if (booking.property.ownerId !== ownerId) {
-      const error = new Error('You cannot rate a student for another owner accommodation.');
+      const error = new Error('لا يمكنك تقييم طالب على سكن مالك آخر.');
       error.status = 403;
       throw error;
     }
@@ -63,21 +63,21 @@ router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
     const { bookingId, rating, comment } = req.body;
 
     if (!bookingId || rating === undefined) {
-      return res.status(400).json({ error: 'Booking and rating are required.' });
+      return res.status(400).json({ error: 'الحجز والتقييم مطلوبان.' });
     }
 
     const booking = await findOwnerBooking(bookingId, req.user.id);
 
     if (!booking) {
-      return res.status(404).json({ error: 'Booking not found.' });
+      return res.status(404).json({ error: 'الحجز غير موجود.' });
     }
 
     if (booking.status !== 'COMPLETED') {
-      return res.status(400).json({ error: 'Only completed bookings can be rated.' });
+      return res.status(400).json({ error: 'يمكن تقييم الحجوزات المكتملة فقط.' });
     }
 
     if (booking.student.role !== 'STUDENT') {
-      return res.status(400).json({ error: 'Only students can be rated.' });
+      return res.status(400).json({ error: 'يمكن تقييم الطلاب فقط.' });
     }
 
     const savedRating = await prisma.studentRating.upsert({
@@ -113,7 +113,7 @@ router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
     });
 
     res.status(201).json({
-      message: 'Student rating saved successfully.',
+      message: 'تم حفظ تقييم الطالب بنجاح.',
       rating: savedRating,
     });
   } catch (err) {

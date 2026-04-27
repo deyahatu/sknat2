@@ -49,19 +49,19 @@ router.put(
       ) {
         return res
           .status(400)
-          .json({ error: "Please fill all required fields." });
+          .json({ error: "يرجى تعبئة جميع الحقول المطلوبة." });
       }
 
       if (bankAccountNumber !== confirmAccountNumber) {
         return res
           .status(400)
-          .json({ error: "Account numbers do not match. Please re-enter." });
+          .json({ error: "أرقام الحساب غير متطابقة. يرجى إعادة الإدخال." });
       }
 
       if (!/^[A-Za-z0-9]+$/.test(bankAccountNumber)) {
         return res
           .status(400)
-          .json({ error: "Account number must contain letters or digits only." });
+          .json({ error: "رقم الحساب يجب أن يحتوي على أحرف أو أرقام فقط." });
       }
 
       const updated = await prisma.user.update({
@@ -79,7 +79,7 @@ router.put(
       });
 
       res.json({
-        message: "Bank account saved successfully.",
+        message: "تم حفظ الحساب البنكي بنجاح.",
         bankAccount: updated,
       });
     } catch (err) {
@@ -103,7 +103,7 @@ router.delete(
           .status(400)
           .json({
             error:
-              "Cannot delete bank account while a withdrawal request is pending.",
+              "لا يمكن حذف الحساب البنكي أثناء وجود طلب سحب قيد المعالجة.",
           });
       }
 
@@ -116,7 +116,7 @@ router.delete(
         },
       });
 
-      res.json({ message: "Bank account deleted successfully." });
+      res.json({ message: "تم حذف الحساب البنكي بنجاح." });
     } catch (err) {
       next(err);
     }
@@ -132,13 +132,13 @@ router.post("/", authenticate, authorize("OWNER"), async (req, res, next) => {
     if (!Number.isFinite(withdrawAmount) || withdrawAmount <= 0) {
       return res
         .status(400)
-        .json({ error: "Please enter a valid positive amount." });
+        .json({ error: "يرجى إدخال مبلغ صحيح وموجب." });
     }
 
     if (withdrawAmount < MINIMUM_WITHDRAWAL) {
       return res
         .status(400)
-        .json({ error: `Minimum withdrawal amount is ${MINIMUM_WITHDRAWAL}.` });
+        .json({ error: `الحد الأدنى لمبلغ السحب هو ${MINIMUM_WITHDRAWAL}.` });
     }
 
     const owner = await prisma.user.findUnique({
@@ -158,7 +158,7 @@ router.post("/", authenticate, authorize("OWNER"), async (req, res, next) => {
       return res
         .status(400)
         .json({
-          error: "Please add a bank account before requesting withdrawal.",
+          error: "يرجى إضافة حساب بنكي قبل طلب السحب.",
         });
     }
 
@@ -171,7 +171,7 @@ router.post("/", authenticate, authorize("OWNER"), async (req, res, next) => {
       return res
         .status(400)
         .json({
-          error: "Insufficient balance. Please enter a smaller amount.",
+          error: "الرصيد غير كافٍ. يرجى إدخال مبلغ أصغر.",
         });
     }
 
@@ -184,7 +184,7 @@ router.post("/", authenticate, authorize("OWNER"), async (req, res, next) => {
         .status(400)
         .json({
           error:
-            "You already have a pending withdrawal request. Please wait until it is processed.",
+            "لديك طلب سحب قيد المعالجة بالفعل. يرجى الانتظار حتى تتم معالجته.",
         });
     }
 
@@ -200,7 +200,7 @@ router.post("/", authenticate, authorize("OWNER"), async (req, res, next) => {
     });
 
     res.status(201).json({
-      message: "Withdrawal request submitted. Waiting for admin approval.",
+      message: "تم إرسال طلب السحب. بانتظار موافقة المسؤول.",
       request,
     });
   } catch (err) {

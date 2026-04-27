@@ -9,6 +9,9 @@ import studentRatingRoutes from './routes/studentRatings.js';
 import bookingRoutes from './routes/bookings.js';
 import paymentRoutes from './routes/payments.js';
 import withdrawalRoutes from './routes/withdrawals.js';
+import favoriteRoutes from './routes/favorites.js';
+import refundRoutes from './routes/refunds.js';
+import reviewRoutes from './routes/reviews.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,6 +32,9 @@ app.use('/api/student-ratings', studentRatingRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/withdrawals', withdrawalRoutes);
+app.use('/api/favorites', favoriteRoutes);
+app.use('/api/refunds', refundRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

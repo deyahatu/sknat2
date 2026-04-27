@@ -1,0 +1,164 @@
+.rate-page {
+  padding: 36px 0 64px;
+}
+
+.rate-container {
+  max-width: 720px;
+}
+
+.rate-loading,
+.rate-error-box {
+  padding: 60px 20px;
+  text-align: center;
+  background: white;
+  border-radius: 18px;
+  border: 1px dashed rgba(37, 99, 235, 0.2);
+}
+
+.rate-error-box h2 {
+  margin: 0 0 8px;
+  color: #991b1b;
+}
+
+.rate-error-box p {
+  margin: 0 0 16px;
+  color: var(--text-secondary);
+}
+
+.rate-container .back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.rate-card {
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 22px;
+  padding: 32px;
+  box-shadow: 0 12px 28px rgba(15, 32, 64, 0.06);
+}
+
+.rate-header {
+  margin-bottom: 26px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.rate-header h1 {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #17386a;
+}
+
+.rate-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.rate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.rate-stars-group,
+.rate-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rate-stars-group label,
+.rate-form-group label {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.rate-stars {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.rate-star {
+  width: 56px;
+  height: 56px;
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  color: #d1d5db;
+  padding: 0;
+}
+
+.rate-star:hover {
+  transform: translateY(-2px);
+}
+
+.rate-star.filled {
+  color: #f59e0b;
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.rate-star.filled svg {
+  fill: #f59e0b;
+}
+
+.rate-stars-label {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.rate-form-group textarea {
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.rate-form-group textarea:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+}
+
+.rate-form-hint {
+  text-align: end;
+  font-size: 0.82rem;
+  color: var(--text-light);
+}
+
+.rate-error {
+  padding: 10px 14px;
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-size: 0.88rem;
+}
+
+.rate-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.rate-actions .btn {
+  flex: 1;
+}

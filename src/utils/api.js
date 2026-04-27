@@ -17,6 +17,21 @@ async function request(endpoint, options = {}) {
   return data;
 }
 
+function buildQuery(params = {}) {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    if (Array.isArray(value)) {
+      if (value.length === 0) return;
+      search.set(key, value.join(','));
+    } else {
+      search.set(key, String(value));
+    }
+  });
+  const qs = search.toString();
+  return qs ? `?${qs}` : '';
+}
+
 export const api = {
   auth: {
     register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
@@ -34,6 +49,7 @@ export const api = {
     delete: (id) => request(`/users/${id}`, { method: 'DELETE' }),
   },
   properties: {
+    list: (filters) => request(`/properties${buildQuery(filters)}`),
     create: (body) => request('/properties', { method: 'POST', body: JSON.stringify(body) }),
     mine: () => request('/properties/mine'),
     get: (id) => request(`/properties/${id}`),
@@ -44,12 +60,35 @@ export const api = {
     propertyRatings: (id) => request(`/properties/${id}/ratings`),
   },
   bookings: {
+    create: (body) => request('/bookings', { method: 'POST', body: JSON.stringify(body) }),
+    studentList: (status) => request(`/bookings/student${status ? `?status=${status}` : ''}`),
     ownerList: (status) => request(`/bookings/owner${status ? `?status=${status}` : ''}`),
+    get: (id) => request(`/bookings/${id}`),
     accept: (id) => request(`/bookings/${id}/accept`, { method: 'PATCH' }),
     reject: (id) => request(`/bookings/${id}/reject`, { method: 'PATCH' }),
+    cancel: (id) => request(`/bookings/${id}/cancel`, { method: 'PATCH' }),
+    cancellationPolicy: (id) => request(`/bookings/${id}/cancellation-policy`),
   },
   payments: {
+    pay: (bookingId) => request('/payments', { method: 'POST', body: JSON.stringify({ bookingId }) }),
+    studentList: () => request('/payments/student'),
     ownerEarnings: () => request('/payments/owner/earnings'),
+  },
+  favorites: {
+    list: () => request('/favorites'),
+    add: (propertyId) => request('/favorites', { method: 'POST', body: JSON.stringify({ propertyId }) }),
+    remove: (propertyId) => request(`/favorites/${propertyId}`, { method: 'DELETE' }),
+    check: (propertyId) => request(`/favorites/check/${propertyId}`),
+  },
+  reviews: {
+    create: (body) => request('/reviews', { method: 'POST', body: JSON.stringify(body) }),
+    studentList: () => request('/reviews/student'),
+  },
+  refunds: {
+    studentList: () => request('/refunds/student'),
+    list: (status) => request(`/refunds${status ? `?status=${status}` : ''}`),
+    approve: (id) => request(`/refunds/${id}/approve`, { method: 'PATCH' }),
+    reject: (id, reason) => request(`/refunds/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
   },
   studentRatings: {
     rate: (body) => request('/student-ratings', { method: 'POST', body: JSON.stringify(body) }),

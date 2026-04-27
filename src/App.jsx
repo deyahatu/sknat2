@@ -8,7 +8,11 @@ import RegisterPage from './pages/RegisterPage';
 import SearchPage from './pages/SearchPage';
 import PropertyDetailsPage from './pages/PropertyDetailsPage';
 import AdminDashboard from './pages/AdminDashboard';
-import ProfilePage from './pages/ProfilePage';
+import ProfilePage from './pages/student/ProfilePage';
+import MyBookings from './pages/student/MyBookings';
+import PaymentPage from './pages/student/PaymentPage';
+import RateAccommodation from './pages/student/RateAccommodation';
+import Favorites from './pages/student/Favorites';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import OwnerLayout from './pages/owner/OwnerLayout';
@@ -84,7 +88,11 @@ function App() {
             <Route path="/reset-password/:token" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/property/:id" element={<PropertyDetailsPage />} />
-            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute roles={['STUDENT']}><ProfilePage /></ProtectedRoute>} />
+            <Route path="/bookings" element={<ProtectedRoute roles={['STUDENT']}><MyBookings /></ProtectedRoute>} />
+            <Route path="/payment/:bookingId" element={<ProtectedRoute roles={['STUDENT']}><PaymentPage /></ProtectedRoute>} />
+            <Route path="/rate/:bookingId" element={<ProtectedRoute roles={['STUDENT']}><RateAccommodation /></ProtectedRoute>} />
+            <Route path="/favorites" element={<ProtectedRoute roles={['STUDENT']}><Favorites /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
           </Route>
         </Routes>

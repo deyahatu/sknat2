@@ -1,25 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../../utils/api";
-
-const AVAILABLE_SERVICES = [
-  "واي فاي",
-  "مكيف",
-  "غسالة",
-  "مطبخ مشترك",
-  "موقف سيارات",
-  "مصعد",
-  "تدفئة",
-  "مطبخ خاص",
-  "حمام خاص",
-  "حراسة",
-];
-
-const FIELD_LIMITS = {
-  rooms: 5,
-  capacityPerRoom: 3,
-  bathrooms: 4,
-};
+import { AVAILABLE_SERVICES, FIELD_LIMITS } from "../../constants/property";
 
 const NUMBER_KEY_ALLOWLIST = [
   "Backspace",
