@@ -29,9 +29,11 @@ function PropertyCard({ property }) {
             {TARGET_GENDER_LABELS[property.targetGender] || property.targetGender}
           </span>
         )}
-        <span className="property-price">
-          {Number(property.price).toLocaleString('en-US')} ₪/شهر
-        </span>
+        {property.roomVariants?.length > 0 && (
+          <span className="property-price">
+            {Number(property.roomVariants[0].fullPrice).toLocaleString('en-US')} ₪/شهر
+          </span>
+        )}
       </div>
 
       <div className="property-card-body">
@@ -46,10 +48,12 @@ function PropertyCard({ property }) {
         </div>
 
         <div className="property-card-specs">
-          <div className="spec">
-            <IoBedOutline />
-            <span>{property.rooms} غرف</span>
-          </div>
+          {property.roomVariants?.length > 0 && (
+            <div className="spec">
+              <IoBedOutline />
+              <span>{property.roomVariants.filter((v) => !v.isOccupied).length} غرف متاحة</span>
+            </div>
+          )}
           <div className="spec">
             <LuBath />
             <span>{property.bathrooms} حمام</span>

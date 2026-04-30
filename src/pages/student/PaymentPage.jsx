@@ -10,7 +10,8 @@ function calculateTotal(booking) {
   const end = new Date(booking.endDate);
   const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
   const months = Math.max(1, Math.ceil(days / 30));
-  return Number(booking.property.price) * months;
+  const price = booking.roomVariant?.fullPrice || 0;
+  return Number(price) * months;
 }
 
 function PaymentPage() {
@@ -201,8 +202,8 @@ function PaymentPage() {
               <span>{new Date(booking.endDate).toLocaleDateString('ar-EG')}</span>
             </div>
             <div className="payment-summary-row">
-              <span>السعر الشهري</span>
-              <span>{Number(booking.property.price).toLocaleString('en-US')} ₪</span>
+              <span>السعر الشهري ({booking.roomVariant?.name})</span>
+              <span>{Number(booking.roomVariant?.fullPrice || 0).toLocaleString('en-US')} ₪</span>
             </div>
             <div className="payment-summary-divider"></div>
             <div className="payment-summary-total">

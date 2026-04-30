@@ -6,9 +6,9 @@ const router = Router();
 
 router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
   try {
-    const { propertyId, startDate, endDate } = req.body;
+    const { propertyId, roomVariantId, startDate, endDate } = req.body;
 
-    if (!propertyId || !startDate || !endDate) {
+    if (!propertyId || !roomVariantId || !startDate || !endDate) {
       return res
         .status(400)
         .json({ error: "يرجى تعبئة جميع الحقول المطلوبة." });
@@ -39,7 +39,6 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
       select: {
         id: true,
         title: true,
-        price: true,
         available: true,
         ownerId: true,
         policy: true,
@@ -54,25 +53,22 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
       return res.status(400).json({ error: "هذا السكن غير متاح." });
     }
 
+    // Check room variant exists and has available beds
+    const roomVariant = await prisma.roomVariant.findFirst({
+      where: { id: roomVariantId, propertyId },
+    });
+
+    if (!roomVariant) {
+      return res.status(404).json({ error: "نوع الغرفة غير موجود." });
+    }
+
+    if (roomVariant.isOccupied) {
+      return res.status(400).json({ error: "هذه الغرفة محجوزة حالياً." });
+    }
+
     // Student can't book own property
     if (property.ownerId === req.user.id) {
       return res.status(400).json({ error: "لا يمكنك حجز سكنك الخاص." });
-    }
-
-    // Check no APPROVED/PAID booking on same property for overlapping dates
-    const conflictingBooking = await prisma.booking.findFirst({
-      where: {
-        propertyId,
-        status: { in: ["APPROVED", "PAID"] },
-        startDate: { lt: end },
-        endDate: { gt: start },
-      },
-    });
-
-    if (conflictingBooking) {
-      return res
-        .status(400)
-        .json({ error: "هذه التواريخ غير متاحة. يرجى اختيار تواريخ مختلفة." });
     }
 
     // Check student doesn't have overlapping APPROVED/PAID booking
@@ -95,7 +91,7 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
     const diffMs = end.getTime() - start.getTime();
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     const months = Math.max(1, Math.ceil(diffDays / 30));
-    const totalPrice = Number(property.price) * months;
+    const totalPrice = Number(roomVariant.fullPrice) * months;
 
     const booking = await prisma.booking.create({
       data: {
@@ -103,6 +99,7 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
         endDate: end,
         status: "PENDING",
         propertyId,
+        roomVariantId,
         studentId: req.user.id,
       },
       include: {
@@ -111,8 +108,15 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
             id: true,
             title: true,
             city: true,
-            price: true,
             images: true,
+          },
+        },
+        roomVariant: {
+          select: {
+            id: true,
+            name: true,
+            fullPrice: true,
+            halfPrice: true,
           },
         },
       },
@@ -149,13 +153,15 @@ router.get(
               title: true,
               city: true,
               address: true,
-              price: true,
               images: true,
               policy: true,
               owner: {
                 select: { id: true, name: true, email: true },
               },
             },
+          },
+          roomVariant: {
+            select: { id: true, name: true, fullPrice: true, halfPrice: true },
           },
           payment: true,
         },
@@ -192,9 +198,11 @@ router.get(
               id: true,
               title: true,
               city: true,
-              price: true,
               images: true,
             },
+          },
+          roomVariant: {
+            select: { id: true, name: true, fullPrice: true, halfPrice: true },
           },
           student: {
             select: { id: true, name: true, email: true, phone: true },
@@ -222,7 +230,6 @@ router.get("/:id", authenticate, async (req, res, next) => {
             title: true,
             city: true,
             address: true,
-            price: true,
             images: true,
             policy: true,
             ownerId: true,
@@ -230,6 +237,9 @@ router.get("/:id", authenticate, async (req, res, next) => {
               select: { id: true, name: true, email: true },
             },
           },
+        },
+        roomVariant: {
+          select: { id: true, name: true, fullPrice: true, halfPrice: true },
         },
         student: {
           select: { id: true, name: true, email: true, phone: true },
@@ -267,6 +277,7 @@ router.patch(
         where: { id: req.params.id },
         include: {
           property: { select: { ownerId: true, title: true } },
+          roomVariant: { select: { id: true, isOccupied: true } },
         },
       });
 
@@ -286,36 +297,35 @@ router.patch(
           .json({ error: "يمكن قبول الحجوزات قيد الانتظار فقط." });
       }
 
-      // Check dates are still available (no other APPROVED/PAID booking)
-      const conflict = await prisma.booking.findFirst({
-        where: {
-          propertyId: booking.propertyId,
-          id: { not: booking.id },
-          status: { in: ["APPROVED", "PAID"] },
-          startDate: { lt: booking.endDate },
-          endDate: { gt: booking.startDate },
-        },
-      });
-
-      if (conflict) {
+      if (booking.roomVariant.isOccupied) {
         return res
           .status(400)
-          .json({
-            error: "هذه التواريخ لم تعد متاحة. لا يمكن قبول هذا الطلب.",
-          });
+          .json({ error: "هذه الغرفة محجوزة بالفعل. لا يمكن قبول هذا الطلب." });
       }
 
-      const updated = await prisma.booking.update({
-        where: { id: booking.id },
-        data: { status: "APPROVED" },
-        include: {
-          property: {
-            select: { id: true, title: true, city: true, price: true },
+      const updated = await prisma.$transaction(async (tx) => {
+        const updatedBooking = await tx.booking.update({
+          where: { id: booking.id },
+          data: { status: "APPROVED" },
+          include: {
+            property: {
+              select: { id: true, title: true, city: true },
+            },
+            roomVariant: {
+              select: { id: true, name: true, fullPrice: true },
+            },
+            student: {
+              select: { id: true, name: true, email: true },
+            },
           },
-          student: {
-            select: { id: true, name: true, email: true },
-          },
-        },
+        });
+
+        await tx.roomVariant.update({
+          where: { id: booking.roomVariantId },
+          data: { isOccupied: true },
+        });
+
+        return updatedBooking;
       });
 
       res.json({
@@ -390,7 +400,10 @@ router.patch(
         where: { id: req.params.id },
         include: {
           property: {
-            select: { id: true, title: true, price: true, ownerId: true },
+            select: { id: true, title: true, ownerId: true },
+          },
+          roomVariant: {
+            select: { id: true, fullPrice: true },
           },
           payment: true,
         },
@@ -447,16 +460,28 @@ router.patch(
       // PENDING — just cancel, no payment to refund
 
       // Update booking status + create refund request (UC-13) if applicable
+      const wasBedOccupied = ["APPROVED", "PAID"].includes(booking.status);
+
       const updated = await prisma.$transaction(async (tx) => {
         const updatedBooking = await tx.booking.update({
           where: { id: booking.id },
           data: { status: "CANCELLED" },
           include: {
             property: {
-              select: { id: true, title: true, city: true, price: true },
+              select: { id: true, title: true, city: true },
+            },
+            roomVariant: {
+              select: { id: true, name: true, fullPrice: true },
             },
           },
         });
+
+        if (wasBedOccupied) {
+          await tx.roomVariant.update({
+            where: { id: booking.roomVariantId },
+            data: { isOccupied: false },
+          });
+        }
 
         if (booking.status === "PAID" && refundAmount > 0) {
           await tx.refundRequest.create({
@@ -483,6 +508,67 @@ router.patch(
           amount: refundAmount,
           requestCreated: booking.status === "PAID" && refundAmount > 0,
         },
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+router.patch(
+  "/:id/complete",
+  authenticate,
+  authorize("OWNER"),
+  async (req, res, next) => {
+    try {
+      const booking = await prisma.booking.findUnique({
+        where: { id: req.params.id },
+        include: {
+          property: { select: { ownerId: true } },
+        },
+      });
+
+      if (!booking) {
+        return res.status(404).json({ error: "الحجز غير موجود." });
+      }
+
+      if (booking.property.ownerId !== req.user.id) {
+        return res
+          .status(403)
+          .json({ error: "ليس لديك صلاحية لإدارة هذا الحجز." });
+      }
+
+      if (booking.status !== "PAID") {
+        return res
+          .status(400)
+          .json({ error: "يمكن إكمال الحجوزات المدفوعة فقط." });
+      }
+
+      const updated = await prisma.$transaction(async (tx) => {
+        const updatedBooking = await tx.booking.update({
+          where: { id: booking.id },
+          data: { status: "COMPLETED" },
+          include: {
+            property: {
+              select: { id: true, title: true, city: true },
+            },
+            roomVariant: {
+              select: { id: true, name: true },
+            },
+          },
+        });
+
+        await tx.roomVariant.update({
+          where: { id: booking.roomVariantId },
+          data: { isOccupied: false },
+        });
+
+        return updatedBooking;
+      });
+
+      res.json({
+        message: "تم إكمال الحجز بنجاح وتحرير الغرفة.",
+        booking: updated,
       });
     } catch (err) {
       next(err);

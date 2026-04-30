@@ -7,18 +7,28 @@ const router = Router();
 const IMAGE_REGEX = /^data:image\/(jpeg|jpg|png|webp);base64,/i;
 const VALID_GENDERS = ['MALE', 'FEMALE'];
 
+const roomVariantSelect = {
+  id: true,
+  name: true,
+  roomNumber: true,
+  capacity: true,
+  isOccupied: true,
+  fullPrice: true,
+  halfPrice: true,
+  images: true,
+  services: true,
+  propertyId: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
 const propertySelect = {
   id: true,
   title: true,
   description: true,
   address: true,
   city: true,
-  price: true,
-  rooms: true,
-  capacityPerRoom: true,
-  studentsCount: true,
   targetGender: true,
-  services: true,
   otherServices: true,
   policy: true,
   bathrooms: true,
@@ -28,6 +38,7 @@ const propertySelect = {
   ownerId: true,
   createdAt: true,
   updatedAt: true,
+  roomVariants: { select: roomVariantSelect },
 };
 
 function asRequiredString(value) {
@@ -59,11 +70,11 @@ function asNonNegativeInteger(value, fieldName) {
   return number;
 }
 
-function asPositivePrice(value) {
+function asPositivePrice(value, fieldName = 'السعر') {
   const number = Number(value);
 
   if (!Number.isFinite(number) || number <= 0) {
-    throw new Error('السعر يجب أن يكون رقماً موجباً.');
+    throw new Error(`${fieldName} يجب أن يكون رقماً موجباً.`);
   }
 
   return number;
@@ -85,7 +96,7 @@ function asBoolean(value) {
 
 function validateImages(images) {
   if (!Array.isArray(images) || images.length === 0) {
-    throw new Error('يجب رفع صورة واحدة على الأقل للسكن.');
+    throw new Error('يجب رفع صورة واحدة على الأقل.');
   }
 
   const invalidImage = images.some((image) => (
@@ -93,13 +104,13 @@ function validateImages(images) {
   ));
 
   if (invalidImage) {
-    throw new Error('يرجى رفع صور صحيحة للسكن.');
+    throw new Error('يرجى رفع صور صحيحة.');
   }
 
   return images;
 }
 
-function validateServices(services, otherServices) {
+function validateServices(services) {
   if (!Array.isArray(services)) {
     throw new Error('الخدمات يجب أن تكون قائمة.');
   }
@@ -111,10 +122,6 @@ function validateServices(services, otherServices) {
 
   if (cleanServices.length !== services.length) {
     throw new Error('الخدمات يجب أن تحتوي على قيم نصية فقط.');
-  }
-
-  if (cleanServices.length === 0 && !otherServices) {
-    throw new Error('يرجى اختيار خدمة واحدة على الأقل أو إضافة خدمات أخرى.');
   }
 
   return cleanServices;
@@ -137,16 +144,6 @@ function buildCreateData(body, ownerId) {
     throw new Error('الجنس المستهدف يجب أن يكون MALE أو FEMALE.');
   }
 
-  const price = asPositivePrice(body.price);
-  const rooms = asPositiveInteger(body.rooms, 'عدد الغرف');
-  const capacityPerRoom = asPositiveInteger(body.capacityPerRoom, 'سعة الغرفة');
-  const studentsCount = asNonNegativeInteger(body.studentsCount, 'عدد الطلاب');
-
-  if (studentsCount > rooms * capacityPerRoom) {
-    throw new Error('عدد الطلاب لا يمكن أن يتجاوز السعة الإجمالية للسكن.');
-  }
-
-  const services = validateServices(body.services, otherServices);
   const images = validateImages(body.images);
   const available = asBoolean(body.available);
 
@@ -157,12 +154,7 @@ function buildCreateData(body, ownerId) {
     description,
     policy,
     otherServices,
-    price,
-    rooms,
-    capacityPerRoom,
-    studentsCount,
     targetGender,
-    services,
     images,
     available,
     ownerId,
@@ -206,10 +198,6 @@ function buildUpdateData(body) {
     data.policy = policy;
   }
 
-  if (body.price !== undefined) data.price = asPositivePrice(body.price);
-  if (body.rooms !== undefined) data.rooms = asPositiveInteger(body.rooms, 'عدد الغرف');
-  if (body.capacityPerRoom !== undefined) data.capacityPerRoom = asPositiveInteger(body.capacityPerRoom, 'سعة الغرفة');
-  if (body.studentsCount !== undefined) data.studentsCount = asNonNegativeInteger(body.studentsCount, 'عدد الطلاب');
   if (body.bathrooms !== undefined) data.bathrooms = asPositiveInteger(body.bathrooms, 'عدد الحمامات');
   if (body.area !== undefined) data.area = body.area === null || body.area === '' ? null : asPositiveInteger(body.area, 'المساحة');
 
@@ -225,33 +213,12 @@ function buildUpdateData(body) {
     data.otherServices = asOptionalString(body.otherServices);
   }
 
-  if (body.services !== undefined) {
-    const otherServicesForValidation =
-      body.otherServices !== undefined
-        ? data.otherServices
-        : asOptionalString(body.currentOtherServices);
-    data.services = validateServices(body.services, otherServicesForValidation);
-  }
-
   if (body.images !== undefined) {
     data.images = validateImages(body.images);
   }
 
   if (body.available !== undefined) {
     data.available = asBoolean(body.available);
-  }
-
-  const rooms = data.rooms ?? Number(body.currentRooms);
-  const capacityPerRoom = data.capacityPerRoom ?? Number(body.currentCapacityPerRoom);
-  const studentsCount = data.studentsCount ?? Number(body.currentStudentsCount);
-
-  if (
-    Number.isInteger(rooms) &&
-    Number.isInteger(capacityPerRoom) &&
-    Number.isInteger(studentsCount) &&
-    studentsCount > rooms * capacityPerRoom
-  ) {
-    throw new Error('عدد الطلاب لا يمكن أن يتجاوز السعة الإجمالية للسكن.');
   }
 
   return data;
@@ -277,13 +244,12 @@ router.get('/', async (req, res, next) => {
       city,
       minPrice,
       maxPrice,
-      rooms,
       bathrooms,
       targetGender,
       services,
     } = req.query;
 
-    const where = { available: true };
+    const where = { available: true, roomVariants: { some: {} } };
 
     if (q) {
       where.OR = [
@@ -296,19 +262,31 @@ router.get('/', async (req, res, next) => {
     if (city) where.city = { contains: city, mode: 'insensitive' };
 
     if (minPrice || maxPrice) {
-      where.price = {};
-      if (minPrice) where.price.gte = Number(minPrice);
-      if (maxPrice) where.price.lte = Number(maxPrice);
+      where.roomVariants = {
+        some: {
+          fullPrice: {
+            ...(minPrice && { gte: Number(minPrice) }),
+            ...(maxPrice && { lte: Number(maxPrice) }),
+          },
+        },
+      };
     }
 
-    if (rooms) where.rooms = Number(rooms);
     if (bathrooms) where.bathrooms = Number(bathrooms);
     if (targetGender) where.targetGender = targetGender;
 
     if (services) {
       const list = Array.isArray(services) ? services : services.split(',');
       const cleaned = list.map((s) => s.trim()).filter(Boolean);
-      if (cleaned.length > 0) where.services = { hasEvery: cleaned };
+      if (cleaned.length > 0) {
+        where.roomVariants = {
+          ...where.roomVariants,
+          some: {
+            ...where.roomVariants?.some,
+            services: { hasEvery: cleaned },
+          },
+        };
+      }
     }
 
     const properties = await prisma.property.findMany({
@@ -470,13 +448,7 @@ router.put('/:id', authenticate, authorize('OWNER'), async (req, res, next) => {
       return res.status(404).json({ error: 'السكن غير موجود.' });
     }
 
-    const updateData = buildUpdateData({
-      ...req.body,
-      currentRooms: existing.rooms,
-      currentCapacityPerRoom: existing.capacityPerRoom,
-      currentStudentsCount: existing.studentsCount,
-      currentOtherServices: existing.otherServices,
-    });
+    const updateData = buildUpdateData(req.body);
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ error: 'لا توجد بيانات سكن للتحديث.' });
@@ -547,6 +519,156 @@ router.delete('/:id', authenticate, authorize('OWNER'), async (req, res, next) =
 
     await prisma.property.delete({ where: { id: existing.id } });
     res.json({ message: 'تم حذف السكن بنجاح.' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ───────────────────────────────────────────────
+// RoomVariant CRUD (nested under property)
+// ───────────────────────────────────────────────
+
+// Add room variant to property
+router.post('/:id/variants', authenticate, authorize('OWNER'), async (req, res, next) => {
+  try {
+    const property = await findOwnerProperty(req.params.id, req.user.id);
+    if (!property) {
+      return res.status(404).json({ error: 'السكن غير موجود.' });
+    }
+
+    const name = asRequiredString(req.body.name);
+    if (!name) throw new Error('اسم نوع الغرفة مطلوب.');
+
+    const capacity = asPositiveInteger(req.body.capacity, 'القدرة الاستيعابية');
+    const fullPrice = asPositivePrice(req.body.fullPrice, 'سعر الغرفة');
+    const halfPrice = req.body.halfPrice != null ? asPositivePrice(req.body.halfPrice, 'سعر نصف الغرفة') : null;
+    const images = req.body.images?.length ? validateImages(req.body.images) : [];
+    const services = req.body.services?.length ? validateServices(req.body.services) : [];
+
+    const variant = await prisma.roomVariant.create({
+      data: {
+        name,
+        roomNumber: asOptionalString(req.body.roomNumber),
+        capacity,
+        isOccupied: false,
+        fullPrice,
+        halfPrice,
+        images,
+        services,
+        propertyId: property.id,
+      },
+      select: roomVariantSelect,
+    });
+
+    res.status(201).json({
+      message: 'تم إضافة نوع الغرفة بنجاح.',
+      variant,
+    });
+  } catch (err) {
+    if (err.message) {
+      return res.status(400).json({ error: err.message });
+    }
+    next(err);
+  }
+});
+
+// Get all variants for a property
+router.get('/:id/variants', async (req, res, next) => {
+  try {
+    const variants = await prisma.roomVariant.findMany({
+      where: { propertyId: req.params.id },
+      select: roomVariantSelect,
+      orderBy: { createdAt: 'asc' },
+    });
+
+    res.json({ variants });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Update a room variant
+router.put('/:id/variants/:variantId', authenticate, authorize('OWNER'), async (req, res, next) => {
+  try {
+    const property = await findOwnerProperty(req.params.id, req.user.id);
+    if (!property) {
+      return res.status(404).json({ error: 'السكن غير موجود.' });
+    }
+
+    const existing = await prisma.roomVariant.findFirst({
+      where: { id: req.params.variantId, propertyId: property.id },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'نوع الغرفة غير موجود.' });
+    }
+
+    const data = {};
+
+    if (req.body.name !== undefined) {
+      const name = asRequiredString(req.body.name);
+      if (!name) throw new Error('اسم نوع الغرفة لا يمكن أن يكون فارغاً.');
+      data.name = name;
+    }
+
+    if (req.body.roomNumber !== undefined) data.roomNumber = asOptionalString(req.body.roomNumber);
+    if (req.body.capacity !== undefined) data.capacity = asPositiveInteger(req.body.capacity, 'القدرة الاستيعابية');
+    if (req.body.fullPrice !== undefined) data.fullPrice = asPositivePrice(req.body.fullPrice, 'سعر الغرفة');
+    if (req.body.halfPrice !== undefined) data.halfPrice = req.body.halfPrice === null ? null : asPositivePrice(req.body.halfPrice, 'سعر نصف الغرفة');
+    if (req.body.images !== undefined) data.images = validateImages(req.body.images);
+    if (req.body.services !== undefined) data.services = validateServices(req.body.services);
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'لا توجد بيانات للتحديث.' });
+    }
+
+    const variant = await prisma.roomVariant.update({
+      where: { id: existing.id },
+      data,
+      select: roomVariantSelect,
+    });
+
+    res.json({
+      message: 'تم تحديث نوع الغرفة بنجاح.',
+      variant,
+    });
+  } catch (err) {
+    if (err.message) {
+      return res.status(400).json({ error: err.message });
+    }
+    next(err);
+  }
+});
+
+// Delete a room variant
+router.delete('/:id/variants/:variantId', authenticate, authorize('OWNER'), async (req, res, next) => {
+  try {
+    const property = await findOwnerProperty(req.params.id, req.user.id);
+    if (!property) {
+      return res.status(404).json({ error: 'السكن غير موجود.' });
+    }
+
+    const existing = await prisma.roomVariant.findFirst({
+      where: { id: req.params.variantId, propertyId: property.id },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'نوع الغرفة غير موجود.' });
+    }
+
+    const activeBookings = await prisma.booking.count({
+      where: {
+        roomVariantId: existing.id,
+        status: { in: ['PENDING', 'APPROVED', 'PAID'] },
+      },
+    });
+
+    if (activeBookings > 0) {
+      return res.status(400).json({ error: 'نوع الغرفة لديه حجوزات نشطة. لا يمكن حذفه.' });
+    }
+
+    await prisma.roomVariant.delete({ where: { id: existing.id } });
+    res.json({ message: 'تم حذف نوع الغرفة بنجاح.' });
   } catch (err) {
     next(err);
   }

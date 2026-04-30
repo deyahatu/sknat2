@@ -58,6 +58,11 @@ export const api = {
     toggleAvailability: (id, available) => request(`/properties/${id}/availability`, { method: 'PATCH', body: JSON.stringify({ available }) }),
     myRatings: () => request('/properties/ratings'),
     propertyRatings: (id) => request(`/properties/${id}/ratings`),
+    // Room Variants
+    listVariants: (propertyId) => request(`/properties/${propertyId}/variants`),
+    createVariant: (propertyId, body) => request(`/properties/${propertyId}/variants`, { method: 'POST', body: JSON.stringify(body) }),
+    updateVariant: (propertyId, variantId, body) => request(`/properties/${propertyId}/variants/${variantId}`, { method: 'PUT', body: JSON.stringify(body) }),
+    deleteVariant: (propertyId, variantId) => request(`/properties/${propertyId}/variants/${variantId}`, { method: 'DELETE' }),
   },
   bookings: {
     create: (body) => request('/bookings', { method: 'POST', body: JSON.stringify(body) }),
@@ -67,6 +72,7 @@ export const api = {
     accept: (id) => request(`/bookings/${id}/accept`, { method: 'PATCH' }),
     reject: (id) => request(`/bookings/${id}/reject`, { method: 'PATCH' }),
     cancel: (id) => request(`/bookings/${id}/cancel`, { method: 'PATCH' }),
+    complete: (id) => request(`/bookings/${id}/complete`, { method: 'PATCH' }),
     cancellationPolicy: (id) => request(`/bookings/${id}/cancellation-policy`),
   },
   payments: {
