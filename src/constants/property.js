@@ -11,10 +11,18 @@ export const AVAILABLE_SERVICES = [
   "حراسة",
 ];
 
-export const FIELD_LIMITS = {
-  rooms: 5,
-  capacityPerRoom: 3,
-  bathrooms: 4,
+export const ROOM_TYPES = [
+  "غرفة مفردة",
+  "غرفة مشتركة",
+  "استوديو",
+  "شقة كاملة",
+];
+
+export const ROOM_TYPE_ICONS = {
+  "غرفة مفردة": "🛏️",
+  "غرفة مشتركة": "🏘️",
+  "استوديو": "🏠",
+  "شقة كاملة": "🏢",
 };
 
 export const TARGET_GENDERS = [

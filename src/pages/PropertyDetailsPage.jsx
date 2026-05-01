@@ -9,6 +9,7 @@ import { LuBath } from 'react-icons/lu';
 import { BiArea } from 'react-icons/bi';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
+import { ROOM_TYPE_ICONS } from '../constants/property';
 import './PropertyDetailsPage.css';
 
 const TARGET_GENDER_LABELS = {
@@ -40,6 +41,7 @@ function PropertyDetailsPage() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingStep, setBookingStep] = useState('policy'); // 'policy' | 'form'
   const [agreedPolicy, setAgreedPolicy] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState('');
   const [bookingDates, setBookingDates] = useState({ startDate: '', endDate: '' });
   const [bookingError, setBookingError] = useState(null);
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
@@ -92,6 +94,7 @@ function PropertyDetailsPage() {
     }
     setBookingStep('policy');
     setAgreedPolicy(false);
+    setSelectedVariantId('');
     setBookingDates({ startDate: '', endDate: '' });
     setBookingError(null);
     setShowBookingModal(true);
@@ -109,8 +112,14 @@ function PropertyDetailsPage() {
 
     setBookingSubmitting(true);
     try {
+      if (!selectedVariantId) {
+        setBookingError('يرجى اختيار نوع الغرفة.');
+        setBookingSubmitting(false);
+        return;
+      }
       await api.bookings.create({
         propertyId: id,
+        roomVariantId: selectedVariantId,
         startDate,
         endDate,
       });
@@ -152,8 +161,10 @@ function PropertyDetailsPage() {
     ? (property.reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount).toFixed(1)
     : null;
 
-  const totalCapacity = (property.rooms || 0) * (property.capacityPerRoom || 0);
-  const availableSpots = Math.max(0, totalCapacity - (property.studentsCount || 0));
+  const variants = property.roomVariants || [];
+  const totalRooms = variants.length;
+  const availableSpots = variants.filter((v) => !v.isOccupied).length;
+  const minPrice = variants.length > 0 ? Math.min(...variants.map((v) => Number(v.fullPrice))) : 0;
 
   const nextImage = () => {
     setCurrentImage((prev) => (prev + 1) % property.images.length);
@@ -236,15 +247,15 @@ function PropertyDetailsPage() {
                 <div className="spec-item">
                   <IoBedOutline />
                   <div>
-                    <span className="spec-value">{property.rooms}</span>
-                    <span className="spec-label">غرف</span>
+                    <span className="spec-value">{variants.length}</span>
+                    <span className="spec-label">أنواع غرف</span>
                   </div>
                 </div>
                 <div className="spec-item">
                   <FiUsers />
                   <div>
-                    <span className="spec-value">{property.capacityPerRoom}</span>
-                    <span className="spec-label">طلاب لكل غرفة</span>
+                    <span className="spec-value">{totalRooms}</span>
+                    <span className="spec-label">غرف</span>
                   </div>
                 </div>
                 <div className="spec-item">
@@ -273,6 +284,46 @@ function PropertyDetailsPage() {
               </div>
             </div>
 
+            {/* Room Variants */}
+            {variants.length > 0 && (
+              <div className="property-description-section">
+                <h3>أنواع الغرف</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[...variants].sort((a, b) => Number(a.fullPrice) - Number(b.fullPrice)).map((v) => (
+                    <div key={v.id} style={{ padding: 16, border: '1px solid #e0e0e0', borderRadius: 10, background: '#fafafa' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <strong style={{ fontSize: 16 }}>{ROOM_TYPE_ICONS[v.name] || '🏠'} {v.name}{v.roomNumber ? ` (${v.roomNumber})` : ''}</strong>
+                        <span style={{ color: '#4f46e5', fontWeight: 600 }}>
+                          {Number(v.fullPrice).toLocaleString('en-US')} ₪/شهر
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 16, fontSize: 14, color: '#555', flexWrap: 'wrap' }}>
+                        <span>السعة: {v.capacity} أشخاص</span>
+                        <span>{v.isOccupied ? '🔴 محجوزة' : '🟢 متاحة'}</span>
+                        {v.halfPrice && <span>للطالب الواحد: {Number(v.halfPrice).toLocaleString('en-US')} ₪</span>}
+                      </div>
+                      {v.services?.length > 0 && (
+                        <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          {v.services.map((s) => (
+                            <span key={s} style={{ padding: '2px 10px', background: '#e8e6ff', borderRadius: 12, fontSize: 13 }}>
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {v.images?.length > 0 && (
+                        <div style={{ marginTop: 8, display: 'flex', gap: 6, overflowX: 'auto' }}>
+                          {v.images.map((img, i) => (
+                            <img key={i} src={img} alt="" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 6 }} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {property.description && (
               <div className="property-description-section">
                 <h3>وصف السكن</h3>
@@ -280,22 +331,14 @@ function PropertyDetailsPage() {
               </div>
             )}
 
-            {(property.services?.length > 0 || property.otherServices) && (
+            {property.otherServices && (
               <div className="property-amenities-section">
-                <h3>الخدمات والمرافق</h3>
+                <h3>خدمات إضافية</h3>
                 <div className="amenities-grid">
-                  {property.services?.map((s) => (
-                    <div key={s} className="amenity-item">
-                      <FiCheck className="amenity-check" />
-                      <span>{s}</span>
-                    </div>
-                  ))}
-                  {property.otherServices && (
-                    <div className="amenity-item">
-                      <FiCheck className="amenity-check" />
-                      <span>{property.otherServices}</span>
-                    </div>
-                  )}
+                  <div className="amenity-item">
+                    <FiCheck className="amenity-check" />
+                    <span>{property.otherServices}</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -336,13 +379,18 @@ function PropertyDetailsPage() {
 
           <div className="property-sidebar">
             <div className="price-card">
-              <div className="price-amount">
-                <span className="price-value">
-                  {Number(property.price).toLocaleString('en-US')}
-                </span>
-                <span className="price-currency">₪</span>
-                <span className="price-period">/ شهر</span>
-              </div>
+              {variants.length > 0 && (
+                <div className="price-amount">
+                  <span style={{ fontSize: 13, color: '#888' }}>ابتداءً من</span>
+                  <div>
+                    <span className="price-value">
+                      {minPrice.toLocaleString('en-US')}
+                    </span>
+                    <span className="price-currency">₪</span>
+                    <span className="price-period">/ شهر</span>
+                  </div>
+                </div>
+              )}
 
               {!property.available ? (
                 <div className="price-card-unavailable">السكن غير متاح حالياً</div>
@@ -449,9 +497,23 @@ function PropertyDetailsPage() {
                 <div className="booking-summary">
                   <strong>{property.title}</strong>
                   <span>{property.address}، {property.city}</span>
-                  <span className="booking-price">
-                    {Number(property.price).toLocaleString('en-US')} ₪ / شهر
-                  </span>
+                </div>
+
+                <div className="booking-form-group">
+                  <label>نوع الغرفة</label>
+                  <select
+                    value={selectedVariantId}
+                    onChange={(e) => setSelectedVariantId(e.target.value)}
+                    required
+                    style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }}
+                  >
+                    <option value="">اختر نوع الغرفة</option>
+                    {variants.filter((v) => !v.isOccupied).map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name}{v.roomNumber ? ` (${v.roomNumber})` : ''} — {Number(v.fullPrice).toLocaleString('en-US')} ₪/شهر
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="booking-form-group">

@@ -92,60 +92,79 @@ generator client {
 
 
 
-  model Property {                                                                                                                                                                                                                                  
-    id          String   @id @default(uuid())
-    title       String                                                                                                                                                                                                                              
-    description String?
-    address     String
-    city        String
-    price       Decimal  @db.Decimal(10, 2)
-    rooms       Int      @default(1)
-    capacityPerRoom Int   @default(1)
-    studentsCount   Int   @default(0)
-    targetGender    TargetGender @default(MALE)
-    services        String[] @default([])
-    otherServices   String?
-    policy          String?
-    bathrooms   Int      @default(1)
-    area        Int?                                                                                                                                                                                                                                
-    images      String[]
-    available   Boolean  @default(true)                                                                                                                                                                                                             
-    ownerId     String
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-                                                                                                                                                                                                                                                    
-    owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-    bookings Booking[]
-    reviews  Review[]
-    favoritedBy Favorite[]
+  model Property {
+    id            String   @id @default(uuid())
+    title         String
+    description   String?
+    address       String
+    city          String
+    targetGender  TargetGender @default(MALE)
+    otherServices String?
+    policy        String?
+    bathrooms     Int      @default(1)
+    area          Int?
+    images        String[]
+    available     Boolean  @default(true)
+    ownerId       String
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+
+    owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+    roomVariants RoomVariant[]
+    bookings     Booking[]
+    reviews      Review[]
+    favoritedBy  Favorite[]
 
     @@index([ownerId])
     @@index([city])
-    @@index([price])
     @@index([available])
     @@map("properties")
+  }
+
+  model RoomVariant {
+    id            String   @id @default(uuid())
+    name          String
+    roomNumber    String?
+    capacity      Int      @default(1)
+    isOccupied    Boolean  @default(false)
+    fullPrice     Decimal  @db.Decimal(10, 2)
+    halfPrice     Decimal? @db.Decimal(10, 2)
+    images        String[]
+    services      String[] @default([])
+    propertyId    String
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+
+    property Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+    bookings Booking[]
+
+    @@index([propertyId])
+    @@map("room_variants")
   }                                                                                                                                                                                                                                                 
                   
   
 
   model Booking {
-    id         String        @id @default(uuid())
-    startDate  DateTime      @db.Date
-    endDate    DateTime      @db.Date                                                                                                                                                                                                               
-    status     BookingStatus @default(PENDING)
-    propertyId String                                                                                                                                                                                                                               
-    studentId  String
-    createdAt  DateTime      @default(now())
-    updatedAt  DateTime      @updatedAt
-                                                                                                                                                                                                                                                    
-    property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-    student  User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-    payment  Payment?
+    id            String        @id @default(uuid())
+    startDate     DateTime      @db.Date
+    endDate       DateTime      @db.Date
+    status        BookingStatus @default(PENDING)
+    propertyId    String
+    roomVariantId String
+    studentId     String
+    createdAt     DateTime      @default(now())
+    updatedAt     DateTime      @updatedAt
+
+    property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+    roomVariant RoomVariant @relation(fields: [roomVariantId], references: [id], onDelete: Cascade)
+    student     User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+    payment     Payment?
     studentRating StudentRating?
     refundRequest RefundRequest?
 
     @@index([studentId])
     @@index([propertyId])
+    @@index([roomVariantId])
     @@index([status])
     @@map("bookings")
   }

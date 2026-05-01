@@ -120,6 +120,13 @@ export default function OwnerProperties() {
                 <p className="owner-property-card-summary">
                   {getPropertySummary(p)}
                 </p>
+                {p.roomVariants && p.roomVariants.length > 0 && (
+                  <div style={{ fontSize: 13, color: "#555", marginTop: 4 }}>
+                    الغرف: {p.roomVariants.length} | متاح:{" "}
+                    {p.roomVariants.filter((v) => !v.isOccupied).length} | محجوز:{" "}
+                    {p.roomVariants.filter((v) => v.isOccupied).length}
+                  </div>
+                )}
 
                 <div className="owner-property-footer">
                   <p className="owner-property-updated">

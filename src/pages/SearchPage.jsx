@@ -4,8 +4,8 @@ import { FiSearch, FiFilter, FiX } from "react-icons/fi";
 import PropertyCard from "../components/property/PropertyCard";
 import {
   AVAILABLE_SERVICES,
-  FIELD_LIMITS,
   TARGET_GENDERS,
+  ROOM_TYPES,
 } from "../constants/property";
 import { findCanonical } from "../utils/text";
 import { api } from "../utils/api";
@@ -16,9 +16,9 @@ const EMPTY_FILTERS = {
   city: "",
   minPrice: "",
   maxPrice: "",
-  rooms: "",
   bathrooms: "",
   targetGender: "",
+  roomType: "",
   services: [],
 };
 
@@ -48,12 +48,19 @@ function SearchPage() {
           city: filters.city,
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
-          rooms: filters.rooms,
           bathrooms: filters.bathrooms,
           targetGender: filters.targetGender,
           services: filters.services,
         })
-        .then((data) => setProperties(data.properties || []))
+        .then((data) => {
+          let props = data.properties || [];
+          if (filters.roomType) {
+            props = props.filter((p) =>
+              p.roomVariants?.some((v) => v.name === filters.roomType),
+            );
+          }
+          setProperties(props);
+        })
         .catch((err) => setError(err.message || "تعذر تحميل العقارات"))
         .finally(() => setLoading(false));
     }, 300);
@@ -121,17 +128,13 @@ function SearchPage() {
     filters.city ||
     filters.minPrice ||
     filters.maxPrice ||
-    filters.rooms ||
     filters.bathrooms ||
     filters.targetGender ||
+    filters.roomType ||
     filters.services.length > 0;
 
-  const roomOptions = Array.from(
-    { length: FIELD_LIMITS.rooms },
-    (_, i) => i + 1,
-  );
   const bathroomOptions = Array.from(
-    { length: FIELD_LIMITS.bathrooms },
+    { length: 10 },
     (_, i) => i + 1,
   );
 
@@ -199,21 +202,6 @@ function SearchPage() {
             </div>
 
             <div className="filter-group">
-              <label>عدد الغرف</label>
-              <select
-                value={filters.rooms}
-                onChange={(e) => setField("rooms", e.target.value)}
-              >
-                <option value="">الكل</option>
-                {roomOptions.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="filter-group">
               <label>عدد الحمامات</label>
               <select
                 value={filters.bathrooms}
@@ -239,6 +227,19 @@ function SearchPage() {
                   <option key={g.value} value={g.value}>
                     {g.label}
                   </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label>نوع الغرفة</label>
+              <select
+                value={filters.roomType}
+                onChange={(e) => setField("roomType", e.target.value)}
+              >
+                <option value="">الكل</option>
+                {ROOM_TYPES.map((t) => (
+                  <option key={t} value={t}>{t}</option>
                 ))}
               </select>
             </div>

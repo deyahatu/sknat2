@@ -207,9 +207,9 @@ export default function OwnerDashboard() {
                 <span className="owner-top-property-stat primary">
                   <span>📅</span> {topProperty.bookingCount} حجز
                 </span>
-                {topProperty.price != null && (
+                {topProperty.roomVariants?.length > 0 && (
                   <span className="owner-top-property-stat success">
-                    <span>💵</span> {topProperty.price} د.أ
+                    <span>💵</span> {Number(topProperty.roomVariants[0].fullPrice).toLocaleString('en-US')} د.أ
                   </span>
                 )}
               </div>
