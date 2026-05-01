@@ -21,11 +21,11 @@ async function seed() {
   });
 
   await prisma.user.upsert({
-    where: { email: 'student@test.com' },
+    where: { email: 's12345678@stu.najah.edu' },
     update: {},
     create: {
       name: 'طالب تجريبي',
-      email: 'student@test.com',
+      email: 's12345678@stu.najah.edu',
       phone: '0599999999',
       password: userPassword,
       role: 'STUDENT',
@@ -46,7 +46,7 @@ async function seed() {
 
   console.log('Seeding complete!');
   console.log('Admin: admin@sakanat.com / admin123');
-  console.log('Student: student@test.com / user123');
+  console.log('Student: s12345678@stu.najah.edu / user123');
   console.log('Owner: owner@test.com / user123');
 }
 

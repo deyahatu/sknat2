@@ -36,6 +36,8 @@ router.get('/profile', authenticate, async (req, res, next) => {
   }
 });
 
+const AVATAR_REGEX = /^data:image\/(jpeg|jpg|png|webp);base64,/i;
+
 router.put('/profile', authenticate, async (req, res, next) => {
   try {
     const { name, phone, email, avatar } = req.body;
@@ -47,6 +49,11 @@ router.put('/profile', authenticate, async (req, res, next) => {
     }
 
     if (typeof email === 'string' && email.trim() !== req.user.email) {
+      if (req.user.role === 'STUDENT') {
+        return res.status(403).json({
+          error: 'لا يمكن تغيير البريد الجامعي بعد التسجيل.',
+        });
+      }
       const nextEmail = email.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
         return res.status(400).json({ error: 'يرجى إدخال بريد إلكتروني صحيح.' });
@@ -70,7 +77,12 @@ router.put('/profile', authenticate, async (req, res, next) => {
       data.phone = nextPhone;
     }
 
-    if (typeof avatar === 'string' && avatar) {
+    if (avatar === null) {
+      data.avatar = null;
+    } else if (typeof avatar === 'string' && avatar) {
+      if (!AVATAR_REGEX.test(avatar)) {
+        return res.status(400).json({ error: 'يرجى رفع صورة صحيحة (JPG, PNG, أو WEBP).' });
+      }
       data.avatar = avatar;
     }
 

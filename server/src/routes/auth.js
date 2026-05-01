@@ -3,12 +3,20 @@ import bcrypt from "bcryptjs";
 import prisma from "../utils/prisma.js";
 import { generateToken } from "../utils/jwt.js";
 import { generateResetToken, hashToken } from "../utils/crypto.js";
+import {
+  generateVerificationCode,
+  sendVerificationCodeEmail,
+} from "../utils/email.js";
 import { authenticate } from "../middleware/auth.js";
 
 const router = Router();
 
 const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
+const VERIFICATION_CODE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+const RESEND_COOLDOWN_MS = 60 * 1000; // 60 seconds
+const MAX_VERIFICATION_ATTEMPTS = 5;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const STUDENT_EMAIL_REGEX = /^s\d{8}@stu\.najah\.edu$/i;
 const NAME_REGEX = /^[؀-ۿa-zA-Z\s]+$/;
 const MAJOR_REGEX = /^[؀-ۿa-zA-Z\s]{2,100}$/;
 const PHONE_REGEX = /^\d{10}$/;
@@ -67,6 +75,12 @@ router.post("/register", async (req, res) => {
         });
     }
 
+    if (!isOwner && !STUDENT_EMAIL_REGEX.test(email)) {
+      return res.status(400).json({
+        error: "يجب استخدام البريد الجامعي (مثال: s12345678@stu.najah.edu).",
+      });
+    }
+
     if (password.length < 8) {
       return res
         .status(400)
@@ -122,26 +136,96 @@ router.post("/register", async (req, res) => {
       });
     }
 
+    if (!isOwner) {
+      const pendingPhoneConflict = await prisma.emailVerification.findFirst({
+        where: { phone, NOT: { email } },
+      });
+      if (pendingPhoneConflict) {
+        return res
+          .status(409)
+          .json({ error: "رقم الجوال هذا مستخدم في طلب تسجيل آخر." });
+      }
+
+      const pendingIdConflict = await prisma.emailVerification.findFirst({
+        where: { idNumber, NOT: { email } },
+      });
+      if (pendingIdConflict) {
+        return res.status(409).json({
+          error: "الرقم الجامعي هذا مستخدم في طلب تسجيل آخر.",
+        });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const user = await prisma.user.create({
-      data: {
+    if (isOwner) {
+      const user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          phone,
+          password: hashedPassword,
+          role: userRole,
+          idNumber,
+          idPhoto,
+          gender: null,
+          major: null,
+        },
+        select: userSelect,
+      });
+
+      return res.status(201).json({
+        message: "Registration successful. Please log in.",
+        user,
+      });
+    }
+
+    // STUDENT — store registration data temporarily and send verification code
+    const code = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + VERIFICATION_CODE_EXPIRY_MS);
+
+    await prisma.emailVerification.upsert({
+      where: { email },
+      update: {
         name,
-        email,
         phone,
         password: hashedPassword,
-        role: userRole,
         idNumber,
         idPhoto,
-        gender: isOwner ? null : gender.toUpperCase(),
-        major: isOwner ? null : major.trim(),
+        gender: gender.toUpperCase(),
+        major: major.trim(),
+        code,
+        expiresAt,
+        attempts: 0,
+        lastSentAt: new Date(),
       },
-      select: userSelect,
+      create: {
+        email,
+        name,
+        phone,
+        password: hashedPassword,
+        idNumber,
+        idPhoto,
+        gender: gender.toUpperCase(),
+        major: major.trim(),
+        code,
+        expiresAt,
+      },
     });
 
-    res.status(201).json({
-      message: "Registration successful. Please log in.",
-      user,
+    try {
+      await sendVerificationCodeEmail(email, code);
+    } catch (mailErr) {
+      console.error("Email send failed:", mailErr);
+      return res.status(500).json({
+        error: "تعذر إرسال رمز التحقق. يرجى المحاولة لاحقاً.",
+      });
+    }
+
+    return res.status(200).json({
+      message: "تم إرسال رمز التحقق إلى بريدك الجامعي.",
+      email,
+      requiresVerification: true,
     });
   } catch (err) {
     if (err?.code === "P2002") {
@@ -170,6 +254,150 @@ router.post("/register", async (req, res) => {
     return res
       .status(500)
       .json({ error: "فشل إنشاء الحساب. يرجى المحاولة لاحقاً." });
+  }
+});
+
+router.post("/verify-email", async (req, res, next) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res
+        .status(400)
+        .json({ error: "البريد الإلكتروني ورمز التحقق مطلوبان." });
+    }
+
+    const pending = await prisma.emailVerification.findUnique({
+      where: { email },
+    });
+
+    if (!pending) {
+      return res
+        .status(404)
+        .json({ error: "لا يوجد طلب تسجيل لهذا البريد. يرجى إعادة التسجيل." });
+    }
+
+    if (pending.expiresAt < new Date()) {
+      await prisma.emailVerification.delete({ where: { email } });
+      return res
+        .status(400)
+        .json({ error: "انتهت صلاحية رمز التحقق. يرجى إعادة التسجيل." });
+    }
+
+    if (pending.attempts >= MAX_VERIFICATION_ATTEMPTS) {
+      await prisma.emailVerification.delete({ where: { email } });
+      return res.status(429).json({
+        error: "تم تجاوز الحد الأقصى للمحاولات. يرجى إعادة التسجيل.",
+      });
+    }
+
+    if (pending.code !== String(code).trim()) {
+      await prisma.emailVerification.update({
+        where: { email },
+        data: { attempts: { increment: 1 } },
+      });
+      const remaining = MAX_VERIFICATION_ATTEMPTS - (pending.attempts + 1);
+      return res.status(400).json({
+        error: `رمز التحقق غير صحيح. المحاولات المتبقية: ${remaining}.`,
+      });
+    }
+
+    // Code matches — create the User and clean up
+    const user = await prisma.user.create({
+      data: {
+        name: pending.name,
+        email: pending.email,
+        phone: pending.phone,
+        password: pending.password,
+        role: "STUDENT",
+        idNumber: pending.idNumber,
+        idPhoto: pending.idPhoto,
+        gender: pending.gender,
+        major: pending.major,
+      },
+      select: userSelect,
+    });
+
+    await prisma.emailVerification.delete({ where: { email } });
+
+    return res.status(201).json({
+      message: "تم التحقق من بريدك بنجاح. يمكنك الآن تسجيل الدخول.",
+      user,
+    });
+  } catch (err) {
+    if (err?.code === "P2002") {
+      const target = err.meta?.target || [];
+      if (target.includes("phone")) {
+        return res
+          .status(409)
+          .json({ error: "رقم الجوال هذا مرتبط بحساب آخر." });
+      }
+      if (target.includes("idNumber")) {
+        return res
+          .status(409)
+          .json({ error: "الرقم الجامعي هذا مرتبط بحساب آخر." });
+      }
+      if (target.includes("email")) {
+        return res
+          .status(409)
+          .json({ error: "هذا البريد الإلكتروني مسجّل مسبقاً." });
+      }
+    }
+    next(err);
+  }
+});
+
+router.post("/resend-code", async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "البريد الإلكتروني مطلوب." });
+    }
+
+    const pending = await prisma.emailVerification.findUnique({
+      where: { email },
+    });
+
+    if (!pending) {
+      return res
+        .status(404)
+        .json({ error: "لا يوجد طلب تسجيل لهذا البريد. يرجى إعادة التسجيل." });
+    }
+
+    const sinceLast = Date.now() - pending.lastSentAt.getTime();
+    if (sinceLast < RESEND_COOLDOWN_MS) {
+      const wait = Math.ceil((RESEND_COOLDOWN_MS - sinceLast) / 1000);
+      return res.status(429).json({
+        error: `يرجى الانتظار ${wait} ثانية قبل طلب رمز جديد.`,
+      });
+    }
+
+    const code = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + VERIFICATION_CODE_EXPIRY_MS);
+
+    await prisma.emailVerification.update({
+      where: { email },
+      data: {
+        code,
+        expiresAt,
+        attempts: 0,
+        lastSentAt: new Date(),
+      },
+    });
+
+    try {
+      await sendVerificationCodeEmail(email, code);
+    } catch (mailErr) {
+      console.error("Email send failed:", mailErr);
+      return res.status(500).json({
+        error: "تعذر إرسال رمز التحقق. يرجى المحاولة لاحقاً.",
+      });
+    }
+
+    res.json({ message: "تم إرسال رمز تحقق جديد إلى بريدك." });
+  } catch (err) {
+    next(err);
   }
 });
 

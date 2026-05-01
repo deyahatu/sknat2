@@ -35,6 +35,8 @@ function buildQuery(params = {}) {
 export const api = {
   auth: {
     register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+    verifyEmail: (email, code) => request('/auth/verify-email', { method: 'POST', body: JSON.stringify({ email, code }) }),
+    resendCode: (email) => request('/auth/resend-code', { method: 'POST', body: JSON.stringify({ email }) }),
     login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
     logout: () => request('/auth/logout', { method: 'POST' }),
     me: () => request('/auth/me'),

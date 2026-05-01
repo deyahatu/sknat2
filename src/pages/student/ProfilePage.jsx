@@ -1,7 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { FiCamera, FiTrash2 } from "react-icons/fi";
 import { api } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 import "./ProfilePage.css";
+
+const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
 const PHONE_KEY_ALLOWLIST = [
   "Backspace",
@@ -47,7 +51,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
 
-  const [info, setInfo] = useState({ name: "", phone: "", email: "" });
+  const [info, setInfo] = useState({ name: "", phone: "" });
   const [savingInfo, setSavingInfo] = useState(false);
   const [infoStatus, setInfoStatus] = useState({ type: "", message: "" });
 
@@ -59,6 +63,10 @@ export default function ProfilePage() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordStatus, setPasswordStatus] = useState({ type: "", message: "" });
 
+  const avatarInputRef = useRef(null);
+  const [savingAvatar, setSavingAvatar] = useState(false);
+  const [avatarStatus, setAvatarStatus] = useState({ type: "", message: "" });
+
   useEffect(() => {
     api.users
       .profile()
@@ -67,7 +75,6 @@ export default function ProfilePage() {
         setInfo({
           name: res.user.name || "",
           phone: res.user.phone || "",
-          email: res.user.email || "",
         });
       })
       .catch((err) => setLoadError(err.message))
@@ -80,7 +87,6 @@ export default function ProfilePage() {
 
     const name = info.name.trim();
     const phone = info.phone.trim();
-    const email = info.email.trim();
 
     if (!name) {
       setInfoStatus({ type: "error", message: "الاسم الكامل مطلوب" });
@@ -95,17 +101,9 @@ export default function ProfilePage() {
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setInfoStatus({
-        type: "error",
-        message: "يرجى إدخال بريد إلكتروني صحيح",
-      });
-      return;
-    }
-
     setSavingInfo(true);
     try {
-      const res = await api.users.updateProfile({ name, phone, email });
+      const res = await api.users.updateProfile({ name, phone });
       setProfile((prev) => ({ ...prev, ...res.user }));
       await refreshUser();
       setInfoStatus({ type: "success", message: "تم تحديث البيانات بنجاح" });
@@ -117,6 +115,59 @@ export default function ProfilePage() {
     } finally {
       setSavingInfo(false);
     }
+  }
+
+  async function uploadAvatar(dataUrl) {
+    setSavingAvatar(true);
+    setAvatarStatus({ type: "", message: "" });
+    try {
+      const res = await api.users.updateProfile({ avatar: dataUrl });
+      setProfile((prev) => ({ ...prev, ...res.user }));
+      await refreshUser();
+      setAvatarStatus({
+        type: "success",
+        message: dataUrl ? "تم تحديث الصورة الشخصية" : "تم حذف الصورة الشخصية",
+      });
+    } catch (err) {
+      setAvatarStatus({
+        type: "error",
+        message: err.message || "تعذر تحديث الصورة الشخصية",
+      });
+    } finally {
+      setSavingAvatar(false);
+    }
+  }
+
+  function handleAvatarChange(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      setAvatarStatus({
+        type: "error",
+        message: "يرجى رفع صورة بصيغة JPG أو PNG أو WEBP",
+      });
+      return;
+    }
+
+    if (file.size > MAX_AVATAR_BYTES) {
+      setAvatarStatus({
+        type: "error",
+        message: "حجم الصورة يجب ألا يتجاوز 2 ميجابايت",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => uploadAvatar(ev.target.result);
+    reader.onerror = () =>
+      setAvatarStatus({ type: "error", message: "تعذر قراءة الصورة" });
+    reader.readAsDataURL(file);
+  }
+
+  async function handleAvatarRemove() {
+    await uploadAvatar(null);
   }
 
   async function handlePasswordChange(e) {
@@ -199,7 +250,44 @@ export default function ProfilePage() {
       <div className="container profile-container">
         <div className="student-profile-hero">
           <div className="student-profile-hero-main">
-            <div className="student-profile-hero-avatar">{initial}</div>
+            <div className="student-profile-hero-avatar-wrap">
+              <div className="student-profile-hero-avatar">
+                {profile.avatar ? (
+                  <img src={profile.avatar} alt={profile.name} />
+                ) : (
+                  initial
+                )}
+              </div>
+              <button
+                type="button"
+                className="student-profile-avatar-btn"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={savingAvatar}
+                aria-label={profile.avatar ? "تغيير الصورة الشخصية" : "إضافة صورة شخصية"}
+                title={profile.avatar ? "تغيير الصورة" : "إضافة صورة"}
+              >
+                <FiCamera />
+              </button>
+              {profile.avatar && (
+                <button
+                  type="button"
+                  className="student-profile-avatar-btn student-profile-avatar-btn-remove"
+                  onClick={handleAvatarRemove}
+                  disabled={savingAvatar}
+                  aria-label="حذف الصورة الشخصية"
+                  title="حذف الصورة"
+                >
+                  <FiTrash2 />
+                </button>
+              )}
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleAvatarChange}
+                hidden
+              />
+            </div>
             <div>
               <h1 className="student-profile-hero-name">{profile.name}</h1>
               <div className="student-profile-hero-meta">
@@ -208,6 +296,13 @@ export default function ProfilePage() {
                   عضو منذ {joined}
                 </span>
               </div>
+              {avatarStatus.message && (
+                <div
+                  className={`student-profile-avatar-status student-profile-avatar-status-${avatarStatus.type}`}
+                >
+                  {avatarStatus.message}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -263,18 +358,19 @@ export default function ProfilePage() {
 
                   <div className="student-form-group">
                     <label className="student-form-label">
-                      البريد الإلكتروني
+                      البريد الجامعي
                     </label>
                     <input
-                      className="student-form-input"
+                      className="student-form-input student-form-input-locked"
                       type="email"
-                      value={info.email}
-                      onChange={(e) =>
-                        setInfo({ ...info, email: e.target.value })
-                      }
-                      required
+                      value={profile.email}
+                      readOnly
                       dir="ltr"
+                      title="لا يمكن تغيير البريد الجامعي بعد التسجيل"
                     />
+                    <p className="student-form-hint">
+                      🔒 لا يمكن تغيير البريد الجامعي بعد التسجيل
+                    </p>
                   </div>
 
                   <button

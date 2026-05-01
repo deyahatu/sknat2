@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FiMail,
@@ -11,6 +11,7 @@ import {
   FiBookOpen,
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
+import { api } from "../utils/api";
 import "./AuthPages.css";
 
 function RegisterPage() {
@@ -31,10 +32,25 @@ function RegisterPage() {
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
 
+  const [step, setStep] = useState("form"); // "form" | "otp"
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState(null);
+  const [otpSuccess, setOtpSuccess] = useState(null);
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const isOwner = formData.role === "owner";
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -66,6 +82,10 @@ function RegisterPage() {
       setError("كلمات المرور غير متطابقة");
       return;
     }
+    if (!isOwner && !/^s\d{8}@stu\.najah\.edu$/i.test(formData.email.trim())) {
+      setError("يجب استخدام البريد الجامعي (مثال: s12345678@stu.najah.edu)");
+      return;
+    }
     if (formData.phone.length !== 10) {
       setError("رقم الجوال يجب أن يتكوّن من 10 أرقام بالضبط");
       return;
@@ -89,7 +109,7 @@ function RegisterPage() {
     setLoading(true);
     setError(null);
     try {
-      await register({
+      const result = await register({
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
@@ -103,6 +123,13 @@ function RegisterPage() {
         }),
       });
 
+      if (result?.requiresVerification) {
+        setPendingEmail(result.email || formData.email.trim());
+        setStep("otp");
+        setResendCooldown(60);
+        return;
+      }
+
       navigate("/login", {
         state: { successMessage: "تم إنشاء الحساب بنجاح. يرجى تسجيل الدخول." },
       });
@@ -112,6 +139,158 @@ function RegisterPage() {
       setLoading(false);
     }
   };
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    setOtpError(null);
+    setOtpSuccess(null);
+
+    if (!/^\d{6}$/.test(otpCode)) {
+      setOtpError("الرمز يجب أن يتكون من 6 أرقام");
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      await api.auth.verifyEmail(pendingEmail, otpCode);
+      navigate("/login", {
+        state: {
+          successMessage: "تم التحقق من بريدك بنجاح. يمكنك الآن تسجيل الدخول.",
+        },
+      });
+    } catch (err) {
+      setOtpError(err.message || "تعذر التحقق من الرمز");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (resendCooldown > 0 || resending) return;
+    setOtpError(null);
+    setOtpSuccess(null);
+    setResending(true);
+    try {
+      await api.auth.resendCode(pendingEmail);
+      setOtpSuccess("تم إرسال رمز جديد إلى بريدك");
+      setResendCooldown(60);
+    } catch (err) {
+      setOtpError(err.message || "تعذر إرسال الرمز");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  if (step === "otp") {
+    return (
+      <div className="page auth-page">
+        <div className="auth-container">
+          <div className="auth-card">
+            <div className="auth-header">
+              <h1>تحقق من بريدك الجامعي</h1>
+              <p>
+                أرسلنا رمزاً مكوناً من 6 أرقام إلى{" "}
+                <strong dir="ltr">{pendingEmail}</strong>
+              </p>
+            </div>
+
+            <form className="auth-form" onSubmit={handleVerify}>
+              <div className="form-group">
+                <label htmlFor="otp-code">رمز التحقق</label>
+                <input
+                  id="otp-code"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={(e) =>
+                    setOtpCode(e.target.value.replace(/[^\d]/g, ""))
+                  }
+                  placeholder="••••••"
+                  dir="ltr"
+                  style={{
+                    fontSize: "1.6rem",
+                    textAlign: "center",
+                    letterSpacing: "8px",
+                    fontWeight: 700,
+                  }}
+                  autoFocus
+                  required
+                />
+              </div>
+
+              {otpError && <div className="auth-error">{otpError}</div>}
+              {otpSuccess && (
+                <div
+                  className="auth-error"
+                  style={{
+                    background: "#dcfce7",
+                    color: "#166534",
+                    border: "1px solid #bbf7d0",
+                  }}
+                >
+                  {otpSuccess}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="btn btn-primary btn-lg auth-submit"
+                disabled={verifying}
+              >
+                {verifying ? "جاري التحقق..." : "تأكيد"}
+              </button>
+            </form>
+
+            <div className="auth-footer" style={{ textAlign: "center" }}>
+              <p>
+                لم يصلك الرمز؟{" "}
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendCooldown > 0 || resending}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: resendCooldown > 0 ? "#94a3b8" : "#2563eb",
+                    fontWeight: 700,
+                    cursor: resendCooldown > 0 ? "not-allowed" : "pointer",
+                    padding: 0,
+                  }}
+                >
+                  {resending
+                    ? "جاري الإرسال..."
+                    : resendCooldown > 0
+                      ? `إعادة الإرسال خلال ${resendCooldown}s`
+                      : "إعادة الإرسال"}
+                </button>
+              </p>
+              <p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("form");
+                    setOtpCode("");
+                    setOtpError(null);
+                    setOtpSuccess(null);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#64748b",
+                    cursor: "pointer",
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  ← العودة لتعديل البيانات
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page auth-page">

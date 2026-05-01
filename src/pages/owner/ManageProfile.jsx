@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { FiCamera, FiTrash2 } from "react-icons/fi";
 import { api } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 
@@ -8,6 +9,9 @@ const ROLE_LABELS = {
   ADMIN: "مدير",
   STUDENT: "طالب",
 };
+
+const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
 const PHONE_KEY_ALLOWLIST = [
   "Backspace",
@@ -66,6 +70,10 @@ export default function ManageProfile() {
   const [savingPwd, setSavingPwd] = useState(false);
   const [pwdStatus, setPwdStatus] = useState({ type: "", message: "" });
 
+  const avatarInputRef = useRef(null);
+  const [savingAvatar, setSavingAvatar] = useState(false);
+  const [avatarStatus, setAvatarStatus] = useState({ type: "", message: "" });
+
   useEffect(() => {
     api.users
       .profile()
@@ -108,6 +116,55 @@ export default function ManageProfile() {
     } finally {
       setSavingInfo(false);
     }
+  }
+
+  async function uploadAvatar(dataUrl) {
+    setSavingAvatar(true);
+    setAvatarStatus({ type: "", message: "" });
+    try {
+      const res = await api.users.updateProfile({ avatar: dataUrl });
+      setProfile((prev) => ({ ...prev, ...res.user }));
+      await refreshUser();
+      setAvatarStatus({
+        type: "success",
+        message: dataUrl ? "تم تحديث الصورة الشخصية" : "تم حذف الصورة الشخصية",
+      });
+    } catch (err) {
+      setAvatarStatus({
+        type: "error",
+        message: err.message || "تعذر تحديث الصورة الشخصية",
+      });
+    } finally {
+      setSavingAvatar(false);
+    }
+  }
+
+  function handleAvatarChange(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      setAvatarStatus({
+        type: "error",
+        message: "يرجى رفع صورة بصيغة JPG أو PNG أو WEBP",
+      });
+      return;
+    }
+
+    if (file.size > MAX_AVATAR_BYTES) {
+      setAvatarStatus({
+        type: "error",
+        message: "حجم الصورة يجب ألا يتجاوز 2 ميجابايت",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => uploadAvatar(ev.target.result);
+    reader.onerror = () =>
+      setAvatarStatus({ type: "error", message: "تعذر قراءة الصورة" });
+    reader.readAsDataURL(file);
   }
 
   async function handleChangePassword(e) {
@@ -160,12 +217,51 @@ export default function ManageProfile() {
   const maskedAccount = profile.bankAccountNumber
     ? `****${profile.bankAccountNumber.slice(-4)}`
     : null;
+  const initial = (profile.name || "م").charAt(0).toUpperCase();
 
   return (
     <>
       {/* Hero */}
       <div className="owner-profile-hero">
         <div className="owner-profile-hero-main">
+          <div className="owner-profile-hero-avatar-wrap">
+            <div className="owner-profile-hero-avatar">
+              {profile.avatar ? (
+                <img src={profile.avatar} alt={profile.name} />
+              ) : (
+                initial
+              )}
+            </div>
+            <button
+              type="button"
+              className="owner-profile-avatar-btn"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={savingAvatar}
+              aria-label={profile.avatar ? "تغيير الصورة الشخصية" : "إضافة صورة شخصية"}
+              title={profile.avatar ? "تغيير الصورة" : "إضافة صورة"}
+            >
+              <FiCamera />
+            </button>
+            {profile.avatar && (
+              <button
+                type="button"
+                className="owner-profile-avatar-btn owner-profile-avatar-btn-remove"
+                onClick={() => uploadAvatar(null)}
+                disabled={savingAvatar}
+                aria-label="حذف الصورة الشخصية"
+                title="حذف الصورة"
+              >
+                <FiTrash2 />
+              </button>
+            )}
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleAvatarChange}
+              hidden
+            />
+          </div>
           <div>
             <h1 className="owner-profile-hero-name">{profile.name}</h1>
             <div className="owner-profile-hero-meta">
@@ -176,6 +272,13 @@ export default function ManageProfile() {
                 عضو منذ {joined}
               </span>
             </div>
+            {avatarStatus.message && (
+              <div
+                className={`owner-profile-avatar-status owner-profile-avatar-status-${avatarStatus.type}`}
+              >
+                {avatarStatus.message}
+              </div>
+            )}
           </div>
         </div>
       </div>
