@@ -30,6 +30,18 @@ const CANCELLATION_RULES = [
   { condition: 'تم الدفع بعد 7 أيام', refund: '0%' },
 ];
 
+// Map a (status, refundPercentage) pair to the matching rule row above
+// so we can highlight "← حالتك" next to it. Order must mirror CANCELLATION_RULES.
+function matchRuleIndex(refundPercentage, status) {
+  if (status === 'APPROVED') return 0;
+  if (status === 'PAID') {
+    if (refundPercentage === 100) return 1;
+    if (refundPercentage === 50) return 2;
+    if (refundPercentage === 0) return 3;
+  }
+  return -1;
+}
+
 function formatDate(value) {
   if (!value) return '—';
   return new Date(value).toLocaleDateString('ar-EG', {
@@ -48,6 +60,8 @@ function MyBookings() {
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelError, setCancelError] = useState(null);
+  const [cancelPolicy, setCancelPolicy] = useState(null);
+  const [policyLoading, setPolicyLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState(null);
 
   const load = () => {
@@ -59,6 +73,32 @@ function MyBookings() {
       .catch((err) => setError(err.message || 'تعذر تحميل الحجوزات'))
       .finally(() => setLoading(false));
   };
+
+  // Fetch the per-booking cancellation summary (refund %, refund amount,
+  // matched policy rule) the moment the cancel modal opens. UC-11 step 7
+  // requires this so the student sees their actual numbers before confirming.
+  useEffect(() => {
+    if (!cancelTarget) {
+      setCancelPolicy(null);
+      return;
+    }
+    let cancelled = false;
+    setPolicyLoading(true);
+    api.bookings
+      .cancellationPolicy(cancelTarget.id)
+      .then((res) => {
+        if (!cancelled) setCancelPolicy(res.policy);
+      })
+      .catch(() => {
+        if (!cancelled) setCancelPolicy(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPolicyLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [cancelTarget]);
 
   useEffect(() => {
     load();
@@ -152,22 +192,96 @@ function MyBookings() {
         <div className="cancel-modal-overlay" onClick={() => !cancelLoading && setCancelTarget(null)}>
           <div className="cancel-modal" onClick={(e) => e.stopPropagation()}>
             <h2>إلغاء الحجز</h2>
-            <p>هل أنت متأكد من إلغاء حجز "{cancelTarget.property.title}"؟</p>
+            <p>هل أنت متأكد من إلغاء هذا الحجز؟</p>
+
+            <div className="cancel-modal-summary">
+              <div className="cancel-modal-summary-title">ملخص الإلغاء</div>
+              <div className="cancel-modal-summary-row">
+                <span>رقم الحجز</span>
+                <strong dir="ltr">#{cancelTarget.id.slice(0, 8).toUpperCase()}</strong>
+              </div>
+              <div className="cancel-modal-summary-row">
+                <span>السكن</span>
+                <strong>{cancelTarget.property.title}</strong>
+              </div>
+              {cancelTarget.status === 'PAID' && cancelTarget.payment && (
+                <>
+                  <div className="cancel-modal-summary-row">
+                    <span>المبلغ المدفوع</span>
+                    <strong>
+                      {Number(cancelTarget.payment.amount).toLocaleString('en-US')} ₪
+                    </strong>
+                  </div>
+                  <div className="cancel-modal-summary-row refund">
+                    <span>مبلغ الاسترداد</span>
+                    <strong>
+                      {policyLoading ? (
+                        '...'
+                      ) : cancelPolicy?.currentBooking ? (
+                        <>
+                          {Number(
+                            cancelPolicy.currentBooking.refundAmount,
+                          ).toLocaleString('en-US')}{' '}
+                          ₪{' '}
+                          <span className="refund-pct">
+                            ({cancelPolicy.currentBooking.refundPercentage}%)
+                          </span>
+                        </>
+                      ) : (
+                        '—'
+                      )}
+                    </strong>
+                  </div>
+                </>
+              )}
+              {cancelTarget.status === 'APPROVED' && (
+                <div className="cancel-modal-summary-row refund">
+                  <span>مبلغ الاسترداد</span>
+                  <strong>لا يوجد دفع — لا حاجة لاسترداد</strong>
+                </div>
+              )}
+            </div>
 
             {cancelTarget.status === 'PAID' && (
               <>
                 <p className="cancel-modal-policy-intro">سياسة الاسترداد:</p>
                 <ul className="cancel-modal-rules">
-                  {CANCELLATION_RULES.map((rule) => (
-                    <li key={rule.condition}>
-                      <span>{rule.condition}</span>
-                      <strong>{rule.refund}</strong>
-                    </li>
-                  ))}
+                  {CANCELLATION_RULES.map((rule, idx) => {
+                    const matchedIdx = cancelPolicy?.currentBooking
+                      ? matchRuleIndex(
+                          cancelPolicy.currentBooking.refundPercentage,
+                          cancelTarget.status,
+                        )
+                      : -1;
+                    const isMatched = matchedIdx === idx;
+                    return (
+                      <li
+                        key={rule.condition}
+                        className={isMatched ? 'matched' : ''}
+                      >
+                        <span>{rule.condition}</span>
+                        <strong>{rule.refund}</strong>
+                        {isMatched && <span className="rule-flag">← حالتك</span>}
+                      </li>
+                    );
+                  })}
                 </ul>
-                <p className="cancel-modal-note">
-                  سيتم إنشاء طلب استرداد ينتظر موافقة الإدارة.
-                </p>
+                {cancelPolicy?.currentBooking?.refundAmount > 0 ? (
+                  <p className="cancel-modal-note">
+                    سيتم إنشاء طلب استرداد بمبلغ{' '}
+                    <strong>
+                      {Number(
+                        cancelPolicy.currentBooking.refundAmount,
+                      ).toLocaleString('en-US')}{' '}
+                      ₪
+                    </strong>{' '}
+                    بانتظار موافقة الإدارة.
+                  </p>
+                ) : (
+                  <p className="cancel-modal-note">
+                    لن يتم استرداد أي مبلغ بناءً على سياسة الإلغاء.
+                  </p>
+                )}
               </>
             )}
 
@@ -186,7 +300,7 @@ function MyBookings() {
                 type="button"
                 className="btn btn-danger"
                 onClick={handleCancel}
-                disabled={cancelLoading}
+                disabled={cancelLoading || policyLoading}
               >
                 {cancelLoading ? 'جاري الإلغاء...' : 'تأكيد الإلغاء'}
               </button>

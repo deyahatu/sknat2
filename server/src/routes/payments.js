@@ -47,17 +47,18 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
         .json({ error: "تم دفع هذا الحجز مسبقاً." });
     }
 
-    // Calculate total price (DOUBLE → halfPrice per bed; SINGLE → fullPrice)
+    // Calculate total price (DOUBLE → halfPrice per bed; SINGLE → fullPrice).
+    // Months are pro-rated (30-day month) with a 1-month minimum.
     const diffMs = booking.endDate.getTime() - booking.startDate.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    const months = Math.max(1, Math.ceil(diffDays / 30));
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    const months = Math.max(1, diffDays / 30);
     const isDouble = booking.roomVariant.kind === "DOUBLE";
     const monthlyPrice = isDouble
       ? (booking.roomVariant.halfPrice
           ? Number(booking.roomVariant.halfPrice)
           : Number(booking.roomVariant.fullPrice) / 2)
       : Number(booking.roomVariant.fullPrice);
-    const totalAmount = monthlyPrice * months;
+    const totalAmount = Math.round(monthlyPrice * months * 100) / 100;
 
     // Process payment + update booking status + add to owner wallet in a transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -134,16 +135,37 @@ router.get(
   },
 );
 
+// Refund window per UC-12 — must match the value used in withdrawals.js.
+const EARNINGS_REFUND_WINDOW_DAYS = 7;
+
 router.get(
   "/owner/earnings",
   authenticate,
   authorize("OWNER"),
   async (req, res, next) => {
     try {
-      // Get wallet balance
       const wallet = await prisma.wallet.findUnique({
         where: { ownerId: req.user.id },
       });
+      const balance = wallet ? Number(wallet.balance) : 0;
+
+      // Compute locked amount (recent payments still inside refund window).
+      const cutoff = new Date(
+        Date.now() - EARNINGS_REFUND_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+      );
+      const recent = await prisma.payment.findMany({
+        where: {
+          status: "COMPLETED",
+          createdAt: { gte: cutoff },
+          booking: { property: { ownerId: req.user.id } },
+        },
+        select: { amount: true },
+      });
+      const lockedBalance = recent.reduce(
+        (sum, p) => sum + Number(p.amount),
+        0,
+      );
+      const availableBalance = Math.max(0, balance - lockedBalance);
 
       // Get all payments for owner's properties
       const payments = await prisma.payment.findMany({
@@ -168,7 +190,7 @@ router.get(
       });
 
       res.json({
-        wallet: wallet || { balance: 0 },
+        wallet: { balance, lockedBalance, availableBalance },
         payments,
       });
     } catch (err) {

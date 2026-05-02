@@ -74,6 +74,22 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
       return res.status(400).json({ error: "لا يمكنك حجز سكنك الخاص." });
     }
 
+    // UC-4 A1: prevent duplicate booking requests on the same property
+    // while a previous one is still active (PENDING/APPROVED/PAID).
+    const existingForProperty = await prisma.booking.findFirst({
+      where: {
+        studentId: req.user.id,
+        propertyId,
+        status: { in: ["PENDING", "APPROVED", "PAID"] },
+      },
+    });
+
+    if (existingForProperty) {
+      return res
+        .status(400)
+        .json({ error: "لديك طلب حجز سابق على هذا السكن. يرجى إلغاؤه أو متابعته قبل إرسال طلب جديد." });
+    }
+
     // Check student doesn't have overlapping APPROVED/PAID booking
     const studentConflict = await prisma.booking.findFirst({
       where: {
@@ -93,15 +109,16 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
     // Calculate total price:
     //  - DOUBLE → student takes one bed → use halfPrice (fallback to fullPrice / 2)
     //  - SINGLE → fullPrice
+    // Months are pro-rated (30-day month) with a 1-month minimum.
     const diffMs = end.getTime() - start.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    const months = Math.max(1, Math.ceil(diffDays / 30));
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    const months = Math.max(1, diffDays / 30);
     const monthlyPrice = isDouble
       ? (roomVariant.halfPrice
           ? Number(roomVariant.halfPrice)
           : Number(roomVariant.fullPrice) / 2)
       : Number(roomVariant.fullPrice);
-    const totalPrice = monthlyPrice * months;
+    const totalPrice = Math.round(monthlyPrice * months * 100) / 100;
 
     const booking = await prisma.booking.create({
       data: {

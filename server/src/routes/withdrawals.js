@@ -5,6 +5,41 @@ import { authenticate, authorize } from "../middleware/auth.js";
 const router = Router();
 
 const MINIMUM_WITHDRAWAL = 10;
+// Refund window per UC-12: payments are eligible for full/partial refund
+// during the first 7 days. Funds received within this window are held back
+// from withdrawal so a refund approval never fails for "insufficient funds".
+const REFUND_WINDOW_DAYS = 7;
+
+async function computeLockedAmount(ownerId) {
+  const cutoff = new Date(
+    Date.now() - REFUND_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  );
+
+  // Sum payments to this owner that are still inside the refund window AND
+  // haven't been refunded yet. These represent money that may need to be
+  // returned to the student in the next few days.
+  const recent = await prisma.payment.findMany({
+    where: {
+      status: "COMPLETED",
+      createdAt: { gte: cutoff },
+      booking: {
+        property: { ownerId },
+      },
+    },
+    select: { amount: true },
+  });
+
+  return recent.reduce((sum, p) => sum + Number(p.amount), 0);
+}
+
+async function getWalletSnapshot(ownerId) {
+  const wallet = await prisma.wallet.findUnique({ where: { ownerId } });
+  const balance = wallet ? Number(wallet.balance) : 0;
+  const lockedBalance = await computeLockedAmount(ownerId);
+  // Available cannot go negative even in edge cases (e.g. legacy data).
+  const availableBalance = Math.max(0, balance - lockedBalance);
+  return { balance, lockedBalance, availableBalance };
+}
 
 router.get(
   "/bank-account",
@@ -162,17 +197,18 @@ router.post("/", authenticate, authorize("OWNER"), async (req, res, next) => {
         });
     }
 
-    const wallet = await prisma.wallet.findUnique({
-      where: { ownerId: req.user.id },
-    });
-    const balance = wallet ? Number(wallet.balance) : 0;
+    const { availableBalance, lockedBalance } = await getWalletSnapshot(
+      req.user.id,
+    );
 
-    if (withdrawAmount > balance) {
-      return res
-        .status(400)
-        .json({
-          error: "الرصيد غير كافٍ. يرجى إدخال مبلغ أصغر.",
-        });
+    if (withdrawAmount > availableBalance) {
+      const lockedMsg = lockedBalance > 0
+        ? ` (${lockedBalance.toFixed(2)} شيكل مقفولة مؤقتاً خلال فترة الاسترداد).`
+        : ".";
+      return res.status(400).json({
+        error:
+          `الرصيد المتاح للسحب غير كافٍ. الرصيد المتاح حالياً ${availableBalance.toFixed(2)} شيكل${lockedMsg}`,
+      });
     }
 
     const pendingRequest = await prisma.withdrawRequest.findFirst({
@@ -222,12 +258,10 @@ router.get("/", authenticate, authorize("OWNER"), async (req, res, next) => {
       orderBy: { createdAt: "desc" },
     });
 
-    const wallet = await prisma.wallet.findUnique({
-      where: { ownerId: req.user.id },
-    });
+    const snapshot = await getWalletSnapshot(req.user.id);
 
     res.json({
-      wallet: wallet || { balance: 0 },
+      wallet: snapshot,
       requests,
     });
   } catch (err) {

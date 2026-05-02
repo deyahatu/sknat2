@@ -45,6 +45,8 @@ const STATUS_FILTERS = [
 
 export default function Withdrawals() {
   const [balance, setBalance] = useState(0);
+  const [lockedBalance, setLockedBalance] = useState(0);
+  const [availableBalance, setAvailableBalance] = useState(0);
   const [requests, setRequests] = useState([]);
   const [filter, setFilter] = useState("");
   const [amount, setAmount] = useState("");
@@ -62,6 +64,8 @@ export default function Withdrawals() {
         api.withdrawals.getBankAccount(),
       ]);
       setBalance(Number(histRes.wallet?.balance || 0));
+      setLockedBalance(Number(histRes.wallet?.lockedBalance || 0));
+      setAvailableBalance(Number(histRes.wallet?.availableBalance || 0));
       setRequests(histRes.requests || []);
       const ba = bankRes.bankAccount;
       setHasBankAccount(!!ba?.bankName);
@@ -105,14 +109,34 @@ export default function Withdrawals() {
         <div className="owner-withdrawals-hero-side">
           <div className="owner-withdrawals-hero-balance">
             <span className="owner-withdrawals-hero-balance-label">
-              الرصيد المتاح
+              الرصيد المتاح للسحب
             </span>
             <strong className="owner-withdrawals-hero-balance-value">
-              {balance.toFixed(2)} شيكل
+              {availableBalance.toFixed(2)} شيكل
             </strong>
           </div>
         </div>
       </div>
+
+      {(lockedBalance > 0 || balance !== availableBalance) && (
+        <div className="owner-withdrawals-balance-breakdown">
+          <div className="owner-withdrawals-balance-row">
+            <span>الرصيد الكلي</span>
+            <strong>{balance.toFixed(2)} شيكل</strong>
+          </div>
+          <div className="owner-withdrawals-balance-row locked">
+            <span>
+              مقفول مؤقتاً
+              <small> (دفعات حديثة خلال فترة الاسترداد - 7 أيام)</small>
+            </span>
+            <strong>{lockedBalance.toFixed(2)} شيكل</strong>
+          </div>
+          <div className="owner-withdrawals-balance-row available">
+            <span>المتاح للسحب الآن</span>
+            <strong>{availableBalance.toFixed(2)} شيكل</strong>
+          </div>
+        </div>
+      )}
 
       {!hasBankAccount && (
         <div className="owner-withdrawals-page-alert">

@@ -1804,6 +1804,54 @@
   line-height: 1.2;
 }
 
+.owner-withdrawals-balance-breakdown {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.owner-withdrawals-balance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.92rem;
+  color: #374151;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.owner-withdrawals-balance-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.owner-withdrawals-balance-row small {
+  display: block;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  margin-top: 2px;
+  font-weight: 400;
+}
+
+.owner-withdrawals-balance-row.locked strong {
+  color: #b45309;
+}
+
+.owner-withdrawals-balance-row.available {
+  font-weight: 600;
+}
+
+.owner-withdrawals-balance-row.available strong {
+  color: #059669;
+  font-size: 1.05rem;
+}
+
 .owner-withdrawals-bank-link {
   display: inline-flex;
   align-items: center;

@@ -250,6 +250,7 @@ generator client {
     bankAccountNumber  String?
     createdAt          DateTime       @default(now())
     updatedAt          DateTime       @updatedAt
+    processedAt        DateTime?
 
     owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
@@ -260,14 +261,17 @@ generator client {
 
 
   model StudentRating {
-    id        String   @id @default(uuid())
-    rating    Int
-    comment   String?
-    bookingId String   @unique
-    ownerId   String
-    studentId String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id                String   @id @default(uuid())
+    behaviorRating    Int
+    cleanlinessRating Int
+    communicationRating Int
+    overallRating     Int
+    comment           String?
+    bookingId         String   @unique
+    ownerId           String
+    studentId         String
+    createdAt         DateTime @default(now())
+    updatedAt         DateTime @updatedAt
 
     booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
     owner   User    @relation("StudentRatingsGiven", fields: [ownerId], references: [id], onDelete: Cascade)

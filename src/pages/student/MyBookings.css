@@ -298,6 +298,65 @@
   font-size: 0.94rem;
 }
 
+.cancel-modal-summary {
+  background: #f8fbff;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 12px 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cancel-modal-summary-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #17386a;
+  margin-bottom: 4px;
+  border-bottom: 1px dashed #cbd5e1;
+  padding-bottom: 6px;
+}
+
+.cancel-modal-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--text-primary, #1f2937);
+}
+
+.cancel-modal-summary-row span:first-child {
+  color: var(--text-secondary, #64748b);
+}
+
+.cancel-modal-summary-row.refund strong {
+  color: #059669;
+  font-size: 1rem;
+}
+
+.cancel-modal-summary-row.refund .refund-pct {
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.cancel-modal-rules li.matched {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+.cancel-modal-rules li.matched strong {
+  color: #047857;
+}
+
+.rule-flag {
+  margin-inline-start: 8px;
+  font-size: 0.78rem;
+  color: #047857;
+  font-weight: 700;
+}
+
 .cancel-modal-policy-intro {
   font-weight: 700 !important;
   color: var(--text-primary) !important;

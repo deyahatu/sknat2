@@ -4,14 +4,26 @@ import { FiCreditCard, FiLock, FiArrowRight } from 'react-icons/fi';
 import { api } from '../../utils/api';
 import './PaymentPage.css';
 
+function getMonthlyPrice(roomVariant) {
+  if (!roomVariant) return 0;
+  const isDouble = roomVariant.kind === "DOUBLE";
+  if (isDouble) {
+    return Number(
+      roomVariant.halfPrice ?? Number(roomVariant.fullPrice) / 2,
+    );
+  }
+  return Number(roomVariant.fullPrice || 0);
+}
+
 function calculateTotal(booking) {
   if (!booking) return 0;
   const start = new Date(booking.startDate);
   const end = new Date(booking.endDate);
-  const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-  const months = Math.max(1, Math.ceil(days / 30));
-  const price = booking.roomVariant?.fullPrice || 0;
-  return Number(price) * months;
+  // Pro-rated months (30-day month), minimum 1 month — must match backend.
+  const days = Math.round((end - start) / (1000 * 60 * 60 * 24));
+  const months = Math.max(1, days / 30);
+  const price = getMonthlyPrice(booking.roomVariant);
+  return Math.round(price * months * 100) / 100;
 }
 
 function PaymentPage() {
@@ -167,14 +179,24 @@ function PaymentPage() {
 
               {error && <div className="payment-error">{error}</div>}
 
-              <button
-                type="submit"
-                className="btn btn-primary btn-lg payment-submit"
-                disabled={submitting}
-              >
-                <FiLock />
-                {submitting ? 'جاري المعالجة...' : `ادفع ${total.toLocaleString('en-US')} ₪`}
-              </button>
+              <div className="payment-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-lg payment-cancel"
+                  onClick={() => navigate('/bookings')}
+                  disabled={submitting}
+                >
+                  إلغاء الدفع
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-lg payment-submit"
+                  disabled={submitting}
+                >
+                  <FiLock />
+                  {submitting ? 'جاري المعالجة...' : `ادفع ${total.toLocaleString('en-US')} ₪`}
+                </button>
+              </div>
 
               <p className="payment-secure-note">
                 <FiLock />
@@ -203,7 +225,7 @@ function PaymentPage() {
             </div>
             <div className="payment-summary-row">
               <span>السعر الشهري ({booking.roomVariant?.name})</span>
-              <span>{Number(booking.roomVariant?.fullPrice || 0).toLocaleString('en-US')} ₪</span>
+              <span>{getMonthlyPrice(booking.roomVariant).toLocaleString('en-US')} ₪</span>
             </div>
             <div className="payment-summary-divider"></div>
             <div className="payment-summary-total">

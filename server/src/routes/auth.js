@@ -6,8 +6,17 @@ import { generateResetToken, hashToken } from "../utils/crypto.js";
 import {
   generateVerificationCode,
   sendVerificationCodeEmail,
+  sendPasswordResetEmail,
 } from "../utils/email.js";
+import { withTimeout, TimeoutError } from "../utils/timeout.js";
 import { authenticate } from "../middleware/auth.js";
+import {
+  loginLimiter,
+  forgotPasswordLimiter,
+  verifyEmailLimiter,
+  resendCodeLimiter,
+  registerLimiter,
+} from "../middleware/rateLimit.js";
 
 const router = Router();
 
@@ -15,6 +24,10 @@ const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 const VERIFICATION_CODE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 const RESEND_COOLDOWN_MS = 60 * 1000; // 60 seconds
 const MAX_VERIFICATION_ATTEMPTS = 5;
+// Hard ceiling for SMTP send during signup. Beyond this we surface the
+// spec-required timeout message (UC-1 E2) instead of waiting for the
+// underlying SMTP / DNS timeout (which can be 30+ seconds).
+const EMAIL_SEND_TIMEOUT_MS = 15 * 1000;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const STUDENT_EMAIL_REGEX = /^s\d{8}@stu\.najah\.edu$/i;
 const NAME_REGEX = /^[؀-ۿa-zA-Z\s]+$/;
@@ -38,7 +51,7 @@ const userSelect = {
   createdAt: true,
 };
 
-router.post("/register", async (req, res) => {
+router.post("/register", registerLimiter, async (req, res) => {
   try {
     const { name, email, phone, password, role, idNumber, idPhoto, gender, major } = req.body;
     const userRole = role?.toUpperCase() === "OWNER" ? "OWNER" : "STUDENT";
@@ -214,9 +227,18 @@ router.post("/register", async (req, res) => {
     });
 
     try {
-      await sendVerificationCodeEmail(email, code);
+      await withTimeout(
+        sendVerificationCodeEmail(email, code),
+        EMAIL_SEND_TIMEOUT_MS,
+        "verification email send",
+      );
     } catch (mailErr) {
       console.error("Email send failed:", mailErr);
+      if (mailErr instanceof TimeoutError) {
+        return res.status(504).json({
+          error: "انتهت مهلة التسجيل. يرجى المحاولة مرة أخرى.",
+        });
+      }
       return res.status(500).json({
         error: "تعذر إرسال رمز التحقق. يرجى المحاولة لاحقاً.",
       });
@@ -257,7 +279,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.post("/verify-email", async (req, res, next) => {
+router.post("/verify-email", verifyEmailLimiter, async (req, res, next) => {
   try {
     const { email, code } = req.body;
 
@@ -347,7 +369,7 @@ router.post("/verify-email", async (req, res, next) => {
   }
 });
 
-router.post("/resend-code", async (req, res, next) => {
+router.post("/resend-code", resendCodeLimiter, async (req, res, next) => {
   try {
     const { email } = req.body;
 
@@ -387,9 +409,18 @@ router.post("/resend-code", async (req, res, next) => {
     });
 
     try {
-      await sendVerificationCodeEmail(email, code);
+      await withTimeout(
+        sendVerificationCodeEmail(email, code),
+        EMAIL_SEND_TIMEOUT_MS,
+        "verification email resend",
+      );
     } catch (mailErr) {
       console.error("Email send failed:", mailErr);
+      if (mailErr instanceof TimeoutError) {
+        return res.status(504).json({
+          error: "انتهت مهلة الإرسال. يرجى المحاولة مرة أخرى.",
+        });
+      }
       return res.status(500).json({
         error: "تعذر إرسال رمز التحقق. يرجى المحاولة لاحقاً.",
       });
@@ -401,7 +432,7 @@ router.post("/resend-code", async (req, res, next) => {
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -455,7 +486,7 @@ router.get("/me", authenticate, (req, res) => {
   res.json({ user: req.user });
 });
 
-router.post("/forgot-password", async (req, res, next) => {
+router.post("/forgot-password", forgotPasswordLimiter, async (req, res, next) => {
   try {
     const { email } = req.body;
 
@@ -482,7 +513,15 @@ router.post("/forgot-password", async (req, res, next) => {
     });
 
     const resetUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/reset-password/${rawToken}`;
-    console.log(`\n🔑 Password reset link for ${email}:\n${resetUrl}\n`);
+
+    // Fail silently to avoid leaking which emails are registered
+    // (account-enumeration). The user-facing message is the same in
+    // success and failure paths.
+    try {
+      await sendPasswordResetEmail(email, resetUrl);
+    } catch (mailErr) {
+      console.error("Password reset email failed:", mailErr);
+    }
 
     res.json({
       message: "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط الاستعادة",

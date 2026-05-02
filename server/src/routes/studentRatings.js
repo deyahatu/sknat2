@@ -4,14 +4,39 @@ import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = Router();
 
-function validateRating(value) {
+const RATING_DIMENSIONS = [
+  'behaviorRating',
+  'cleanlinessRating',
+  'communicationRating',
+  'overallRating',
+];
+
+const DIMENSION_LABELS = {
+  behaviorRating: 'سلوك الطالب',
+  cleanlinessRating: 'النظافة',
+  communicationRating: 'التواصل',
+  overallRating: 'التجربة الإجمالية',
+};
+
+function validateDimension(value, label) {
   const rating = Number(value);
 
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    throw new Error('التقييم يجب أن يكون رقماً من 1 إلى 5.');
+    throw new Error(`تقييم "${label}" يجب أن يكون رقماً من 1 إلى 5.`);
   }
 
   return rating;
+}
+
+function buildRatingData(body) {
+  const data = {};
+  for (const dim of RATING_DIMENSIONS) {
+    if (body[dim] === undefined || body[dim] === null || body[dim] === '') {
+      throw new Error(`يرجى اختيار تقييم "${DIMENSION_LABELS[dim]}".`);
+    }
+    data[dim] = validateDimension(body[dim], DIMENSION_LABELS[dim]);
+  }
+  return data;
 }
 
 function cleanComment(value) {
@@ -60,11 +85,13 @@ async function findOwnerBooking(bookingId, ownerId) {
 
 router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
   try {
-    const { bookingId, rating, comment } = req.body;
+    const { bookingId, comment } = req.body;
 
-    if (!bookingId || rating === undefined) {
-      return res.status(400).json({ error: 'الحجز والتقييم مطلوبان.' });
+    if (!bookingId) {
+      return res.status(400).json({ error: 'الحجز مطلوب.' });
     }
+
+    const ratingData = buildRatingData(req.body);
 
     const booking = await findOwnerBooking(bookingId, req.user.id);
 
@@ -83,14 +110,14 @@ router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
     const savedRating = await prisma.studentRating.upsert({
       where: { bookingId },
       update: {
-        rating: validateRating(rating),
+        ...ratingData,
         comment: cleanComment(comment),
       },
       create: {
         bookingId,
         ownerId: req.user.id,
         studentId: booking.studentId,
-        rating: validateRating(rating),
+        ...ratingData,
         comment: cleanComment(comment),
       },
       include: {

@@ -174,9 +174,10 @@ function buildCreateData(body, ownerId) {
   }
 
   const sharedServices = validateSharedServices(body.sharedServices);
-  const images = Array.isArray(body.images) && body.images.length > 0
-    ? validateImages(body.images)
-    : [];
+  if (!Array.isArray(body.images) || body.images.length === 0) {
+    throw new Error('يرجى رفع صورة واحدة على الأقل للسكن.');
+  }
+  const images = validateImages(body.images);
   const available = body.available === undefined ? true : asBoolean(body.available);
 
   return {
@@ -268,9 +269,10 @@ function buildUpdateData(body) {
   }
 
   if (body.images !== undefined) {
-    data.images = Array.isArray(body.images) && body.images.length > 0
-      ? validateImages(body.images)
-      : [];
+    if (!Array.isArray(body.images) || body.images.length === 0) {
+      throw new Error('يرجى رفع صورة واحدة على الأقل للسكن.');
+    }
+    data.images = validateImages(body.images);
   }
 
   if (body.available !== undefined) {

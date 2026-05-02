@@ -25,3 +25,8 @@ dist-ssr
 
 # Claude Code local settings (per-machine)
 .claude/settings.local.json
+
+# Environment files — never commit secrets
+.env
+.env.*
+!.env.example

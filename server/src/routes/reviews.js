@@ -23,7 +23,13 @@ router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
 
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
-      select: { id: true, status: true, studentId: true, propertyId: true },
+      select: {
+        id: true,
+        status: true,
+        studentId: true,
+        propertyId: true,
+        endDate: true,
+      },
     });
 
     if (!booking) {
@@ -39,7 +45,16 @@ router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
     if (!['PAID', 'COMPLETED'].includes(booking.status)) {
       return res
         .status(400)
-        .json({ error: 'يمكن تقييم السكن بعد الدفع وانتهاء الإقامة فقط.' });
+        .json({ error: 'يمكن تقييم السكن بعد الدفع فقط.' });
+    }
+
+    // UC-9: spec requires "PAID and stay has ended". COMPLETED is set by the
+    // owner when the stay finishes, so it implicitly satisfies this; for PAID
+    // we must check the end date has passed.
+    if (booking.status === 'PAID' && booking.endDate >= new Date()) {
+      return res
+        .status(400)
+        .json({ error: 'يمكن تقييم السكن بعد انتهاء فترة الإقامة فقط.' });
     }
 
     const existing = await prisma.review.findUnique({

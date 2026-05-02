@@ -577,7 +577,12 @@ export default function AddEditProperty() {
         </div>
 
         <div className="wiz-card">
-          <div className="wiz-card-title">الصور</div>
+          <div className="wiz-card-title">
+            الصور <span style={{ color: "#dc2626", fontWeight: 700 }}>*</span>
+          </div>
+          <div className="wiz-card-hint">
+            مطلوب رفع صورة واحدة على الأقل للسكن.
+          </div>
           <button
             type="button"
             className="wiz-btn-outline"
@@ -593,6 +598,11 @@ export default function AddEditProperty() {
             style={{ display: "none" }}
             onChange={handlePropertyImageFiles}
           />
+          {propertyData.images.length === 0 && (
+            <div className="wiz-images-empty">
+              ⚠️ لم تقم برفع أي صورة بعد. يجب رفع صورة واحدة على الأقل للمتابعة.
+            </div>
+          )}
           {propertyData.images.length > 0 && (
             <div className="wiz-images-grid">
               {propertyData.images.map((img, i) => (
@@ -1950,6 +1960,16 @@ const wizardStyles = `
 }
 .wiz-btn-ghost.danger:hover {
   background: #fef2f2;
+}
+.wiz-images-empty {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.6;
 }
 .wiz-images-grid {
   display: grid;

@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
 import { api } from "../../utils/api";
 
+const DIMENSIONS = [
+  { key: "behaviorRating", label: "سلوك الطالب" },
+  { key: "cleanlinessRating", label: "النظافة" },
+  { key: "communicationRating", label: "التواصل" },
+  { key: "overallRating", label: "التجربة الإجمالية" },
+];
+
+function emptyRatings() {
+  return DIMENSIONS.reduce((acc, d) => ({ ...acc, [d.key]: 0 }), {});
+}
+
 function StarInput({ value, onChange }) {
   const [hover, setHover] = useState(0);
   const display = hover || value;
@@ -51,10 +62,13 @@ export default function RateStudents() {
         const initComments = {};
         for (const b of completed) {
           if (givenMap[b.id]) {
-            initRatings[b.id] = givenMap[b.id].rating;
+            initRatings[b.id] = DIMENSIONS.reduce(
+              (acc, d) => ({ ...acc, [d.key]: givenMap[b.id][d.key] || 0 }),
+              {},
+            );
             initComments[b.id] = givenMap[b.id].comment || "";
           } else {
-            initRatings[b.id] = 0;
+            initRatings[b.id] = emptyRatings();
             initComments[b.id] = "";
           }
         }
@@ -69,10 +83,18 @@ export default function RateStudents() {
     load();
   }, []);
 
+  function setDimension(bookingId, key, value) {
+    setRatings((prev) => ({
+      ...prev,
+      [bookingId]: { ...(prev[bookingId] || emptyRatings()), [key]: value },
+    }));
+  }
+
   async function handleSave(bookingId, studentId) {
-    const rating = ratings[bookingId];
-    if (!rating || rating < 1) {
-      setError("يرجى اختيار تقييم");
+    const current = ratings[bookingId] || emptyRatings();
+    const missing = DIMENSIONS.find((d) => !current[d.key] || current[d.key] < 1);
+    if (missing) {
+      setError(`يرجى اختيار تقييم "${missing.label}".`);
       return;
     }
     setSaving(bookingId);
@@ -82,12 +104,12 @@ export default function RateStudents() {
       await api.studentRatings.rate({
         bookingId,
         studentId,
-        rating,
+        ...current,
         comment: comments[bookingId] || "",
       });
       setGiven((prev) => ({
         ...prev,
-        [bookingId]: { rating, comment: comments[bookingId] },
+        [bookingId]: { ...current, comment: comments[bookingId] },
       }));
       setSuccess("تم حفظ التقييم بنجاح");
     } catch (err) {
@@ -116,6 +138,7 @@ export default function RateStudents() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {bookings.map((b) => {
             const isRated = !!given[b.id];
+            const current = ratings[b.id] || emptyRatings();
             return (
               <div key={b.id} className="owner-card">
                 <div className="owner-card-header">
@@ -140,15 +163,15 @@ export default function RateStudents() {
                   )}
                 </div>
                 <div style={{ padding: "16px 20px" }}>
-                  <div className="owner-form-group">
-                    <label className="owner-form-label">التقييم</label>
-                    <StarInput
-                      value={ratings[b.id] || 0}
-                      onChange={(v) =>
-                        setRatings((prev) => ({ ...prev, [b.id]: v }))
-                      }
-                    />
-                  </div>
+                  {DIMENSIONS.map((d) => (
+                    <div key={d.key} className="owner-form-group">
+                      <label className="owner-form-label">{d.label}</label>
+                      <StarInput
+                        value={current[d.key] || 0}
+                        onChange={(v) => setDimension(b.id, d.key, v)}
+                      />
+                    </div>
+                  ))}
                   <div className="owner-form-group">
                     <label className="owner-form-label">تعليق (اختياري)</label>
                     <textarea

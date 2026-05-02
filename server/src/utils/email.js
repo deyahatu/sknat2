@@ -55,3 +55,43 @@ export async function sendVerificationCodeEmail(to, code) {
     html,
   });
 }
+
+export async function sendPasswordResetEmail(to, resetUrl) {
+  const t = getTransporter();
+  const fromName = process.env.SMTP_FROM_NAME || "منصة سكنات";
+
+  if (!t) {
+    console.log(`\n🔑 [DEV] Password reset link for ${to}: ${resetUrl}\n`);
+    return;
+  }
+
+  const html = `
+    <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background:#f8fbff; border-radius: 16px;">
+      <h2 style="color:#17386a; margin:0 0 16px;">إعادة تعيين كلمة المرور</h2>
+      <p style="color:#1f3558; font-size:15px; line-height:1.7; margin:0 0 20px;">
+        طلبت إعادة تعيين كلمة مرور حسابك في منصة سكنات. اضغط على الزر أدناه لاختيار كلمة مرور جديدة:
+      </p>
+      <div style="text-align:center; margin:0 0 20px;">
+        <a href="${resetUrl}" style="display:inline-block; background:#2563eb; color:#ffffff; text-decoration:none; padding:14px 28px; border-radius:12px; font-weight:700; font-size:15px;">
+          إعادة تعيين كلمة المرور
+        </a>
+      </div>
+      <p style="color:#1f3558; font-size:13px; line-height:1.7; margin:0 0 16px;">
+        إذا لم يعمل الزر، انسخ هذا الرابط والصقه في المتصفح:<br>
+        <span style="word-break:break-all; color:#2563eb; font-size:12px;">${resetUrl}</span>
+      </p>
+      <p style="color:#64748b; font-size:13px; line-height:1.7; margin:0;">
+        هذا الرابط صالح لمدة ساعة واحدة فقط.<br>
+        إذا لم تطلب إعادة تعيين كلمة المرور، يمكنك تجاهل هذه الرسالة بأمان.
+      </p>
+    </div>
+  `;
+
+  await t.sendMail({
+    from: `"${fromName}" <${process.env.SMTP_USER}>`,
+    to,
+    subject: "إعادة تعيين كلمة المرور - سكنات",
+    text: `رابط إعادة تعيين كلمة المرور:\n${resetUrl}\n\nهذا الرابط صالح لمدة ساعة واحدة. إذا لم تطلب ذلك، تجاهل هذه الرسالة.`,
+    html,
+  });
+}
