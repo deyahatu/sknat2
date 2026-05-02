@@ -9,7 +9,6 @@ import { LuBath } from 'react-icons/lu';
 import { BiArea } from 'react-icons/bi';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
-import { ROOM_TYPE_ICONS } from '../constants/property';
 import './PropertyDetailsPage.css';
 
 const TARGET_GENDER_LABELS = {
@@ -164,7 +163,51 @@ function PropertyDetailsPage() {
   const variants = property.roomVariants || [];
   const totalRooms = variants.length;
   const availableSpots = variants.filter((v) => !v.isOccupied).length;
-  const minPrice = variants.length > 0 ? Math.min(...variants.map((v) => Number(v.fullPrice))) : 0;
+  // Per-person price = halfPrice for DOUBLE, fullPrice for SINGLE
+  const perPersonPrices = variants.map((v) => v.kind === 'DOUBLE'
+    ? (v.halfPrice ? Number(v.halfPrice) : Number(v.fullPrice) / 2)
+    : Number(v.fullPrice));
+  const minPrice = perPersonPrices.length > 0 ? Math.min(...perPersonPrices) : 0;
+
+  // Group variants by pattern (patternName + kind + price + services)
+  const patternMap = new Map();
+  variants.forEach((v) => {
+    const key = `${v.patternName || v.name}|${v.kind}|${v.fullPrice}|${(v.services || []).join(',')}`;
+    if (!patternMap.has(key)) {
+      patternMap.set(key, {
+        key,
+        name: v.patternName || v.name,
+        color: v.patternColor || '#4f46e5',
+        kind: v.kind,
+        fullPrice: Number(v.fullPrice),
+        halfPrice: v.halfPrice != null ? Number(v.halfPrice) : null,
+        services: v.services || [],
+        images: v.images || [],
+        rooms: [],
+      });
+    }
+    patternMap.get(key).rooms.push(v);
+  });
+  const patternList = Array.from(patternMap.values());
+
+  function roomStatus(v) {
+    if (v.isOccupied) return 'BOOKED';
+    if (v.partiallyOccupied) return 'PARTIAL';
+    return 'AVAILABLE';
+  }
+
+  function openBookingForRoom(variantId) {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setBookingStep('policy');
+    setAgreedPolicy(false);
+    setSelectedVariantId(variantId);
+    setBookingDates({ startDate: '', endDate: '' });
+    setBookingError(null);
+    setShowBookingModal(true);
+  }
 
   const nextImage = () => {
     setCurrentImage((prev) => (prev + 1) % property.images.length);
@@ -230,7 +273,15 @@ function PropertyDetailsPage() {
               <h1 className="property-title">{property.title}</h1>
               <div className="property-location">
                 <FiMapPin />
-                <span>{property.address}، {property.city}</span>
+                <span>
+                  {[property.address, property.city].filter(Boolean).join('، ')}
+                  {property.campus && (
+                    <span style={{ marginRight: 8, color: '#888' }}>
+                      • {property.campus === 'OLD' ? 'الحرم القديم' : 'الحرم الجديد'}
+                      {property.distance ? ` (${property.distance} د. سيراً)` : ''}
+                    </span>
+                  )}
+                </span>
               </div>
               {avgRating && (
                 <div className="property-rating-line">
@@ -284,40 +335,152 @@ function PropertyDetailsPage() {
               </div>
             </div>
 
-            {/* Room Variants */}
-            {variants.length > 0 && (
+            {/* Room Patterns + Individual rooms */}
+            {patternList.length > 0 && property.kind !== 'STUDIO' && (
+              <div className="property-description-section property-patterns-section">
+                <h3>الغرف المتاحة للحجز</h3>
+                <p style={{ color: '#666', fontSize: 13, marginBottom: 14 }}>
+                  اختر الغرفة التي تناسبك. الغرف المحجوزة لا يمكن حجزها.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {patternList.map((pat) => {
+                    const isDouble = pat.kind === 'DOUBLE';
+                    const cap = isDouble ? 2 : 1;
+                    const pricePerPerson = isDouble
+                      ? (pat.halfPrice || Math.round(pat.fullPrice / 2))
+                      : pat.fullPrice;
+                    const freeBeds = pat.rooms.reduce((s, r) => {
+                      const st = roomStatus(r);
+                      if (st === 'AVAILABLE') return s + cap;
+                      if (st === 'PARTIAL') return s + 1;
+                      return s;
+                    }, 0);
+                    const totalBeds = pat.rooms.length * cap;
+                    return (
+                      <div
+                        key={pat.key}
+                        style={{
+                          padding: 16,
+                          border: '1px solid #e0e0e0',
+                          borderRight: `4px solid ${pat.color}`,
+                          borderRadius: 10,
+                          background: '#fff',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, gap: 12, flexWrap: 'wrap' }}>
+                          <div>
+                            <div style={{ fontSize: 17, fontWeight: 700 }}>
+                              {isDouble ? '🛏️🛏️' : '🛏️'} {pat.name}
+                            </div>
+                            <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                              {isDouble ? 'غرفة مزدوجة' : 'غرفة مفردة'} •{' '}
+                              {freeBeds === 0
+                                ? <span style={{ color: '#dc2626', fontWeight: 600 }}>لا يوجد متاح</span>
+                                : isDouble
+                                  ? <span style={{ color: '#059669', fontWeight: 600 }}>{freeBeds} سرير متاح من {totalBeds}</span>
+                                  : <span style={{ color: '#059669', fontWeight: 600 }}>{freeBeds} غرفة متاحة من {pat.rooms.length}</span>
+                              }
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'left' }}>
+                            <div style={{ fontSize: 22, fontWeight: 700, color: '#059669' }}>
+                              {pricePerPerson.toLocaleString('en-US')} ₪
+                            </div>
+                            <div style={{ fontSize: 11, color: '#888' }}>
+                              /شهر للشخص{isDouble ? ` (${pat.fullPrice} للغرفة)` : ''}
+                            </div>
+                          </div>
+                        </div>
+
+                        {pat.services?.length > 0 && (
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                            {pat.services.map((s) => (
+                              <span key={s} style={{ padding: '3px 10px', background: '#f3f4f6', borderRadius: 12, fontSize: 12, color: '#374151' }}>{s}</span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>
+                            الغرف:
+                          </span>
+                          {pat.rooms.map((r) => {
+                            const st = roomStatus(r);
+                            const isAvail = st === 'AVAILABLE';
+                            const isPartial = st === 'PARTIAL';
+                            const isBooked = st === 'BOOKED';
+                            const canBook = (isAvail || isPartial) && !isOwnProperty && property.available;
+                            const tooltip = isPartial ? 'سرير واحد متاح' : '';
+                            return (
+                              <button
+                                key={r.id}
+                                type="button"
+                                disabled={!canBook}
+                                onClick={() => openBookingForRoom(r.id)}
+                                title={tooltip}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  padding: '6px 12px',
+                                  borderRadius: 16,
+                                  border: `1.5px solid ${isAvail ? pat.color : isPartial ? '#d97706' : '#e5e7eb'}`,
+                                  background: isBooked ? '#f9fafb' : '#fff',
+                                  color: isAvail ? pat.color : isPartial ? '#d97706' : '#9ca3af',
+                                  cursor: canBook ? 'pointer' : 'not-allowed',
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  fontFamily: 'inherit',
+                                  textDecoration: isBooked ? 'line-through' : 'none',
+                                }}
+                              >
+                                {isBooked && '🔒 '}
+                                {isAvail && '✓ '}
+                                {isPartial && '½ '}
+                                {r.name}
+                                {isPartial && (
+                                  <span style={{ background: '#fef3c7', color: '#92400e', fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 8, marginRight: 4 }}>
+                                    سرير متاح
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Studio: simple price + book button */}
+            {property.kind === 'STUDIO' && variants.length > 0 && (
               <div className="property-description-section">
-                <h3>أنواع الغرف</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {[...variants].sort((a, b) => Number(a.fullPrice) - Number(b.fullPrice)).map((v) => (
-                    <div key={v.id} style={{ padding: 16, border: '1px solid #e0e0e0', borderRadius: 10, background: '#fafafa' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <strong style={{ fontSize: 16 }}>{ROOM_TYPE_ICONS[v.name] || '🏠'} {v.name}{v.roomNumber ? ` (${v.roomNumber})` : ''}</strong>
-                        <span style={{ color: '#4f46e5', fontWeight: 600 }}>
-                          {Number(v.fullPrice).toLocaleString('en-US')} ₪/شهر
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', gap: 16, fontSize: 14, color: '#555', flexWrap: 'wrap' }}>
-                        <span>السعة: {v.capacity} أشخاص</span>
-                        <span>{v.isOccupied ? '🔴 محجوزة' : '🟢 متاحة'}</span>
-                        {v.halfPrice && <span>للطالب الواحد: {Number(v.halfPrice).toLocaleString('en-US')} ₪</span>}
-                      </div>
-                      {v.services?.length > 0 && (
-                        <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          {v.services.map((s) => (
-                            <span key={s} style={{ padding: '2px 10px', background: '#e8e6ff', borderRadius: 12, fontSize: 13 }}>
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {v.images?.length > 0 && (
-                        <div style={{ marginTop: 8, display: 'flex', gap: 6, overflowX: 'auto' }}>
-                          {v.images.map((img, i) => (
-                            <img key={i} src={img} alt="" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 6 }} />
-                          ))}
-                        </div>
-                      )}
+                <h3>الاستوديو</h3>
+                <div style={{ padding: 16, border: '1px solid #e0e0e0', borderRadius: 10, background: '#fafbfc' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <strong style={{ fontSize: 17 }}>🏠 وحدة استوديو مستقلة</strong>
+                    <span style={{ color: '#059669', fontWeight: 700, fontSize: 18 }}>
+                      {Number(property.studioPrice || variants[0].fullPrice).toLocaleString('en-US')} ₪/شهر
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#666' }}>
+                    {variants[0].isOccupied ? '🔴 محجوز حالياً' : '🟢 متاح للحجز'}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Shared services on the property */}
+            {property.sharedServices?.length > 0 && (
+              <div className="property-amenities-section">
+                <h3>الخدمات المشتركة</h3>
+                <div className="amenities-grid">
+                  {property.sharedServices.map((s) => (
+                    <div key={s} className="amenity-item">
+                      <FiCheck className="amenity-check" />
+                      <span>{s}</span>
                     </div>
                   ))}
                 </div>
@@ -496,25 +659,64 @@ function PropertyDetailsPage() {
               <form className="booking-modal-body" onSubmit={handleBookingSubmit}>
                 <div className="booking-summary">
                   <strong>{property.title}</strong>
-                  <span>{property.address}، {property.city}</span>
+                  <span>{property.city}</span>
                 </div>
 
-                <div className="booking-form-group">
-                  <label>نوع الغرفة</label>
-                  <select
-                    value={selectedVariantId}
-                    onChange={(e) => setSelectedVariantId(e.target.value)}
-                    required
-                    style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }}
-                  >
-                    <option value="">اختر نوع الغرفة</option>
-                    {variants.filter((v) => !v.isOccupied).map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name}{v.roomNumber ? ` (${v.roomNumber})` : ''} — {Number(v.fullPrice).toLocaleString('en-US')} ₪/شهر
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {(() => {
+                  const sel = variants.find((v) => v.id === selectedVariantId);
+                  if (!sel) {
+                    return (
+                      <div className="booking-form-group">
+                        <label>الغرفة</label>
+                        <select
+                          value={selectedVariantId}
+                          onChange={(e) => setSelectedVariantId(e.target.value)}
+                          required
+                          style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }}
+                        >
+                          <option value="">اختر غرفة</option>
+                          {variants.filter((v) => !v.isOccupied).map((v) => {
+                            const pp = v.kind === 'DOUBLE'
+                              ? (v.halfPrice ? Number(v.halfPrice) : Number(v.fullPrice) / 2)
+                              : Number(v.fullPrice);
+                            return (
+                              <option key={v.id} value={v.id}>
+                                {v.name} — {pp.toLocaleString('en-US')} ₪/شهر للشخص
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    );
+                  }
+                  const isDouble = sel.kind === 'DOUBLE';
+                  const pp = isDouble
+                    ? (sel.halfPrice ? Number(sel.halfPrice) : Number(sel.fullPrice) / 2)
+                    : Number(sel.fullPrice);
+                  return (
+                    <div style={{ padding: 12, background: '#f8f9fb', borderRadius: 10, marginBottom: 14, borderRight: `4px solid ${sel.patternColor || '#4f46e5'}` }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+                        {isDouble ? '🛏️🛏️' : '🛏️'} {sel.name}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+                        {sel.patternName || (isDouble ? 'غرفة مزدوجة' : 'غرفة مفردة')}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#059669' }}>
+                        {pp.toLocaleString('en-US')} ₪/شهر للشخص
+                        {isDouble && (
+                          <span style={{ color: '#888', fontWeight: 400, fontSize: 12, marginRight: 6 }}>
+                            ({Number(sel.fullPrice)} للغرفة كاملة)
+                          </span>
+                        )}
+                      </div>
+                      {sel.partiallyOccupied && (
+                        <div style={{ marginTop: 6, fontSize: 12, background: '#fef3c7', color: '#92400e', padding: '4px 10px', borderRadius: 6, display: 'inline-block' }}>
+                          ⚠️ ستتشارك هذه الغرفة مع طالب آخر
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <div className="booking-form-group">
                   <label>تاريخ البداية</label>

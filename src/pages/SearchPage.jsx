@@ -3,11 +3,12 @@ import { useSearchParams } from "react-router-dom";
 import { FiSearch, FiFilter, FiX } from "react-icons/fi";
 import PropertyCard from "../components/property/PropertyCard";
 import {
-  AVAILABLE_SERVICES,
+  PROPERTY_LEVEL_SERVICES,
   TARGET_GENDERS,
-  ROOM_TYPES,
+  PROPERTY_KINDS,
+  ROOM_KINDS,
+  CAMPUSES,
 } from "../constants/property";
-import { findCanonical } from "../utils/text";
 import { api } from "../utils/api";
 import "./SearchPage.css";
 
@@ -16,9 +17,11 @@ const EMPTY_FILTERS = {
   city: "",
   minPrice: "",
   maxPrice: "",
-  bathrooms: "",
   targetGender: "",
-  roomType: "",
+  kind: "",
+  campus: "",
+  roomKind: "",
+  maxDistance: "",
   services: [],
 };
 
@@ -30,8 +33,6 @@ function SearchPage() {
     ...EMPTY_FILTERS,
     searchQuery: initialQuery,
   });
-  const [customServices, setCustomServices] = useState([]);
-  const [customInput, setCustomInput] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
   const [properties, setProperties] = useState([]);
@@ -48,19 +49,14 @@ function SearchPage() {
           city: filters.city,
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
-          bathrooms: filters.bathrooms,
           targetGender: filters.targetGender,
+          kind: filters.kind,
+          campus: filters.campus,
+          roomKind: filters.roomKind,
+          maxDistance: filters.maxDistance,
           services: filters.services,
         })
-        .then((data) => {
-          let props = data.properties || [];
-          if (filters.roomType) {
-            props = props.filter((p) =>
-              p.roomVariants?.some((v) => v.name === filters.roomType),
-            );
-          }
-          setProperties(props);
-        })
+        .then((data) => setProperties(data.properties || []))
         .catch((err) => setError(err.message || "تعذر تحميل العقارات"))
         .finally(() => setLoading(false));
     }, 300);
@@ -80,47 +76,8 @@ function SearchPage() {
     }));
   };
 
-  const handleCustomServiceKey = (e) => {
-    if (e.key !== "Enter") return;
-    e.preventDefault();
-    const value = customInput.trim();
-    if (!value) return;
-
-    const canonicalPredefined = findCanonical(value, AVAILABLE_SERVICES);
-    if (canonicalPredefined) {
-      if (!filters.services.includes(canonicalPredefined)) {
-        setFilters((prev) => ({
-          ...prev,
-          services: [...prev.services, canonicalPredefined],
-        }));
-      }
-      setCustomInput("");
-      return;
-    }
-
-    const canonicalCustom = findCanonical(value, customServices);
-    if (canonicalCustom) {
-      setCustomInput("");
-      return;
-    }
-
-    setCustomServices((prev) => [...prev, value]);
-    setFilters((prev) => ({ ...prev, services: [...prev.services, value] }));
-    setCustomInput("");
-  };
-
-  const removeCustomService = (name) => {
-    setCustomServices((prev) => prev.filter((s) => s !== name));
-    setFilters((prev) => ({
-      ...prev,
-      services: prev.services.filter((s) => s !== name),
-    }));
-  };
-
   const clearFilters = () => {
     setFilters(EMPTY_FILTERS);
-    setCustomServices([]);
-    setCustomInput("");
   };
 
   const hasActiveFilters =
@@ -128,15 +85,12 @@ function SearchPage() {
     filters.city ||
     filters.minPrice ||
     filters.maxPrice ||
-    filters.bathrooms ||
     filters.targetGender ||
-    filters.roomType ||
+    filters.kind ||
+    filters.campus ||
+    filters.roomKind ||
+    filters.maxDistance ||
     filters.services.length > 0;
-
-  const bathroomOptions = Array.from(
-    { length: 10 },
-    (_, i) => i + 1,
-  );
 
   return (
     <div className="page search-page">
@@ -171,9 +125,53 @@ function SearchPage() {
               <label>الحي/المنطقة</label>
               <input
                 type="text"
-                placeholder="مثلاً:الحرم الجديد"
+                placeholder="مثلاً: رفيديا"
                 value={filters.city}
                 onChange={(e) => setField("city", e.target.value)}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>نوع العقار</label>
+              <select
+                value={filters.kind}
+                onChange={(e) => setField("kind", e.target.value)}
+              >
+                <option value="">الكل</option>
+                {PROPERTY_KINDS.map((k) => (
+                  <option key={k.id} value={k.id}>
+                    {k.icon} {k.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label>الحرم الأقرب</label>
+              <select
+                value={filters.campus}
+                onChange={(e) => setField("campus", e.target.value)}
+              >
+                <option value="">الكل</option>
+                {CAMPUSES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label>أقصى مسافة عن الحرم (دقائق)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="مثلاً: 15"
+                value={filters.maxDistance}
+                onChange={(e) =>
+                  setField("maxDistance", e.target.value.replace(/[^\d]/g, ""))
+                }
+                dir="ltr"
               />
             </div>
 
@@ -184,7 +182,9 @@ function SearchPage() {
                 inputMode="numeric"
                 placeholder="0"
                 value={filters.minPrice}
-                onChange={(e) => setField("minPrice", e.target.value.replace(/[^\d]/g, ""))}
+                onChange={(e) =>
+                  setField("minPrice", e.target.value.replace(/[^\d]/g, ""))
+                }
                 dir="ltr"
               />
             </div>
@@ -196,24 +196,11 @@ function SearchPage() {
                 inputMode="numeric"
                 placeholder="5000"
                 value={filters.maxPrice}
-                onChange={(e) => setField("maxPrice", e.target.value.replace(/[^\d]/g, ""))}
+                onChange={(e) =>
+                  setField("maxPrice", e.target.value.replace(/[^\d]/g, ""))
+                }
                 dir="ltr"
               />
-            </div>
-
-            <div className="filter-group">
-              <label>عدد الحمامات</label>
-              <select
-                value={filters.bathrooms}
-                onChange={(e) => setField("bathrooms", e.target.value)}
-              >
-                <option value="">الكل</option>
-                {bathroomOptions.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
             </div>
 
             <div className="filter-group">
@@ -234,12 +221,15 @@ function SearchPage() {
             <div className="filter-group">
               <label>نوع الغرفة</label>
               <select
-                value={filters.roomType}
-                onChange={(e) => setField("roomType", e.target.value)}
+                value={filters.roomKind}
+                onChange={(e) => setField("roomKind", e.target.value)}
+                disabled={filters.kind === "STUDIO"}
               >
                 <option value="">الكل</option>
-                {ROOM_TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                {ROOM_KINDS.map((rk) => (
+                  <option key={rk.id} value={rk.id}>
+                    {rk.icon} {rk.title}
+                  </option>
                 ))}
               </select>
             </div>
@@ -247,7 +237,7 @@ function SearchPage() {
             <div className="filter-group filter-group-services">
               <label>الخدمات</label>
               <div className="filter-services-grid">
-                {AVAILABLE_SERVICES.map((s) => (
+                {PROPERTY_LEVEL_SERVICES.map((s) => (
                   <label key={s} className="filter-service-check">
                     <input
                       type="checkbox"
@@ -257,28 +247,7 @@ function SearchPage() {
                     <span>{s}</span>
                   </label>
                 ))}
-                {customServices.map((s) => (
-                  <span key={s} className="filter-service-check filter-service-custom">
-                    <span>{s}</span>
-                    <button
-                      type="button"
-                      className="filter-service-remove"
-                      onClick={() => removeCustomService(s)}
-                      aria-label={`حذف ${s}`}
-                    >
-                      ✕
-                    </button>
-                  </span>
-                ))}
               </div>
-              <input
-                type="text"
-                className="filter-custom-input"
-                placeholder="اكتب خدمة إضافية واضغط Enter"
-                value={customInput}
-                onChange={(e) => setCustomInput(e.target.value.replace(/[^؀-ۿa-zA-Z\s]/g, ""))}
-                onKeyDown={handleCustomServiceKey}
-              />
             </div>
 
             {hasActiveFilters && (
@@ -295,11 +264,13 @@ function SearchPage() {
 
         <div className="search-results-info">
           <span>
-            {loading
-              ? "جاري التحميل..."
-              : (
-                <>تم العثور على <strong>{properties.length}</strong> نتيجة</>
-              )}
+            {loading ? (
+              "جاري التحميل..."
+            ) : (
+              <>
+                تم العثور على <strong>{properties.length}</strong> نتيجة
+              </>
+            )}
           </span>
         </div>
 

@@ -63,6 +63,7 @@ export const api = {
     // Room Variants
     listVariants: (propertyId) => request(`/properties/${propertyId}/variants`),
     createVariant: (propertyId, body) => request(`/properties/${propertyId}/variants`, { method: 'POST', body: JSON.stringify(body) }),
+    bulkCreateVariants: (propertyId, variants) => request(`/properties/${propertyId}/variants/bulk`, { method: 'POST', body: JSON.stringify({ variants }) }),
     updateVariant: (propertyId, variantId, body) => request(`/properties/${propertyId}/variants/${variantId}`, { method: 'PUT', body: JSON.stringify(body) }),
     deleteVariant: (propertyId, variantId) => request(`/properties/${propertyId}/variants/${variantId}`, { method: 'DELETE' }),
   },

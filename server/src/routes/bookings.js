@@ -59,12 +59,15 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
     });
 
     if (!roomVariant) {
-      return res.status(404).json({ error: "نوع الغرفة غير موجود." });
+      return res.status(404).json({ error: "الغرفة غير موجودة." });
     }
 
     if (roomVariant.isOccupied) {
-      return res.status(400).json({ error: "هذه الغرفة محجوزة حالياً." });
+      return res.status(400).json({ error: "هذه الغرفة محجوزة بالكامل." });
     }
+
+    // For SINGLE rooms, partial doesn't apply. For DOUBLE, allow booking even if partial.
+    const isDouble = roomVariant.kind === "DOUBLE";
 
     // Student can't book own property
     if (property.ownerId === req.user.id) {
@@ -87,11 +90,18 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
         .json({ error: "لديك حجز مؤكد بالفعل في هذا التاريخ." });
     }
 
-    // Calculate total price (price per month, calculate months)
+    // Calculate total price:
+    //  - DOUBLE → student takes one bed → use halfPrice (fallback to fullPrice / 2)
+    //  - SINGLE → fullPrice
     const diffMs = end.getTime() - start.getTime();
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     const months = Math.max(1, Math.ceil(diffDays / 30));
-    const totalPrice = Number(roomVariant.fullPrice) * months;
+    const monthlyPrice = isDouble
+      ? (roomVariant.halfPrice
+          ? Number(roomVariant.halfPrice)
+          : Number(roomVariant.fullPrice) / 2)
+      : Number(roomVariant.fullPrice);
+    const totalPrice = monthlyPrice * months;
 
     const booking = await prisma.booking.create({
       data: {
@@ -277,7 +287,9 @@ router.patch(
         where: { id: req.params.id },
         include: {
           property: { select: { ownerId: true, title: true } },
-          roomVariant: { select: { id: true, isOccupied: true } },
+          roomVariant: {
+            select: { id: true, kind: true, isOccupied: true, partiallyOccupied: true },
+          },
         },
       });
 
@@ -300,8 +312,19 @@ router.patch(
       if (booking.roomVariant.isOccupied) {
         return res
           .status(400)
-          .json({ error: "هذه الغرفة محجوزة بالفعل. لا يمكن قبول هذا الطلب." });
+          .json({ error: "هذه الغرفة محجوزة بالكامل. لا يمكن قبول هذا الطلب." });
       }
+
+      // Determine the new room state on approval:
+      // - SINGLE → fully occupied
+      // - DOUBLE empty → partially occupied
+      // - DOUBLE partially occupied → fully occupied
+      const isDouble = booking.roomVariant.kind === "DOUBLE";
+      const newRoomData = isDouble
+        ? booking.roomVariant.partiallyOccupied
+          ? { isOccupied: true, partiallyOccupied: false }
+          : { partiallyOccupied: true }
+        : { isOccupied: true };
 
       const updated = await prisma.$transaction(async (tx) => {
         const updatedBooking = await tx.booking.update({
@@ -312,7 +335,7 @@ router.patch(
               select: { id: true, title: true, city: true },
             },
             roomVariant: {
-              select: { id: true, name: true, fullPrice: true },
+              select: { id: true, name: true, kind: true, fullPrice: true, halfPrice: true },
             },
             student: {
               select: { id: true, name: true, email: true },
@@ -322,7 +345,7 @@ router.patch(
 
         await tx.roomVariant.update({
           where: { id: booking.roomVariantId },
-          data: { isOccupied: true },
+          data: newRoomData,
         });
 
         return updatedBooking;
@@ -372,7 +395,7 @@ router.patch(
         data: { status: "REJECTED" },
         include: {
           property: {
-            select: { id: true, title: true, city: true, price: true },
+            select: { id: true, title: true, city: true },
           },
           student: {
             select: { id: true, name: true, email: true },
@@ -471,15 +494,27 @@ router.patch(
               select: { id: true, title: true, city: true },
             },
             roomVariant: {
-              select: { id: true, name: true, fullPrice: true },
+              select: { id: true, name: true, kind: true, fullPrice: true },
             },
           },
         });
 
         if (wasBedOccupied) {
+          // Recompute room state from remaining active bookings
+          const otherActive = await tx.booking.count({
+            where: {
+              roomVariantId: booking.roomVariantId,
+              id: { not: booking.id },
+              status: { in: ["APPROVED", "PAID"] },
+            },
+          });
+          const isDouble = updatedBooking.roomVariant.kind === "DOUBLE";
+          const newState = isDouble
+            ? { isOccupied: false, partiallyOccupied: otherActive >= 1 }
+            : { isOccupied: false, partiallyOccupied: false };
           await tx.roomVariant.update({
             where: { id: booking.roomVariantId },
-            data: { isOccupied: false },
+            data: newState,
           });
         }
 
@@ -553,14 +588,25 @@ router.patch(
               select: { id: true, title: true, city: true },
             },
             roomVariant: {
-              select: { id: true, name: true },
+              select: { id: true, name: true, kind: true },
             },
           },
         });
 
+        const otherActive = await tx.booking.count({
+          where: {
+            roomVariantId: booking.roomVariantId,
+            id: { not: booking.id },
+            status: { in: ["APPROVED", "PAID"] },
+          },
+        });
+        const isDouble = updatedBooking.roomVariant.kind === "DOUBLE";
+        const newState = isDouble
+          ? { isOccupied: false, partiallyOccupied: otherActive >= 1 }
+          : { isOccupied: false, partiallyOccupied: false };
         await tx.roomVariant.update({
           where: { id: booking.roomVariantId },
-          data: { isOccupied: false },
+          data: newState,
         });
 
         return updatedBooking;

@@ -6,17 +6,24 @@ const router = Router();
 
 const IMAGE_REGEX = /^data:image\/(jpeg|jpg|png|webp);base64,/i;
 const VALID_GENDERS = ['MALE', 'FEMALE'];
+const VALID_PROPERTY_KINDS = ['APARTMENT', 'STUDIO'];
+const VALID_ROOM_KINDS = ['SINGLE', 'DOUBLE'];
+const ROOM_KIND_CAPACITY = { SINGLE: 1, DOUBLE: 2 };
 
 const roomVariantSelect = {
   id: true,
   name: true,
   roomNumber: true,
+  kind: true,
   capacity: true,
   isOccupied: true,
+  partiallyOccupied: true,
   fullPrice: true,
   halfPrice: true,
   images: true,
   services: true,
+  patternName: true,
+  patternColor: true,
   propertyId: true,
   createdAt: true,
   updatedAt: true,
@@ -25,9 +32,13 @@ const roomVariantSelect = {
 const propertySelect = {
   id: true,
   title: true,
+  kind: true,
   description: true,
   address: true,
   city: true,
+  campus: true,
+  distance: true,
+  sharedServices: true,
   targetGender: true,
   otherServices: true,
   policy: true,
@@ -35,6 +46,7 @@ const propertySelect = {
   area: true,
   images: true,
   available: true,
+  studioPrice: true,
   ownerId: true,
   createdAt: true,
   updatedAt: true,
@@ -127,38 +139,69 @@ function validateServices(services) {
   return cleanServices;
 }
 
+function validateSharedServices(services) {
+  if (services === undefined || services === null) return [];
+  if (!Array.isArray(services)) {
+    throw new Error('الخدمات المشتركة يجب أن تكون قائمة.');
+  }
+  return services
+    .filter((s) => typeof s === 'string')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 function buildCreateData(body, ownerId) {
   const title = asRequiredString(body.title || body.name);
   const city = asRequiredString(body.city);
-  const address = asRequiredString(body.address);
-  const description = asRequiredString(body.description);
-  const policy = asRequiredString(body.policy);
+  const description = asOptionalString(body.description);
+  const policy = asOptionalString(body.policy);
+  const address = asOptionalString(body.address);
   const otherServices = asOptionalString(body.otherServices);
-  const targetGender = asRequiredString(body.targetGender).toUpperCase();
+  const campus = asOptionalString(body.campus);
+  const targetGender = asRequiredString(body.targetGender || 'MALE').toUpperCase();
 
-  if (!title || !city || !address || !description || !policy) {
-    throw new Error('يرجى تعبئة جميع حقول السكن المطلوبة.');
+  if (!title || !city) {
+    throw new Error('يرجى تعبئة اسم السكن والحي.');
   }
 
   if (!VALID_GENDERS.includes(targetGender)) {
     throw new Error('الجنس المستهدف يجب أن يكون MALE أو FEMALE.');
   }
 
-  const images = validateImages(body.images);
-  const available = asBoolean(body.available);
+  const kind = asRequiredString(body.kind || 'APARTMENT').toUpperCase();
+  if (!VALID_PROPERTY_KINDS.includes(kind)) {
+    throw new Error('نوع العقار يجب أن يكون APARTMENT أو STUDIO.');
+  }
+
+  const sharedServices = validateSharedServices(body.sharedServices);
+  const images = Array.isArray(body.images) && body.images.length > 0
+    ? validateImages(body.images)
+    : [];
+  const available = body.available === undefined ? true : asBoolean(body.available);
 
   return {
     title,
+    kind,
     city,
     address,
     description,
     policy,
+    campus,
+    sharedServices,
     otherServices,
     targetGender,
     images,
     available,
     ownerId,
-    ...(body.bathrooms !== undefined && { bathrooms: asPositiveInteger(body.bathrooms, 'عدد الحمامات') }),
+    ...(body.distance !== undefined && body.distance !== null && body.distance !== '' && {
+      distance: asNonNegativeInteger(body.distance, 'المسافة'),
+    }),
+    ...(body.studioPrice !== undefined && body.studioPrice !== null && body.studioPrice !== '' && {
+      studioPrice: asPositivePrice(body.studioPrice, 'سعر الاستوديو'),
+    }),
+    ...(body.bathrooms !== undefined && body.bathrooms !== null && body.bathrooms !== '' && {
+      bathrooms: asPositiveInteger(body.bathrooms, 'عدد الحمامات'),
+    }),
     ...(body.area !== undefined && body.area !== null && body.area !== '' && {
       area: asPositiveInteger(body.area, 'المساحة'),
     }),
@@ -174,28 +217,39 @@ function buildUpdateData(body) {
     data.title = title;
   }
 
+  if (body.kind !== undefined) {
+    const kind = asRequiredString(body.kind).toUpperCase();
+    if (!VALID_PROPERTY_KINDS.includes(kind)) {
+      throw new Error('نوع العقار يجب أن يكون APARTMENT أو STUDIO.');
+    }
+    data.kind = kind;
+  }
+
   if (body.city !== undefined) {
     const city = asRequiredString(body.city);
-    if (!city) throw new Error('المدينة لا يمكن أن تكون فارغة.');
+    if (!city) throw new Error('الحي لا يمكن أن يكون فارغاً.');
     data.city = city;
   }
 
-  if (body.address !== undefined) {
-    const address = asRequiredString(body.address);
-    if (!address) throw new Error('العنوان لا يمكن أن يكون فارغاً.');
-    data.address = address;
+  if (body.address !== undefined) data.address = asOptionalString(body.address);
+  if (body.description !== undefined) data.description = asOptionalString(body.description);
+  if (body.policy !== undefined) data.policy = asOptionalString(body.policy);
+  if (body.campus !== undefined) data.campus = asOptionalString(body.campus);
+
+  if (body.distance !== undefined) {
+    data.distance = body.distance === null || body.distance === ''
+      ? null
+      : asNonNegativeInteger(body.distance, 'المسافة');
   }
 
-  if (body.description !== undefined) {
-    const description = asRequiredString(body.description);
-    if (!description) throw new Error('الوصف لا يمكن أن يكون فارغاً.');
-    data.description = description;
+  if (body.studioPrice !== undefined) {
+    data.studioPrice = body.studioPrice === null || body.studioPrice === ''
+      ? null
+      : asPositivePrice(body.studioPrice, 'سعر الاستوديو');
   }
 
-  if (body.policy !== undefined) {
-    const policy = asRequiredString(body.policy);
-    if (!policy) throw new Error('سياسة السكن لا يمكن أن تكون فارغة.');
-    data.policy = policy;
+  if (body.sharedServices !== undefined) {
+    data.sharedServices = validateSharedServices(body.sharedServices);
   }
 
   if (body.bathrooms !== undefined) data.bathrooms = asPositiveInteger(body.bathrooms, 'عدد الحمامات');
@@ -214,7 +268,9 @@ function buildUpdateData(body) {
   }
 
   if (body.images !== undefined) {
-    data.images = validateImages(body.images);
+    data.images = Array.isArray(body.images) && body.images.length > 0
+      ? validateImages(body.images)
+      : [];
   }
 
   if (body.available !== undefined) {
@@ -244,48 +300,86 @@ router.get('/', async (req, res, next) => {
       city,
       minPrice,
       maxPrice,
-      bathrooms,
       targetGender,
       services,
+      kind,
+      campus,
+      roomKind,
+      maxDistance,
     } = req.query;
 
-    const where = { available: true, roomVariants: { some: {} } };
+    // A property is listable if:
+    //  - it has at least one room variant (apartment), OR
+    //  - it's a STUDIO with a price set
+    const where = {
+      available: true,
+      AND: [{
+        OR: [
+          { roomVariants: { some: {} } },
+          { kind: 'STUDIO', studioPrice: { not: null } },
+        ],
+      }],
+    };
 
     if (q) {
-      where.OR = [
-        { title: { contains: q, mode: 'insensitive' } },
-        { city: { contains: q, mode: 'insensitive' } },
-        { address: { contains: q, mode: 'insensitive' } },
-      ];
+      where.AND.push({
+        OR: [
+          { title: { contains: q, mode: 'insensitive' } },
+          { city: { contains: q, mode: 'insensitive' } },
+          { address: { contains: q, mode: 'insensitive' } },
+        ],
+      });
     }
 
     if (city) where.city = { contains: city, mode: 'insensitive' };
-
-    if (minPrice || maxPrice) {
-      where.roomVariants = {
-        some: {
-          fullPrice: {
-            ...(minPrice && { gte: Number(minPrice) }),
-            ...(maxPrice && { lte: Number(maxPrice) }),
-          },
-        },
-      };
+    if (targetGender && VALID_GENDERS.includes(targetGender.toUpperCase())) {
+      where.targetGender = targetGender.toUpperCase();
     }
 
-    if (bathrooms) where.bathrooms = Number(bathrooms);
-    if (targetGender) where.targetGender = targetGender;
+    // Property kind filter (APARTMENT / STUDIO)
+    if (kind && VALID_PROPERTY_KINDS.includes(kind.toUpperCase())) {
+      where.kind = kind.toUpperCase();
+    }
+
+    // Campus filter (OLD / NEW)
+    if (campus) where.campus = campus;
+
+    // Max distance from campus (in minutes)
+    if (maxDistance) {
+      const dist = Number(maxDistance);
+      if (Number.isFinite(dist) && dist >= 0) {
+        where.distance = { lte: dist };
+      }
+    }
+
+    // Price filter — match either a variant in range or a studio price in range
+    if (minPrice || maxPrice) {
+      const priceFilter = {
+        ...(minPrice && { gte: Number(minPrice) }),
+        ...(maxPrice && { lte: Number(maxPrice) }),
+      };
+      where.AND.push({
+        OR: [
+          { roomVariants: { some: { fullPrice: priceFilter } } },
+          { kind: 'STUDIO', studioPrice: priceFilter },
+        ],
+      });
+    }
+
+    // Room kind filter (SINGLE / DOUBLE) — only meaningful for APARTMENT
+    if (roomKind && VALID_ROOM_KINDS.includes(roomKind.toUpperCase())) {
+      where.AND.push({
+        roomVariants: { some: { kind: roomKind.toUpperCase() } },
+      });
+    }
 
     if (services) {
       const list = Array.isArray(services) ? services : services.split(',');
       const cleaned = list.map((s) => s.trim()).filter(Boolean);
       if (cleaned.length > 0) {
-        where.roomVariants = {
-          ...where.roomVariants,
-          some: {
-            ...where.roomVariants?.some,
-            services: { hasEvery: cleaned },
-          },
-        };
+        where.AND.push({
+          sharedServices: { hasEvery: cleaned },
+        });
       }
     }
 
@@ -528,6 +622,49 @@ router.delete('/:id', authenticate, authorize('OWNER'), async (req, res, next) =
 // RoomVariant CRUD (nested under property)
 // ───────────────────────────────────────────────
 
+function buildVariantData(body) {
+  const name = asRequiredString(body.name);
+  if (!name) throw new Error('اسم الغرفة مطلوب.');
+
+  const kind = asRequiredString(body.kind || 'SINGLE').toUpperCase();
+  if (!VALID_ROOM_KINDS.includes(kind)) {
+    throw new Error('نوع الغرفة يجب أن يكون SINGLE أو DOUBLE.');
+  }
+
+  const capacity = body.capacity !== undefined && body.capacity !== null && body.capacity !== ''
+    ? asPositiveInteger(body.capacity, 'القدرة الاستيعابية')
+    : ROOM_KIND_CAPACITY[kind];
+
+  const fullPrice = asPositivePrice(body.fullPrice, 'سعر الغرفة');
+  const halfPrice = body.halfPrice !== undefined && body.halfPrice !== null && body.halfPrice !== ''
+    ? asPositivePrice(body.halfPrice, 'سعر نصف الغرفة')
+    : null;
+  const images = body.images?.length ? validateImages(body.images) : [];
+  const services = body.services?.length ? validateServices(body.services) : [];
+  const isOccupied = body.isOccupied === undefined ? false : asBoolean(body.isOccupied);
+  const partiallyOccupied = body.partiallyOccupied === undefined
+    ? false
+    : asBoolean(body.partiallyOccupied);
+
+  // Sanity: SINGLE rooms can't be partial
+  const finalPartial = kind === 'SINGLE' ? false : (isOccupied ? false : partiallyOccupied);
+
+  return {
+    name,
+    roomNumber: asOptionalString(body.roomNumber),
+    kind,
+    capacity,
+    isOccupied,
+    partiallyOccupied: finalPartial,
+    fullPrice,
+    halfPrice,
+    images,
+    services,
+    patternName: asOptionalString(body.patternName),
+    patternColor: asOptionalString(body.patternColor),
+  };
+}
+
 // Add room variant to property
 router.post('/:id/variants', authenticate, authorize('OWNER'), async (req, res, next) => {
   try {
@@ -536,33 +673,51 @@ router.post('/:id/variants', authenticate, authorize('OWNER'), async (req, res, 
       return res.status(404).json({ error: 'السكن غير موجود.' });
     }
 
-    const name = asRequiredString(req.body.name);
-    if (!name) throw new Error('اسم نوع الغرفة مطلوب.');
-
-    const capacity = asPositiveInteger(req.body.capacity, 'القدرة الاستيعابية');
-    const fullPrice = asPositivePrice(req.body.fullPrice, 'سعر الغرفة');
-    const halfPrice = req.body.halfPrice != null ? asPositivePrice(req.body.halfPrice, 'سعر نصف الغرفة') : null;
-    const images = req.body.images?.length ? validateImages(req.body.images) : [];
-    const services = req.body.services?.length ? validateServices(req.body.services) : [];
-
     const variant = await prisma.roomVariant.create({
-      data: {
-        name,
-        roomNumber: asOptionalString(req.body.roomNumber),
-        capacity,
-        isOccupied: false,
-        fullPrice,
-        halfPrice,
-        images,
-        services,
-        propertyId: property.id,
-      },
+      data: { ...buildVariantData(req.body), propertyId: property.id },
       select: roomVariantSelect,
     });
 
     res.status(201).json({
-      message: 'تم إضافة نوع الغرفة بنجاح.',
+      message: 'تم إضافة الغرفة بنجاح.',
       variant,
+    });
+  } catch (err) {
+    if (err.message) {
+      return res.status(400).json({ error: err.message });
+    }
+    next(err);
+  }
+});
+
+// Bulk-create room variants (used by the wizard)
+router.post('/:id/variants/bulk', authenticate, authorize('OWNER'), async (req, res, next) => {
+  try {
+    const property = await findOwnerProperty(req.params.id, req.user.id);
+    if (!property) {
+      return res.status(404).json({ error: 'السكن غير موجود.' });
+    }
+
+    const list = Array.isArray(req.body.variants) ? req.body.variants : [];
+    if (list.length === 0) {
+      return res.status(400).json({ error: 'لا توجد غرف لإضافتها.' });
+    }
+
+    const dataList = list.map((v) => ({ ...buildVariantData(v), propertyId: property.id }));
+
+    await prisma.$transaction(
+      dataList.map((d) => prisma.roomVariant.create({ data: d })),
+    );
+
+    const variants = await prisma.roomVariant.findMany({
+      where: { propertyId: property.id },
+      select: roomVariantSelect,
+      orderBy: { createdAt: 'asc' },
+    });
+
+    res.status(201).json({
+      message: `تم إضافة ${dataList.length} غرفة بنجاح.`,
+      variants,
     });
   } catch (err) {
     if (err.message) {
@@ -607,16 +762,32 @@ router.put('/:id/variants/:variantId', authenticate, authorize('OWNER'), async (
 
     if (req.body.name !== undefined) {
       const name = asRequiredString(req.body.name);
-      if (!name) throw new Error('اسم نوع الغرفة لا يمكن أن يكون فارغاً.');
+      if (!name) throw new Error('اسم الغرفة لا يمكن أن يكون فارغاً.');
       data.name = name;
+    }
+
+    if (req.body.kind !== undefined) {
+      const kind = asRequiredString(req.body.kind).toUpperCase();
+      if (!VALID_ROOM_KINDS.includes(kind)) {
+        throw new Error('نوع الغرفة يجب أن يكون SINGLE أو DOUBLE.');
+      }
+      data.kind = kind;
+      // If kind changes to SINGLE and it was partial, clear it
+      if (kind === 'SINGLE') data.partiallyOccupied = false;
     }
 
     if (req.body.roomNumber !== undefined) data.roomNumber = asOptionalString(req.body.roomNumber);
     if (req.body.capacity !== undefined) data.capacity = asPositiveInteger(req.body.capacity, 'القدرة الاستيعابية');
     if (req.body.fullPrice !== undefined) data.fullPrice = asPositivePrice(req.body.fullPrice, 'سعر الغرفة');
     if (req.body.halfPrice !== undefined) data.halfPrice = req.body.halfPrice === null ? null : asPositivePrice(req.body.halfPrice, 'سعر نصف الغرفة');
-    if (req.body.images !== undefined) data.images = validateImages(req.body.images);
+    if (req.body.images !== undefined) data.images = req.body.images?.length ? validateImages(req.body.images) : [];
     if (req.body.services !== undefined) data.services = validateServices(req.body.services);
+    if (req.body.patternName !== undefined) data.patternName = asOptionalString(req.body.patternName);
+    if (req.body.patternColor !== undefined) data.patternColor = asOptionalString(req.body.patternColor);
+    if (req.body.isOccupied !== undefined) data.isOccupied = asBoolean(req.body.isOccupied);
+    if (req.body.partiallyOccupied !== undefined) {
+      data.partiallyOccupied = asBoolean(req.body.partiallyOccupied);
+    }
 
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ error: 'لا توجد بيانات للتحديث.' });

@@ -16,7 +16,10 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
       where: { id: bookingId },
       include: {
         property: {
-          select: { id: true, title: true, price: true, ownerId: true },
+          select: { id: true, title: true, ownerId: true },
+        },
+        roomVariant: {
+          select: { id: true, kind: true, fullPrice: true, halfPrice: true },
         },
         payment: true,
       },
@@ -44,11 +47,17 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
         .json({ error: "تم دفع هذا الحجز مسبقاً." });
     }
 
-    // Calculate total price
+    // Calculate total price (DOUBLE → halfPrice per bed; SINGLE → fullPrice)
     const diffMs = booking.endDate.getTime() - booking.startDate.getTime();
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     const months = Math.max(1, Math.ceil(diffDays / 30));
-    const totalAmount = Number(booking.property.price) * months;
+    const isDouble = booking.roomVariant.kind === "DOUBLE";
+    const monthlyPrice = isDouble
+      ? (booking.roomVariant.halfPrice
+          ? Number(booking.roomVariant.halfPrice)
+          : Number(booking.roomVariant.fullPrice) / 2)
+      : Number(booking.roomVariant.fullPrice);
+    const totalAmount = monthlyPrice * months;
 
     // Process payment + update booking status + add to owner wallet in a transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -68,7 +77,7 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
         data: { status: "PAID" },
         include: {
           property: {
-            select: { id: true, title: true, city: true, price: true },
+            select: { id: true, title: true, city: true },
           },
         },
       });
