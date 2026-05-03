@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import ErrorBoundary from './components/shared/ErrorBoundary';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import HomePage from './pages/HomePage';
@@ -55,7 +56,8 @@ function PublicLayout() {
 
 function App() {
   return (
-    <Router>
+    <ErrorBoundary>
+      <Router>
       <AuthProvider>
         <Routes>
           {/* Owner section — uses its own layout (no global Navbar/Footer) */}
@@ -97,7 +99,8 @@ function App() {
           </Route>
         </Routes>
       </AuthProvider>
-    </Router>
+      </Router>
+    </ErrorBoundary>
   );
 }
 
