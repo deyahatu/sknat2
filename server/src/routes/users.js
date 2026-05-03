@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { logAudit } from '../utils/audit.js';
 
 const router = Router();
 
@@ -160,6 +161,8 @@ router.patch('/:id/toggle-active', authenticate, authorize('ADMIN'), async (req,
       select: { id: true, name: true, isActive: true },
     });
 
+    logAudit({ action: 'TOGGLE_ACTIVE', entity: 'USER', entityId: id, user: req.user, details: updated.isActive ? 'تفعيل' : 'تعطيل' });
+
     res.json({
       message: updated.isActive ? 'تم تفعيل الحساب بنجاح.' : 'تم تعطيل الحساب بنجاح.',
       user: updated,
@@ -178,6 +181,7 @@ router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res, next) =
     }
 
     await prisma.user.delete({ where: { id } });
+    logAudit({ action: 'DELETE', entity: 'USER', entityId: id, user: req.user, details: null });
     res.json({ message: 'تم حذف المستخدم بنجاح' });
   } catch (err) {
     next(err);

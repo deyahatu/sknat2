@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../utils/prisma.js";
 import { authenticate, authorize } from "../middleware/auth.js";
+import { logAudit } from "../utils/audit.js";
 
 const router = Router();
 
@@ -368,6 +369,8 @@ router.patch(
         return updatedBooking;
       });
 
+      logAudit({ action: 'ACCEPT', entity: 'BOOKING', entityId: updated.id, user: req.user, details: `قبول حجز` });
+
       res.json({
         message: "تم قبول طلب الحجز بنجاح.",
         booking: updated,
@@ -419,6 +422,8 @@ router.patch(
           },
         },
       });
+
+      logAudit({ action: 'REJECT', entity: 'BOOKING', entityId: updated.id, user: req.user, details: `رفض حجز` });
 
       res.json({
         message: "تم رفض طلب الحجز.",
@@ -552,6 +557,8 @@ router.patch(
         return updatedBooking;
       });
 
+      logAudit({ action: 'CANCEL', entity: 'BOOKING', entityId: updated.id, user: req.user, details: `إلغاء حجز` });
+
       res.json({
         message: "تم إلغاء الحجز بنجاح.",
         booking: updated,
@@ -628,6 +635,8 @@ router.patch(
 
         return updatedBooking;
       });
+
+      logAudit({ action: 'COMPLETE', entity: 'BOOKING', entityId: updated.id, user: req.user, details: `إكمال حجز` });
 
       res.json({
         message: "تم إكمال الحجز بنجاح وتحرير الغرفة.",

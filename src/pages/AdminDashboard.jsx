@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
-import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload } from 'react-icons/fi';
+import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import './AdminDashboard.css';
 
@@ -12,6 +12,7 @@ const TABS = [
   { id: 'withdrawals', label: 'طلبات السحب', icon: <FiDollarSign /> },
   { id: 'ratings', label: 'التقييمات', icon: <FiStar /> },
   { id: 'stats', label: 'الإحصائيات', icon: <FiBarChart2 /> },
+  { id: 'audit', label: 'سجل النشاط', icon: <FiFileText /> },
 ];
 
 function exportCSV(data, filename) {
@@ -81,6 +82,7 @@ export default function AdminDashboard() {
           {activeTab === 'withdrawals' && <WithdrawalsTab />}
           {activeTab === 'ratings' && <RatingsTab />}
           {activeTab === 'stats' && <StatsTab />}
+          {activeTab === 'audit' && <AuditTab />}
         </main>
       </div>
     </div>
@@ -656,6 +658,86 @@ function WithdrawalsTab() {
             ))}
             {withdrawals.length === 0 && (
               <tr><td colSpan="7" style={{ textAlign: 'center', padding: 40 }}>لا يوجد طلبات سحب</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+// ── Audit Log Tab ──
+function AuditTab() {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [entityFilter, setEntityFilter] = useState('');
+
+  const fetchLogs = () => {
+    setLoading(true);
+    const params = {};
+    if (entityFilter) params.entity = entityFilter;
+    api.admin.auditLog(params)
+      .then((data) => setLogs(data.logs || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchLogs(); }, [entityFilter]);
+
+  const actionLabels = {
+    ACCEPT: 'قبول',
+    REJECT: 'رفض',
+    CANCEL: 'إلغاء',
+    COMPLETE: 'إكمال',
+    CREATE: 'إنشاء',
+    DELETE: 'حذف',
+    TOGGLE_ACTIVE: 'تغيير الحالة',
+  };
+
+  const entityLabels = {
+    BOOKING: 'حجز',
+    PROPERTY: 'عقار',
+    USER: 'مستخدم',
+  };
+
+  if (loading) return <div className="loading-state">جاري التحميل...</div>;
+
+  return (
+    <>
+      <div className="admin-filters">
+        <select className="admin-role-filter" value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)}>
+          <option value="">كل الأنواع</option>
+          <option value="BOOKING">حجز</option>
+          <option value="PROPERTY">عقار</option>
+          <option value="USER">مستخدم</option>
+        </select>
+      </div>
+
+      <div className="users-table-container">
+        <table className="users-table">
+          <thead>
+            <tr>
+              <th>المستخدم</th>
+              <th>الإجراء</th>
+              <th>النوع</th>
+              <th>التفاصيل</th>
+              <th>التاريخ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {logs.map((log) => (
+              <tr key={log.id}>
+                <td>{log.userName}</td>
+                <td><span className="role-badge">{actionLabels[log.action] || log.action}</span></td>
+                <td>{entityLabels[log.entity] || log.entity}</td>
+                <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {log.details || '—'}
+                </td>
+                <td>{new Date(log.createdAt).toLocaleString('ar-EG')}</td>
+              </tr>
+            ))}
+            {logs.length === 0 && (
+              <tr><td colSpan="5" style={{ textAlign: 'center', padding: 40 }}>لا يوجد سجلات</td></tr>
             )}
           </tbody>
         </table>

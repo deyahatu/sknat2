@@ -342,3 +342,19 @@ generator client {
     @@index([status])
     @@map("refund_requests")
   }
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String
+  entity     String
+  entityId   String
+  userId     String
+  userName   String
+  details    String?
+  createdAt  DateTime @default(now())
+
+  @@index([entity])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

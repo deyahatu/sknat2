@@ -119,5 +119,6 @@ export const api = {
     exportData: (type) => request(`/admin/export/${type}`),
     approveWithdrawal: (id) => request(`/withdrawals/${id}/approve`, { method: 'PATCH' }),
     rejectWithdrawal: (id, reason) => request(`/withdrawals/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
+    auditLog: (params) => request(`/audit-log${buildQuery(params)}`),
   },
 };

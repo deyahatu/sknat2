@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { logAudit } from '../utils/audit.js';
 
 const router = Router();
 
@@ -408,6 +409,8 @@ router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
       select: propertySelect,
     });
 
+    logAudit({ action: 'CREATE', entity: 'PROPERTY', entityId: property.id, user: req.user, details: property.title });
+
     res.status(201).json({
       message: 'تم إنشاء السكن بنجاح.',
       property,
@@ -614,6 +617,7 @@ router.delete('/:id', authenticate, authorize('OWNER'), async (req, res, next) =
     }
 
     await prisma.property.delete({ where: { id: existing.id } });
+    logAudit({ action: 'DELETE', entity: 'PROPERTY', entityId: existing.id, user: req.user, details: existing.title });
     res.json({ message: 'تم حذف السكن بنجاح.' });
   } catch (err) {
     next(err);
