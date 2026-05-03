@@ -1,33 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  FiSearch,
-  FiShield,
-  FiDollarSign,
-  FiMapPin,
-  FiArrowLeft,
-} from "react-icons/fi";
-import { useAuth } from "../context/AuthContext";
-import PropertyCard from "../components/property/PropertyCard";
-import { api } from "../utils/api";
 import "./HomePage.css";
 
 function HomePage() {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const isStudent = user?.role === "STUDENT";
-
-  const [featured, setFeatured] = useState([]);
-  const [featuredLoading, setFeaturedLoading] = useState(true);
   const [query, setQuery] = useState("");
-
-  useEffect(() => {
-    api.properties
-      .list()
-      .then((data) => setFeatured((data.properties || []).slice(0, 6)))
-      .catch(() => setFeatured([]))
-      .finally(() => setFeaturedLoading(false));
-  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -36,159 +13,127 @@ function HomePage() {
   };
 
   return (
-    <div className="page home-page">
+    <div className="landing-page">
       {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-bg">
-          <div className="hero-shape hero-shape-1" />
-          <div className="hero-shape hero-shape-2" />
-          <div className="hero-shape hero-shape-3" />
-        </div>
-
-        <div className="container hero-content">
-          {isStudent ? (
-            <h1 className="hero-title">
-              أهلاً <span className="hero-text-accent">{user.name}</span>
-              <br />
-              سكنك بانتظارك
-            </h1>
-          ) : (
-            <h1 className="hero-title">ابحث عن سكنك الطلابي بسهولة</h1>
-          )}
-
+      <section className="hero-section">
+        <div className="hero-overlay" />
+        <div className="hero-container">
+          <span className="hero-brand">🏠 سكنات</span>
+          <h1 className="hero-title">ابحث عن سكنك الطلابي المثالي</h1>
           <p className="hero-subtitle">
-            منصة سكنات تربطك بأفضل خيارات السكن الطلابي القريبة من جامعة بأسعار
-            مناسبة
+            منصة سكنات تربط الطلاب بأصحاب العقارات لتوفير أفضل خيارات السكن
+            الطلابي بأسعار مناسبة
           </p>
 
-          {isStudent ? (
-            <form className="hero-search" onSubmit={handleSearch}>
-              <FiSearch />
-              <input
-                type="text"
-                placeholder="ابحث باسم السكن أو المنطقة..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              <button type="submit">بحث</button>
-            </form>
-          ) : (
-            <div className="hero-actions">
-              <Link to="/search" className="hero-btn hero-btn-primary">
-                ابدأ التصفّح
-                <FiArrowLeft />
-              </Link>
-              <Link to="/register" className="hero-btn hero-btn-ghost">
-                إنشاء حساب
-              </Link>
-            </div>
-          )}
-        </div>
+          <form className="hero-search-bar" onSubmit={handleSearch}>
+            <input
+              type="text"
+              placeholder="ابحث عن سكن، منطقة، أو مدينة..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <button type="submit">بحث</button>
+          </form>
 
-        <div className="hero-scroll-hint">
-          <span></span>
+          <div className="hero-cta-buttons">
+            <Link to="/search" className="btn-primary">
+              ابحث الآن
+            </Link>
+            <Link to="/register" className="btn-outline">
+              سجّل كمالك عقار
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Features Section — guests only */}
-      {!isStudent && (
-        <section className="features-section">
-          <div className="container">
-            <h2 className="section-title" style={{ textAlign: "center" }}>
-              لماذا سكنات؟
-            </h2>
-            <p className="section-subtitle" style={{ textAlign: "center" }}>
-              نوفر لك تجربة سهلة وآمنة للبحث عن السكن الطلابي المناسب
-            </p>
-            <div className="features-grid">
-              <div className="feature-card">
-                <div className="feature-icon">
-                  <FiSearch />
-                </div>
-                <h3>بحث سهل</h3>
-                <p>
-                  ابحث وقارن بين مئات الخيارات بفلاتر متقدمة تناسب احتياجاتك
-                </p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">
-                  <FiShield />
-                </div>
-                <h3>مصداقية وأمان</h3>
-                <p>جميع العقارات موثقة ومراجعة من فريقنا لضمان تجربة آمنة</p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">
-                  <FiDollarSign />
-                </div>
-                <h3>أسعار مناسبة</h3>
-                <p>
-                  خيارات متنوعة تناسب جميع الميزانيات مع شفافية كاملة في الأسعار
-                </p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">
-                  <FiMapPin />
-                </div>
-                <h3>مواقع استراتيجية</h3>
-                <p>عقارات قريبة من الجامعات والخدمات الأساسية والمواصلات</p>
-              </div>
-            </div>
+      {/* Stats Section */}
+      <section className="stats-section">
+        <div className="stats-container">
+          <div className="stat-card">
+            <span className="stat-number">100+</span>
+            <span className="stat-label">عقار متاح</span>
           </div>
-        </section>
-      )}
-
-      {/* Featured Properties */}
-      <section className="featured-section">
-        <div className="container">
-          <div className="section-header">
-            <div>
-              <h2 className="section-title">عقارات مميزة</h2>
-              <p className="section-subtitle">
-                اكتشف أفضل خيارات السكن الطلابي المتاحة
-              </p>
-            </div>
-            <Link to="/search" className="btn btn-outline">
-              عرض الكل
-            </Link>
+          <div className="stat-card">
+            <span className="stat-number">500+</span>
+            <span className="stat-label">طالب مسجّل</span>
           </div>
-          {featuredLoading ? (
-            <div
-              style={{ textAlign: "center", padding: "40px 0", color: "#666" }}
-            >
-              جاري تحميل العقارات...
-            </div>
-          ) : featured.length === 0 ? (
-            <div
-              style={{ textAlign: "center", padding: "40px 0", color: "#666" }}
-            >
-              لا توجد عقارات متاحة حالياً.
-            </div>
-          ) : (
-            <div className="properties-grid">
-              {featured.map((property) => (
-                <PropertyCard key={property.id} property={property} />
-              ))}
-            </div>
-          )}
+          <div className="stat-card">
+            <span className="stat-number">3</span>
+            <span className="stat-label">مدن فلسطينية</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-number">1000+</span>
+            <span className="stat-label">حجز ناجح</span>
+          </div>
         </div>
       </section>
 
-      {/* Owner CTA — guests only */}
-      {!isStudent && (
-        <section className="owner-cta-section">
-          <div className="container owner-cta-content">
-            <div>
-              <h2>عندك سكن للإيجار؟</h2>
-              <p>انضم إلى سكنات وابدأ بتأجير عقارك للطلاب بسهولة وأمان</p>
+      {/* Features Section */}
+      <section className="features-section">
+        <div className="section-container">
+          <h2 className="section-heading">لماذا سكنات؟</h2>
+          <div className="features-grid">
+            <div className="feature-card">
+              <span className="feature-emoji">🔍</span>
+              <h3>بحث متقدم</h3>
+              <p>فلترة حسب الحي، السعر، نوع الغرفة، والجنس</p>
             </div>
-            <Link to="/register" className="hero-btn hero-btn-white">
-              سجّل كمالك
-              <FiArrowLeft />
-            </Link>
+            <div className="feature-card">
+              <span className="feature-emoji">🛏️</span>
+              <h3>غرف متنوعة</h3>
+              <p>مفردة، مزدوجة، استوديو، وشقق كاملة</p>
+            </div>
+            <div className="feature-card">
+              <span className="feature-emoji">💳</span>
+              <h3>دفع آمن</h3>
+              <p>نظام دفع إلكتروني مع فواتير وإيصالات</p>
+            </div>
+            <div className="feature-card">
+              <span className="feature-emoji">⭐</span>
+              <h3>تقييمات حقيقية</h3>
+              <p>آراء الطلاب تساعدك باختيار السكن الأفضل</p>
+            </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="how-section">
+        <div className="section-container">
+          <h2 className="section-heading">كيف تعمل المنصة؟</h2>
+          <div className="steps-grid">
+            <div className="step-card">
+              <span className="step-number">1</span>
+              <span className="step-emoji">🔍</span>
+              <h3>ابحث</h3>
+              <p>تصفّح العقارات المتاحة وفلتر حسب احتياجاتك</p>
+            </div>
+            <div className="step-card">
+              <span className="step-number">2</span>
+              <span className="step-emoji">📋</span>
+              <h3>احجز</h3>
+              <p>أرسل طلب حجز واتفق مع المالك</p>
+            </div>
+            <div className="step-card">
+              <span className="step-number">3</span>
+              <span className="step-emoji">🏠</span>
+              <h3>اسكن</h3>
+              <p>ادفع واستلم غرفتك</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="cta-section">
+        <div className="cta-container">
+          <h2>جاهز تلاقي سكنك؟</h2>
+          <p>سجّل الآن مجاناً وابدأ البحث</p>
+          <Link to="/register" className="btn-cta">
+            ابدأ الآن
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }
