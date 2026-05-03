@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../utils/prisma.js";
 import { authenticate, authorize } from "../middleware/auth.js";
+import { sendPaymentReceipt } from "../utils/email.js";
 
 const router = Router();
 
@@ -97,6 +98,14 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
 
       return { payment, booking: updatedBooking };
     });
+
+    sendPaymentReceipt(
+      req.user.email,
+      req.user.name,
+      booking.property.title,
+      totalAmount,
+      new Date().toLocaleDateString('ar-EG')
+    ).catch(() => {});
 
     res.status(201).json({
       message: "تم الدفع بنجاح. تم قبول حجزك.",

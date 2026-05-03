@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { bookingAcceptedEmail, bookingRejectedEmail, paymentReceiptEmail, bookingCompletedEmail } from './email-templates.js';
 
 let transporter = null;
 
@@ -53,6 +54,62 @@ export async function sendVerificationCodeEmail(to, code) {
     subject: "رمز تحقق التسجيل في سكنات",
     text: `رمز التحقق الخاص بك: ${code}\nهذا الرمز صالح لمدة 10 دقائق.`,
     html,
+  });
+}
+
+export async function sendBookingAccepted(to, studentName, propertyTitle, roomName, dates) {
+  const t = getTransporter();
+  if (!t) {
+    console.log(`\n[DEV] Booking accepted email for ${to}: ${propertyTitle} - ${roomName}\n`);
+    return;
+  }
+  await t.sendMail({
+    from: `"سكنات" <${process.env.SMTP_USER}>`,
+    to,
+    subject: 'تم قبول حجزك - سكنات',
+    html: bookingAcceptedEmail(studentName, propertyTitle, roomName, dates),
+  });
+}
+
+export async function sendBookingRejected(to, studentName, propertyTitle, roomName) {
+  const t = getTransporter();
+  if (!t) {
+    console.log(`\n[DEV] Booking rejected email for ${to}: ${propertyTitle} - ${roomName}\n`);
+    return;
+  }
+  await t.sendMail({
+    from: `"سكنات" <${process.env.SMTP_USER}>`,
+    to,
+    subject: 'تم رفض طلب الحجز - سكنات',
+    html: bookingRejectedEmail(studentName, propertyTitle, roomName),
+  });
+}
+
+export async function sendPaymentReceipt(to, studentName, propertyTitle, amount, paymentDate) {
+  const t = getTransporter();
+  if (!t) {
+    console.log(`\n[DEV] Payment receipt email for ${to}: ${propertyTitle} - ${amount}\n`);
+    return;
+  }
+  await t.sendMail({
+    from: `"سكنات" <${process.env.SMTP_USER}>`,
+    to,
+    subject: 'ايصال الدفع - سكنات',
+    html: paymentReceiptEmail(studentName, propertyTitle, amount, paymentDate),
+  });
+}
+
+export async function sendBookingCompleted(to, studentName, propertyTitle) {
+  const t = getTransporter();
+  if (!t) {
+    console.log(`\n[DEV] Booking completed email for ${to}: ${propertyTitle}\n`);
+    return;
+  }
+  await t.sendMail({
+    from: `"سكنات" <${process.env.SMTP_USER}>`,
+    to,
+    subject: 'اكتمل حجزك - سكنات',
+    html: bookingCompletedEmail(studentName, propertyTitle),
   });
 }
 

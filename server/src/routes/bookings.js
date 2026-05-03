@@ -2,6 +2,7 @@ import { Router } from "express";
 import prisma from "../utils/prisma.js";
 import { authenticate, authorize } from "../middleware/auth.js";
 import { logAudit } from "../utils/audit.js";
+import { sendBookingAccepted, sendBookingRejected, sendBookingCompleted } from "../utils/email.js";
 
 const router = Router();
 
@@ -371,6 +372,14 @@ router.patch(
 
       logAudit({ action: 'ACCEPT', entity: 'BOOKING', entityId: updated.id, user: req.user, details: `قبول حجز` });
 
+      sendBookingAccepted(
+        updated.student.email,
+        updated.student.name,
+        updated.property.title,
+        updated.roomVariant.name,
+        `${booking.startDate.toLocaleDateString('ar-EG')} - ${booking.endDate.toLocaleDateString('ar-EG')}`
+      ).catch(() => {});
+
       res.json({
         message: "تم قبول طلب الحجز بنجاح.",
         booking: updated,
@@ -417,6 +426,9 @@ router.patch(
           property: {
             select: { id: true, title: true, city: true },
           },
+          roomVariant: {
+            select: { id: true, name: true },
+          },
           student: {
             select: { id: true, name: true, email: true },
           },
@@ -424,6 +436,13 @@ router.patch(
       });
 
       logAudit({ action: 'REJECT', entity: 'BOOKING', entityId: updated.id, user: req.user, details: `رفض حجز` });
+
+      sendBookingRejected(
+        updated.student.email,
+        updated.student.name,
+        updated.property.title,
+        updated.roomVariant.name
+      ).catch(() => {});
 
       res.json({
         message: "تم رفض طلب الحجز.",
@@ -614,6 +633,9 @@ router.patch(
             roomVariant: {
               select: { id: true, name: true, kind: true },
             },
+            student: {
+              select: { id: true, name: true, email: true },
+            },
           },
         });
 
@@ -637,6 +659,12 @@ router.patch(
       });
 
       logAudit({ action: 'COMPLETE', entity: 'BOOKING', entityId: updated.id, user: req.user, details: `إكمال حجز` });
+
+      sendBookingCompleted(
+        updated.student.email,
+        updated.student.name,
+        updated.property.title
+      ).catch(() => {});
 
       res.json({
         message: "تم إكمال الحجز بنجاح وتحرير الغرفة.",
