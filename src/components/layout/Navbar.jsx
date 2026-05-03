@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FiHome, FiSearch, FiLogIn, FiUserPlus, FiMenu, FiX, FiUser, FiLogOut, FiSettings, FiCalendar, FiHeart } from 'react-icons/fi';
+import { FiHome, FiSearch, FiLogIn, FiUserPlus, FiMenu, FiX, FiUser, FiLogOut, FiSettings, FiCalendar, FiHeart, FiMessageSquare } from 'react-icons/fi';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
@@ -23,6 +23,7 @@ function Navbar() {
   } else {
     if (user?.role === 'STUDENT') {
       navLinks.push({ path: '/bookings', label: 'حجوزاتي', icon: <FiCalendar /> });
+      navLinks.push({ path: '/messages', label: 'الرسائل', icon: <FiMessageSquare /> });
       navLinks.push({ path: '/favorites', label: 'المفضلة', icon: <FiHeart /> });
       navLinks.push({ path: '/profile', label: 'الملف الشخصي', icon: <FiUser /> });
     }

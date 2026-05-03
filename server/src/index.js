@@ -15,6 +15,7 @@ import reviewRoutes from './routes/reviews.js';
 import adminRoutes from './routes/admin.js';
 import auditLogRoutes from './routes/auditLog.js';
 import invoiceRoutes from './routes/invoices.js';
+import messageRoutes from './routes/messages.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -41,6 +42,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/audit-log', auditLogRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

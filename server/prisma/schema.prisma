@@ -97,6 +97,8 @@ generator client {
     refundRequests   RefundRequest[]
     studentRatingsGiven    StudentRating[] @relation("StudentRatingsGiven")
     studentRatingsReceived StudentRating[] @relation("StudentRatingsReceived")
+    messagesSent     Message[] @relation("MessagesSent")
+    messagesReceived Message[] @relation("MessagesReceived")
 
     @@map("users")
   }
@@ -181,6 +183,7 @@ generator client {
     payment     Payment?
     studentRating StudentRating?
     refundRequest RefundRequest?
+    messages    Message[]
 
     @@index([studentId])
     @@index([propertyId])
@@ -357,4 +360,23 @@ model AuditLog {
   @@index([userId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  content    String
+  senderId   String
+  receiverId String
+  bookingId  String?
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender   User     @relation("MessagesSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User     @relation("MessagesReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+  booking  Booking? @relation(fields: [bookingId], references: [id])
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([bookingId])
+  @@map("messages")
 }

@@ -116,6 +116,11 @@ export const api = {
   invoices: {
     get: (paymentId) => request(`/invoices/${paymentId}`),
   },
+  messages: {
+    conversations: () => request('/messages'),
+    getChat: (userId) => request(`/messages/${userId}`),
+    send: (body) => request('/messages', { method: 'POST', body: JSON.stringify(body) }),
+  },
   admin: {
     stats: () => request('/admin/stats'),
     monthlyStats: () => request('/admin/stats/monthly'),
