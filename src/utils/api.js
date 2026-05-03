@@ -113,6 +113,9 @@ export const api = {
     request: (amount) => request('/withdrawals', { method: 'POST', body: JSON.stringify({ amount }) }),
     history: (status) => request(`/withdrawals${status ? `?status=${status}` : ''}`),
   },
+  invoices: {
+    get: (paymentId) => request(`/invoices/${paymentId}`),
+  },
   admin: {
     stats: () => request('/admin/stats'),
     monthlyStats: () => request('/admin/stats/monthly'),

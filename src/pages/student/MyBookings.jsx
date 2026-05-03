@@ -312,6 +312,40 @@ function MyBookings() {
   );
 }
 
+async function handleDownloadInvoice(paymentId) {
+  try {
+    const { invoice } = await api.invoices.get(paymentId);
+    const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>فاتورة #${invoice.id}</title><style>
+      body{font-family:Arial,sans-serif;max-width:600px;margin:40px auto;padding:20px}
+      h1{text-align:center;color:#1e1b4b}
+      .info{border:1px solid #eee;border-radius:8px;padding:16px;margin:16px 0}
+      .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5f5f5}
+      .row:last-child{border:none}
+      .total{font-size:20px;font-weight:700;color:#059669;text-align:center;margin:20px 0}
+      .footer{text-align:center;color:#888;font-size:12px;margin-top:30px}
+      @media print{body{margin:0}}
+    </style></head><body>
+      <h1>🏠 سكنات — فاتورة</h1>
+      <div class="info">
+        <div class="row"><span>رقم الفاتورة:</span><strong>#${invoice.id}</strong></div>
+        <div class="row"><span>التاريخ:</span><strong>${invoice.date}</strong></div>
+        <div class="row"><span>الطالب:</span><strong>${invoice.student.name}</strong></div>
+        <div class="row"><span>السكن:</span><strong>${invoice.property.title}</strong></div>
+        <div class="row"><span>الغرفة:</span><strong>${invoice.room.name}</strong></div>
+        <div class="row"><span>الفترة:</span><strong>${invoice.startDate} — ${invoice.endDate}</strong></div>
+      </div>
+      <div class="total">${invoice.amount.toLocaleString('en-US')} ₪</div>
+      <div class="footer">منصة سكنات للسكن الطلابي</div>
+      <script>window.print()</script>
+    </body></html>`;
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+  } catch (err) {
+    alert('تعذر تحميل الفاتورة');
+  }
+}
+
 function BookingCard({ booking, onCancel, onPay, onRate }) {
   const property = booking.property;
   const cover = property?.images?.[0];
@@ -368,6 +402,11 @@ function BookingCard({ booking, onCancel, onPay, onRate }) {
           {canRate && (
             <button type="button" className="btn btn-outline" onClick={onRate}>
               قيّم السكن
+            </button>
+          )}
+          {(booking.status === 'PAID' || booking.status === 'COMPLETED') && booking.payment && (
+            <button onClick={() => handleDownloadInvoice(booking.payment.id)} className="btn btn-secondary" style={{ fontSize: 13 }}>
+              📄 تحميل الفاتورة
             </button>
           )}
           {canCancel && (
