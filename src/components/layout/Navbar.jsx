@@ -11,8 +11,11 @@ function Navbar() {
 
   const navLinks = [
     { path: '/', label: 'الرئيسية', icon: <FiHome /> },
-    { path: '/search', label: 'البحث عن سكن', icon: <FiSearch /> },
   ];
+
+  if (!user || user?.role !== 'ADMIN') {
+    navLinks.push({ path: '/search', label: 'البحث عن سكن', icon: <FiSearch /> });
+  }
 
   if (!user) {
     navLinks.push({ path: '/login', label: 'تسجيل الدخول', icon: <FiLogIn /> });

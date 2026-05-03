@@ -73,6 +73,7 @@ generator client {
     phone            String?   @unique
     password         String
     role             Role      @default(STUDENT)
+    isActive         Boolean   @default(true)
     avatar           String?
     idNumber         String?   @unique
     idPhoto          String?   @db.Text

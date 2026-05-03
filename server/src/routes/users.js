@@ -113,12 +113,57 @@ router.put('/profile', authenticate, async (req, res, next) => {
 
 router.get('/', authenticate, authorize('ADMIN'), async (req, res, next) => {
   try {
+    const { q, role } = req.query;
+    const where = {};
+
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+        { phone: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    if (role && ['STUDENT', 'OWNER', 'ADMIN'].includes(role.toUpperCase())) {
+      where.role = role.toUpperCase();
+    }
+
     const users = await prisma.user.findMany({
-      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, createdAt: true },
+      where,
+      select: { id: true, name: true, email: true, phone: true, role: true, isActive: true, avatar: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
     });
 
     res.json({ users });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// UC-28: Activate/Deactivate User
+router.patch('/:id/toggle-active', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (id === req.user.id) {
+      return res.status(400).json({ error: 'لا يمكنك تعطيل حسابك الخاص.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      return res.status(404).json({ error: 'المستخدم غير موجود.' });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { isActive: !user.isActive },
+      select: { id: true, name: true, isActive: true },
+    });
+
+    res.json({
+      message: updated.isActive ? 'تم تفعيل الحساب بنجاح.' : 'تم تعطيل الحساب بنجاح.',
+      user: updated,
+    });
   } catch (err) {
     next(err);
   }

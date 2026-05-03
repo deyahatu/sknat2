@@ -244,19 +244,29 @@ router.post("/", authenticate, authorize("OWNER"), async (req, res, next) => {
   }
 });
 
-router.get("/", authenticate, authorize("OWNER"), async (req, res, next) => {
+router.get("/", authenticate, async (req, res, next) => {
   try {
     const { status } = req.query;
+    const isAdmin = req.user.role === 'ADMIN';
 
-    const where = { ownerId: req.user.id };
+    if (!isAdmin && req.user.role !== 'OWNER') {
+      return res.status(403).json({ error: 'غير مصرح.' });
+    }
+
+    const where = isAdmin ? {} : { ownerId: req.user.id };
     if (status) {
       where.status = status.toUpperCase();
     }
 
     const requests = await prisma.withdrawRequest.findMany({
       where,
+      include: isAdmin ? { owner: { select: { id: true, name: true, email: true } } } : undefined,
       orderBy: { createdAt: "desc" },
     });
+
+    if (isAdmin) {
+      return res.json({ withdrawals: requests });
+    }
 
     const snapshot = await getWalletSnapshot(req.user.id);
 
@@ -264,6 +274,42 @@ router.get("/", authenticate, authorize("OWNER"), async (req, res, next) => {
       wallet: snapshot,
       requests,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// UC-38: Admin approve withdrawal
+router.patch('/:id/approve', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const withdrawal = await prisma.withdrawRequest.findUnique({ where: { id: req.params.id } });
+    if (!withdrawal) return res.status(404).json({ error: 'طلب السحب غير موجود.' });
+    if (withdrawal.status !== 'PENDING') return res.status(400).json({ error: 'يمكن الموافقة على الطلبات المعلقة فقط.' });
+
+    const updated = await prisma.withdrawRequest.update({
+      where: { id: req.params.id },
+      data: { status: 'APPROVED', processedAt: new Date() },
+    });
+
+    res.json({ message: 'تم الموافقة على طلب السحب.', withdrawal: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// UC-38: Admin reject withdrawal
+router.patch('/:id/reject', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const withdrawal = await prisma.withdrawRequest.findUnique({ where: { id: req.params.id } });
+    if (!withdrawal) return res.status(404).json({ error: 'طلب السحب غير موجود.' });
+    if (withdrawal.status !== 'PENDING') return res.status(400).json({ error: 'يمكن رفض الطلبات المعلقة فقط.' });
+
+    const updated = await prisma.withdrawRequest.update({
+      where: { id: req.params.id },
+      data: { status: 'REJECTED', rejectionReason: req.body.reason || null, processedAt: new Date() },
+    });
+
+    res.json({ message: 'تم رفض طلب السحب.', withdrawal: updated });
   } catch (err) {
     next(err);
   }

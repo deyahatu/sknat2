@@ -120,4 +120,30 @@ router.get(
   },
 );
 
+// Admin: list all reviews
+router.get('/admin/all', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const reviews = await prisma.review.findMany({
+      include: {
+        student: { select: { id: true, name: true, email: true } },
+        property: { select: { id: true, title: true, city: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ reviews });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Admin: delete a review
+router.delete('/admin/:id', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    await prisma.review.delete({ where: { id: req.params.id } });
+    res.json({ message: 'تم حذف التقييم بنجاح.' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

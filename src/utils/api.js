@@ -47,8 +47,9 @@ export const api = {
   users: {
     profile: () => request('/users/profile'),
     updateProfile: (body) => request('/users/profile', { method: 'PUT', body: JSON.stringify(body) }),
-    list: () => request('/users'),
+    list: (params) => request(`/users${buildQuery(params)}`),
     delete: (id) => request(`/users/${id}`, { method: 'DELETE' }),
+    toggleActive: (id) => request(`/users/${id}/toggle-active`, { method: 'PATCH' }),
   },
   properties: {
     list: (filters) => request(`/properties${buildQuery(filters)}`),
@@ -92,6 +93,8 @@ export const api = {
   reviews: {
     create: (body) => request('/reviews', { method: 'POST', body: JSON.stringify(body) }),
     studentList: () => request('/reviews/student'),
+    adminList: () => request('/reviews/admin/all'),
+    adminDelete: (id) => request(`/reviews/admin/${id}`, { method: 'DELETE' }),
   },
   refunds: {
     studentList: () => request('/refunds/student'),
@@ -109,5 +112,12 @@ export const api = {
     deleteBankAccount: () => request('/withdrawals/bank-account', { method: 'DELETE' }),
     request: (amount) => request('/withdrawals', { method: 'POST', body: JSON.stringify({ amount }) }),
     history: (status) => request(`/withdrawals${status ? `?status=${status}` : ''}`),
+  },
+  admin: {
+    stats: () => request('/admin/stats'),
+    monthlyStats: () => request('/admin/stats/monthly'),
+    exportData: (type) => request(`/admin/export/${type}`),
+    approveWithdrawal: (id) => request(`/withdrawals/${id}/approve`, { method: 'PATCH' }),
+    rejectWithdrawal: (id, reason) => request(`/withdrawals/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
   },
 };

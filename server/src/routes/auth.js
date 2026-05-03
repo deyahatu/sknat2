@@ -456,6 +456,12 @@ router.post("/login", loginLimiter, async (req, res) => {
         .json({ error: "البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى." });
     }
 
+    if (!user.isActive) {
+      return res
+        .status(403)
+        .json({ error: "تم تعطيل حسابك. يرجى التواصل مع الإدارة." });
+    }
+
     const token = generateToken(user.id);
 
     res.cookie("token", token, {

@@ -12,6 +12,7 @@ import withdrawalRoutes from './routes/withdrawals.js';
 import favoriteRoutes from './routes/favorites.js';
 import refundRoutes from './routes/refunds.js';
 import reviewRoutes from './routes/reviews.js';
+import adminRoutes from './routes/admin.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -35,6 +36,7 @@ app.use('/api/withdrawals', withdrawalRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/refunds', refundRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
