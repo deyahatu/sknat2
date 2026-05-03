@@ -99,6 +99,7 @@ generator client {
     studentRatingsReceived StudentRating[] @relation("StudentRatingsReceived")
     messagesSent     Message[] @relation("MessagesSent")
     messagesReceived Message[] @relation("MessagesReceived")
+    pushSubscriptions PushSubscription[]
 
     @@map("users")
   }
@@ -345,6 +346,20 @@ generator client {
     @@index([status])
     @@map("refund_requests")
   }
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
 
 model AuditLog {
   id         String   @id @default(uuid())

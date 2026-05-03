@@ -121,6 +121,11 @@ export const api = {
     getChat: (userId) => request(`/messages/${userId}`),
     send: (body) => request('/messages', { method: 'POST', body: JSON.stringify(body) }),
   },
+  push: {
+    vapidKey: () => request('/push/vapid-key'),
+    subscribe: (body) => request('/push/subscribe', { method: 'POST', body: JSON.stringify(body) }),
+    unsubscribe: (body) => request('/push/unsubscribe', { method: 'POST', body: JSON.stringify(body) }),
+  },
   admin: {
     stats: () => request('/admin/stats'),
     monthlyStats: () => request('/admin/stats/monthly'),

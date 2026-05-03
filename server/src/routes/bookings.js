@@ -3,6 +3,7 @@ import prisma from "../utils/prisma.js";
 import { authenticate, authorize } from "../middleware/auth.js";
 import { logAudit } from "../utils/audit.js";
 import { sendBookingAccepted, sendBookingRejected, sendBookingCompleted } from "../utils/email.js";
+import { sendPushToUser } from "../utils/push.js";
 
 const router = Router();
 
@@ -150,6 +151,8 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
         },
       },
     });
+
+    sendPushToUser(property.ownerId, 'سكنات', 'طلب حجز جديد 📋', '/owner/bookings').catch(() => {});
 
     res.status(201).json({
       message: "تم إرسال طلب الحجز بنجاح.",
@@ -380,6 +383,8 @@ router.patch(
         `${booking.startDate.toLocaleDateString('ar-EG')} - ${booking.endDate.toLocaleDateString('ar-EG')}`
       ).catch(() => {});
 
+      sendPushToUser(updated.student.id, 'سكنات', 'تم قبول حجزك ✅', '/bookings').catch(() => {});
+
       res.json({
         message: "تم قبول طلب الحجز بنجاح.",
         booking: updated,
@@ -443,6 +448,8 @@ router.patch(
         updated.property.title,
         updated.roomVariant.name
       ).catch(() => {});
+
+      sendPushToUser(updated.student.id, 'سكنات', 'تم رفض حجزك ❌', '/bookings').catch(() => {});
 
       res.json({
         message: "تم رفض طلب الحجز.",
@@ -665,6 +672,8 @@ router.patch(
         updated.student.name,
         updated.property.title
       ).catch(() => {});
+
+      sendPushToUser(updated.student.id, 'سكنات', 'تم إكمال حجزك 🏠', '/bookings').catch(() => {});
 
       res.json({
         message: "تم إكمال الحجز بنجاح وتحرير الغرفة.",
