@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { to: "/owner/withdrawals", label: "طلبات السحب", icon: "💰" },
   { section: "التواصل" },
   { to: "/owner/messages", label: "الرسائل", icon: "💬" },
+  { to: "/owner/complaints", label: "الشكاوى", icon: "⚠️" },
   { section: "الحساب" },
   { to: "/owner/manage-profile", label: "الملف الشخصي", icon: "🪪" },
 ];

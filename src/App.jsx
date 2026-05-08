@@ -28,6 +28,7 @@ import Withdrawals from './pages/owner/Withdrawals';
 import ManageProfile from './pages/owner/ManageProfile';
 import StudentMessages from './pages/student/Messages';
 import OwnerMessages from './pages/owner/OwnerMessages';
+import Complaints from './pages/Complaints';
 
 function GuestRoute({ children }) {
   const { user, loading } = useAuth();
@@ -82,6 +83,7 @@ function App() {
             <Route path="withdrawals" element={<Withdrawals />} />
             <Route path="manage-profile" element={<ManageProfile />} />
             <Route path="messages" element={<OwnerMessages />} />
+            <Route path="complaints" element={<Complaints />} />
           </Route>
 
           {/* Public + student/admin routes — global Navbar/Footer layout */}
@@ -99,6 +101,7 @@ function App() {
             <Route path="/rate/:bookingId" element={<ProtectedRoute roles={['STUDENT']}><RateAccommodation /></ProtectedRoute>} />
             <Route path="/favorites" element={<ProtectedRoute roles={['STUDENT']}><Favorites /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute roles={['STUDENT']}><StudentMessages /></ProtectedRoute>} />
+            <Route path="/complaints" element={<ProtectedRoute roles={['STUDENT']}><Complaints /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
           </Route>
         </Routes>

@@ -137,6 +137,12 @@ export const api = {
     list: (status) => request(`/reports${status ? `?status=${status}` : ''}`),
     review: (id, body) => request(`/reports/${id}/review`, { method: 'PATCH', body: JSON.stringify(body) }),
   },
+  complaints: {
+    create: (body) => request('/complaints', { method: 'POST', body: JSON.stringify(body) }),
+    mine: () => request('/complaints/mine'),
+    list: (params) => request(`/complaints${buildQuery(params)}`),
+    update: (id, body) => request(`/complaints/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  },
   admin: {
     stats: () => request('/admin/stats'),
     monthlyStats: () => request('/admin/stats/monthly'),

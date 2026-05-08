@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
-import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText, FiFlag } from 'react-icons/fi';
+import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText, FiFlag, FiAlertTriangle } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import './AdminDashboard.css';
 
@@ -14,6 +14,7 @@ const TABS = [
   { id: 'stats', label: 'الإحصائيات', icon: <FiBarChart2 /> },
   { id: 'audit', label: 'سجل النشاط', icon: <FiFileText /> },
   { id: 'reports', label: 'بلاغات التقييمات', icon: <FiFlag /> },
+  { id: 'complaints', label: 'الشكاوى', icon: <FiAlertTriangle /> },
 ];
 
 function exportCSV(data, filename) {
@@ -85,6 +86,7 @@ export default function AdminDashboard() {
           {activeTab === 'stats' && <StatsTab />}
           {activeTab === 'audit' && <AuditTab />}
           {activeTab === 'reports' && <ReportsTab />}
+          {activeTab === 'complaints' && <ComplaintsTab />}
         </main>
       </div>
     </div>
@@ -949,6 +951,139 @@ function ReportsTab() {
             ))}
             {reports.length === 0 && (
               <tr><td colSpan="6" style={{ textAlign: 'center', padding: 40 }}>لا يوجد بلاغات</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+// ── Complaints Tab (UC-34) ──
+function ComplaintsTab() {
+  const [complaints, setComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [replies, setReplies] = useState({});
+  const [statusEdits, setStatusEdits] = useState({});
+  const [saving, setSaving] = useState({});
+
+  const TYPE_LABELS = { ACCOMMODATION: 'سكن', USER_ISSUE: 'مستخدم', TECHNICAL: 'تقني', OTHER: 'أخرى' };
+  const STATUS_LABELS = { OPEN: 'مفتوحة', IN_REVIEW: 'قيد المراجعة', RESOLVED: 'محلولة', REJECTED: 'مرفوضة' };
+  const STATUS_CLASS = { OPEN: '', IN_REVIEW: '', RESOLVED: 'active', REJECTED: 'inactive' };
+
+  const fetchComplaints = () => {
+    setLoading(true);
+    const params = {};
+    if (statusFilter) params.status = statusFilter;
+    if (typeFilter) params.type = typeFilter;
+    api.complaints.list(params)
+      .then((data) => setComplaints(data.complaints || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchComplaints(); }, [statusFilter, typeFilter]);
+
+  const handleSave = async (id) => {
+    setSaving((s) => ({ ...s, [id]: true }));
+    try {
+      await api.complaints.update(id, {
+        status: statusEdits[id] || complaints.find((c) => c.id === id)?.status,
+        adminResponse: replies[id] || '',
+      });
+      fetchComplaints();
+    } catch (err) {
+      alert('خطأ: ' + (err.message || 'فشل'));
+    } finally {
+      setSaving((s) => ({ ...s, [id]: false }));
+    }
+  };
+
+  if (loading) return <div className="loading-state">جاري التحميل...</div>;
+
+  return (
+    <>
+      <div className="admin-filters">
+        <select className="admin-role-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">كل الحالات</option>
+          <option value="OPEN">مفتوحة</option>
+          <option value="IN_REVIEW">قيد المراجعة</option>
+          <option value="RESOLVED">محلولة</option>
+          <option value="REJECTED">مرفوضة</option>
+        </select>
+        <select className="admin-role-filter" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <option value="">كل الأنواع</option>
+          <option value="ACCOMMODATION">سكن</option>
+          <option value="USER_ISSUE">مستخدم</option>
+          <option value="TECHNICAL">تقني</option>
+          <option value="OTHER">أخرى</option>
+        </select>
+      </div>
+
+      <div className="users-table-container">
+        <table className="users-table">
+          <thead>
+            <tr>
+              <th>المستخدم</th>
+              <th>النوع</th>
+              <th>الموضوع</th>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {complaints.map((c) => (
+              <tr key={c.id}>
+                <td>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontWeight: 600 }}>{c.user?.name || c.userName || '—'}</span>
+                    <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{c.user?.email || ''}</span>
+                  </div>
+                </td>
+                <td><span className="role-badge">{TYPE_LABELS[c.type] || c.type}</span></td>
+                <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.subject}</td>
+                <td>
+                  <span className={`status-badge ${STATUS_CLASS[c.status] || ''}`}>
+                    {STATUS_LABELS[c.status] || c.status}
+                  </span>
+                </td>
+                <td>{new Date(c.createdAt).toLocaleDateString('ar-EG')}</td>
+                <td>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 220 }}>
+                    <select
+                      defaultValue={c.status}
+                      onChange={(e) => setStatusEdits((s) => ({ ...s, [c.id]: e.target.value }))}
+                      style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: '0.85rem' }}
+                    >
+                      <option value="OPEN">مفتوحة</option>
+                      <option value="IN_REVIEW">قيد المراجعة</option>
+                      <option value="RESOLVED">محلولة</option>
+                      <option value="REJECTED">مرفوضة</option>
+                    </select>
+                    <textarea
+                      placeholder="رد على الشكوى..."
+                      defaultValue={c.adminResponse || ''}
+                      rows={2}
+                      onChange={(e) => setReplies((r) => ({ ...r, [c.id]: e.target.value }))}
+                      style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: '0.85rem', resize: 'vertical' }}
+                    />
+                    <button
+                      className="action-btn"
+                      onClick={() => handleSave(c.id)}
+                      disabled={saving[c.id]}
+                      style={{ color: '#fff', background: '#4f46e5', borderRadius: 6, padding: '4px 12px', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      {saving[c.id] ? 'جاري...' : 'حفظ'}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {complaints.length === 0 && (
+              <tr><td colSpan="6" style={{ textAlign: 'center', padding: 40 }}>لا يوجد شكاوى</td></tr>
             )}
           </tbody>
         </table>
