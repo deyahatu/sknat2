@@ -19,6 +19,8 @@ router.get('/stats', authenticate, authorize('ADMIN'), async (req, res, next) =>
       pendingRefunds,
       pendingWithdrawals,
       revenueResult,
+      totalRooms,
+      occupiedRooms,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { role: 'STUDENT' } }),
@@ -34,6 +36,8 @@ router.get('/stats', authenticate, authorize('ADMIN'), async (req, res, next) =>
         where: { status: 'COMPLETED' },
         _sum: { amount: true },
       }),
+      prisma.roomVariant.count(),
+      prisma.roomVariant.count({ where: { isOccupied: true } }),
     ]);
 
     res.json({
@@ -48,6 +52,8 @@ router.get('/stats', authenticate, authorize('ADMIN'), async (req, res, next) =>
       totalReviews,
       pendingRefunds,
       pendingWithdrawals,
+      totalRooms,
+      occupiedRooms,
     });
   } catch (err) {
     next(err);

@@ -906,9 +906,13 @@ function StatsTab() {
     { label: 'العقارات', value: stats.totalProperties, color: '#d97706', bg: '#fffbeb', icon: <FiHome /> },
   ];
 
+  const occupancyRate = stats.totalRooms > 0 ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0;
+
   const details = [
     { label: 'الطلاب', value: stats.totalStudents },
     { label: 'الملاك', value: stats.totalOwners },
+    { label: 'معدل الإشغال', value: `${occupancyRate}%`, warn: occupancyRate < 20 },
+    { label: 'غرف محجوزة', value: `${stats.occupiedRooms || 0}/${stats.totalRooms || 0}` },
     { label: 'المدفوعات', value: stats.totalPayments },
     { label: 'حجوزات معلقة', value: stats.pendingBookings, warn: stats.pendingBookings > 0 },
     { label: 'التقييمات', value: stats.totalReviews },
