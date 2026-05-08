@@ -51,11 +51,12 @@ function ProtectedRoute({ children, roles }) {
 function PublicLayout() {
   const { user } = useAuth();
   if (user?.role === 'OWNER') return <Navigate to="/owner" replace />;
+  const isAdmin = user?.role === 'ADMIN';
   return (
     <>
       <Navbar />
       <Outlet />
-      <Footer />
+      {!isAdmin && <Footer />}
     </>
   );
 }
