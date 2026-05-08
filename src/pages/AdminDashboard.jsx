@@ -926,70 +926,54 @@ function StatsTab() {
   return (
     <>
       {/* Highlight cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
+      <div className="as-highlights">
         {highlights.map((h, i) => (
-          <div key={i} style={{
-            background: h.bg, borderRadius: 16, padding: '24px 20px',
-            display: 'flex', alignItems: 'center', gap: 16,
-            border: `1px solid ${h.color}22`, transition: 'transform 0.2s',
-          }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <div style={{
-              width: 48, height: 48, borderRadius: 14,
+          <div key={i} className="as-highlight-card" style={{
+            background: h.bg, border: `1px solid ${h.color}22`,
+          }}>
+            <div className="as-highlight-icon" style={{
               background: `${h.color}18`, color: h.color,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
             }}>{h.icon}</div>
             <div>
-              <div style={{ fontSize: 26, fontWeight: 900, color: h.color, lineHeight: 1 }}>{h.value}</div>
-              <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{h.label}</div>
+              <div className="as-highlight-value" style={{ color: h.color }}>{h.value}</div>
+              <div className="as-highlight-label">{h.label}</div>
             </div>
           </div>
         ))}
       </div>
 
       {/* Detail stats row */}
-      <div style={{
-        display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 28,
-        background: '#fff', borderRadius: 14, padding: '18px 20px',
-        border: '1px solid #e8ecf4',
-      }}>
+      <div className="as-details-row">
         {details.map((d, i) => (
-          <div key={i} style={{
-            flex: '1 1 120px', textAlign: 'center', padding: '8px 0',
-            borderLeft: i < details.length - 1 ? '1px solid #f0f0f0' : 'none',
-          }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: d.warn ? '#dc2626' : '#1e293b' }}>{d.value}</div>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{d.label}</div>
+          <div key={i} className="as-detail-item">
+            <div className={`as-detail-value${d.warn ? ' as-detail-warn' : ''}`}>{d.value}</div>
+            <div className="as-detail-label">{d.label}</div>
           </div>
         ))}
       </div>
 
       {/* Occupancy + Recent Activity */}
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16, marginBottom: 24 }}>
+      <div className="as-middle-grid">
         {/* Occupancy Ring */}
-        <div style={{ background: '#fff', borderRadius: 16, padding: 28, border: '1px solid #e8ecf4', textAlign: 'center' }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginBottom: 20 }}>معدل الإشغال</div>
-          <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto 16px' }}>
-            <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+        <div className="as-occupancy-card">
+          <div className="as-occupancy-title">معدل الإشغال</div>
+          <div className="as-occupancy-ring">
+            <svg viewBox="0 0 36 36">
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f0f0f0" strokeWidth="3" />
               <circle cx="18" cy="18" r="15.9" fill="none" stroke={occupancyRate >= 70 ? '#10b981' : occupancyRate >= 40 ? '#d97706' : '#dc2626'} strokeWidth="3" strokeDasharray={`${occupancyRate} ${100 - occupancyRate}`} strokeLinecap="round" style={{ transition: 'stroke-dasharray 1s ease' }} />
             </svg>
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 32, fontWeight: 900, color: '#1e293b' }}>{occupancyRate}%</span>
-            </div>
+            <div className="as-occupancy-number">{occupancyRate}%</div>
           </div>
-          <div style={{ fontSize: 13, color: '#64748b' }}>{stats.occupiedRooms || 0} محجوزة من {stats.totalRooms || 0} غرفة</div>
+          <div className="as-occupancy-subtitle">{stats.occupiedRooms || 0} محجوزة من {stats.totalRooms || 0} غرفة</div>
         </div>
 
         {/* Recent Activity */}
-        <div style={{ background: '#fff', borderRadius: 16, padding: 20, border: '1px solid #e8ecf4' }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginBottom: 14 }}>آخر النشاطات</div>
+        <div className="as-activity-card">
+          <div className="as-activity-title">آخر النشاطات</div>
           {activities.length === 0 ? (
-            <div style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: 30 }}>لا توجد نشاطات</div>
+            <div className="as-activity-empty">لا توجد نشاطات</div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            <div className="as-activity-list">
               {activities.map((a, i) => {
                 const statusColors = { PENDING: '#d97706', APPROVED: '#4f46e5', PAID: '#059669', COMPLETED: '#10b981', REJECTED: '#dc2626', CANCELLED: '#6b7280' };
                 const statusLabels = { PENDING: 'معلق', APPROVED: 'مقبول', PAID: 'مدفوع', COMPLETED: 'مكتمل', REJECTED: 'مرفوض', CANCELLED: 'ملغى' };
@@ -1001,24 +985,16 @@ function StatsTab() {
                   return `منذ ${Math.floor(diff / 1440)} يوم`;
                 })();
                 return (
-                  <div key={i} style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0',
-                    borderBottom: i < activities.length - 1 ? '1px solid #f5f5f5' : 'none',
-                  }}>
-                    <div style={{
-                      width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                  <div key={i} className="as-activity-item">
+                    <div className="as-activity-dot" style={{
                       background: a.type === 'payment' ? '#059669' : (statusColors[a.status] || '#94a3b8'),
                     }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.text}</div>
-                    </div>
-                    <span style={{
-                      fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 8,
+                    <div className="as-activity-text">{a.text}</div>
+                    <span className="as-activity-badge" style={{
                       background: `${statusColors[a.status] || '#94a3b8'}15`,
                       color: statusColors[a.status] || '#94a3b8',
-                      whiteSpace: 'nowrap',
                     }}>{statusLabels[a.status] || a.status}</span>
-                    <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>{timeAgo}</span>
+                    <span className="as-activity-time">{timeAgo}</span>
                   </div>
                 );
               })}
@@ -1029,7 +1005,7 @@ function StatsTab() {
 
       {/* Charts — 2-column grid */}
       {monthly.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginBottom: 24 }}>
+        <div className="as-charts-grid">
           <div className="chart-section">
             <h3>الحجوزات الشهرية</h3>
             <ResponsiveContainer width="100%" height={240}>
@@ -1072,16 +1048,12 @@ function StatsTab() {
       )}
 
       {/* Export */}
-      <div style={{
-        background: '#f8fafc', borderRadius: 14, padding: '20px 24px',
-        border: '1px solid #e8ecf4', display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
-      }}>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#1e293b' }}>تصدير البيانات</div>
-          <div style={{ fontSize: 12, color: '#94a3b8' }}>حمّل ملف CSV لأي قسم</div>
+      <div className="as-export-bar">
+        <div className="as-export-info">
+          <div className="as-export-title">تصدير البيانات</div>
+          <div className="as-export-sub">حمّل ملف CSV لأي قسم</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="as-export-buttons">
           {['users', 'bookings', 'payments'].map(type => {
             const labels = { users: 'المستخدمين', bookings: 'الحجوزات', payments: 'المدفوعات' };
             return (
