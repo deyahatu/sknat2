@@ -74,7 +74,9 @@ export default function OwnerBookings() {
   return (
     <>
       <div className="owner-section-hero">
-        <h1 className="owner-page-title owner-section-hero-title">الحجوزات</h1>
+        <h1 className="owner-page-title owner-section-hero-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <FiCalendar /> الحجوزات
+        </h1>
       </div>
 
       {error && <div className="owner-form-error">{error}</div>}

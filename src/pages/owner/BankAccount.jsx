@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FiCreditCard, FiTrash2 } from "react-icons/fi";
 import { useToast } from "../../components/shared/Toast";
 import { api } from "../../utils/api";
 import ConfirmModal from "../../components/shared/ConfirmModal";
@@ -181,8 +182,8 @@ export default function BankAccount() {
     <>
       <div className="owner-section-hero owner-bank-hero">
         <div className="owner-bank-hero-copy">
-          <h1 className="owner-page-title owner-section-hero-title">
-            الحساب البنكي
+          <h1 className="owner-page-title owner-section-hero-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <FiCreditCard /> الحساب البنكي
           </h1>
         </div>
 
@@ -192,7 +193,7 @@ export default function BankAccount() {
             onClick={handleDelete}
             disabled={deleting}
           >
-            {deleting ? "جاري الحذف..." : "حذف الحساب"}
+            {deleting ? "جاري الحذف..." : <><FiTrash2 style={{ marginLeft: 6 }} /> حذف الحساب</>}
           </button>
         )}
       </div>

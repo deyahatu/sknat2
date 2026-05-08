@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { FiDollarSign } from "react-icons/fi";
 import { api } from "../../utils/api";
 import Skeleton from "../../components/shared/Skeleton";
 
@@ -102,8 +103,8 @@ export default function Withdrawals() {
     <>
       <div className="owner-section-hero owner-withdrawals-hero">
         <div className="owner-withdrawals-hero-copy">
-          <h1 className="owner-page-title owner-section-hero-title">
-            طلبات السحب
+          <h1 className="owner-page-title owner-section-hero-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <FiDollarSign /> طلبات السحب
           </h1>
         </div>
 
@@ -222,7 +223,13 @@ export default function Withdrawals() {
           {loading ? (
             <div style={{ padding: 20 }}><Skeleton height={40} /><div style={{ height: 16 }} /><Skeleton height={20} count={5} /></div>
           ) : requests.length === 0 ? (
-            <div className="owner-empty">لا توجد طلبات سحب</div>
+            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <FiDollarSign size={36} color="#d1d5db" />
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا توجد طلبات سحب</h3>
+              <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 0 }}>طلبات السحب الخاصة بك ستظهر هنا</p>
+            </div>
           ) : (
             <table className="owner-table owner-withdrawals-table">
               <thead>

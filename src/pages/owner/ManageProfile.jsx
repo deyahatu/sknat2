@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { FiCamera, FiTrash2 } from "react-icons/fi";
+import { FiCamera, FiLock, FiTrash2, FiUser } from "react-icons/fi";
 import { api } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 import Skeleton from "../../components/shared/Skeleton";
@@ -290,7 +290,9 @@ export default function ManageProfile() {
         <div className="owner-profile-col">
           <div className="owner-card">
             <div className="owner-card-header">
-              <h2 className="owner-card-title">المعلومات الشخصية</h2>
+              <h2 className="owner-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <FiUser size={18} /> المعلومات الشخصية
+              </h2>
             </div>
             <div className="owner-profile-card-body">
               {infoStatus.message && (
@@ -361,7 +363,9 @@ export default function ManageProfile() {
 
           <div className="owner-card owner-profile-card-gap">
             <div className="owner-card-header">
-              <h2 className="owner-card-title">تغيير كلمة المرور</h2>
+              <h2 className="owner-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <FiLock size={18} /> تغيير كلمة المرور
+              </h2>
             </div>
             <div className="owner-profile-card-body">
               {pwdStatus.message && (

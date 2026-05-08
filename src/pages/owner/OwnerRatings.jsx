@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { FiStar } from 'react-icons/fi';
 import { api } from '../../utils/api';
 import Skeleton from '../../components/shared/Skeleton';
 
@@ -6,7 +7,7 @@ function Stars({ rating }) {
   return (
     <span className="owner-stars">
       {[1,2,3,4,5].map((s) => (
-        <span key={s} className={s <= rating ? 'owner-star-filled' : 'owner-star-empty'}>★</span>
+        <span key={s} className={s <= rating ? 'owner-star-filled' : 'owner-star-empty'} style={{ color: s <= rating ? '#f59e0b' : '#d1d5db', fontSize: 18 }}>★</span>
       ))}
     </span>
   );
@@ -29,14 +30,22 @@ export default function OwnerRatings() {
   return (
     <>
       <div className="owner-section-hero">
-        <h1 className="owner-page-title owner-section-hero-title">تقييمات العقارات</h1>
+        <h1 className="owner-page-title owner-section-hero-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <FiStar /> تقييمات العقارات
+        </h1>
       </div>
       {error && <div className="owner-form-error">{error}</div>}
 
       <div className="owner-card">
         <div className="owner-table-wrap">
           {ratings.length === 0 ? (
-            <div className="owner-empty">لا توجد تقييمات بعد</div>
+            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <FiStar size={36} color="#d1d5db" />
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا توجد تقييمات بعد</h3>
+              <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 0 }}>ستظهر تقييمات الطلاب لعقاراتك هنا</p>
+            </div>
           ) : (
             <table className="owner-table">
               <thead>

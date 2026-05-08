@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FiUsers } from "react-icons/fi";
 import { api } from "../../utils/api";
 import Skeleton from "../../components/shared/Skeleton";
 
@@ -22,6 +23,7 @@ function StarInput({ value, onChange }) {
         <span
           key={s}
           className={s <= display ? "filled" : "empty"}
+          style={{ fontSize: 28, cursor: 'pointer', color: s <= display ? '#f59e0b' : '#d1d5db', transition: 'color 0.15s, transform 0.15s', transform: s <= display ? 'scale(1.1)' : 'scale(1)' }}
           onMouseEnter={() => setHover(s)}
           onMouseLeave={() => setHover(0)}
           onClick={() => onChange(s)}
@@ -125,15 +127,21 @@ export default function RateStudents() {
   return (
     <>
       <div className="owner-section-hero">
-        <h1 className="owner-page-title owner-section-hero-title">
-          تقييم الطلاب
+        <h1 className="owner-page-title owner-section-hero-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <FiUsers /> تقييم الطلاب
         </h1>
-      </div>{" "}
+      </div>
       {error && <div className="owner-form-error">{error}</div>}
       {success && <div className="owner-form-success">{success}</div>}
       {bookings.length === 0 ? (
         <div className="owner-card">
-          <div className="owner-empty">لا توجد حجوزات مكتملة</div>
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <FiUsers size={36} color="#d1d5db" />
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا توجد حجوزات مكتملة</h3>
+            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 0 }}>عند اكتمال حجز ما، يمكنك تقييم الطالب من هنا</p>
+          </div>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
