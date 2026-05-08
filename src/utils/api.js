@@ -132,6 +132,11 @@ export const api = {
     readAll: () => request('/notifications/read-all', { method: 'PATCH' }),
     read: (id) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
   },
+  reports: {
+    create: (body) => request('/reports', { method: 'POST', body: JSON.stringify(body) }),
+    list: (status) => request(`/reports${status ? `?status=${status}` : ''}`),
+    review: (id, body) => request(`/reports/${id}/review`, { method: 'PATCH', body: JSON.stringify(body) }),
+  },
   admin: {
     stats: () => request('/admin/stats'),
     monthlyStats: () => request('/admin/stats/monthly'),

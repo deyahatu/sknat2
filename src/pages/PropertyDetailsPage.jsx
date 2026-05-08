@@ -533,6 +533,22 @@ function PropertyDetailsPage() {
                         </div>
                       </div>
                       {review.comment && <p className="review-comment">{review.comment}</p>}
+                      {user && review.student?.id !== user?.id && (
+                        <button
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#9ca3af', padding: '4px 8px' }}
+                          onClick={async () => {
+                            const reasons = { '1': 'OFFENSIVE', '2': 'INCORRECT', '3': 'SPAM' };
+                            const input = prompt('سبب البلاغ:\n1. محتوى مسيء\n2. معلومات خاطئة\n3. سبام\n\nاكتب الرقم:');
+                            const reason = reasons[input];
+                            if (!reason) return;
+                            try {
+                              await api.reports.create({ type: 'REVIEW', targetId: review.id, reason });
+                              alert('تم إرسال البلاغ بنجاح.');
+                            } catch (err) { alert(err.message); }
+                          }}
+                          title="الإبلاغ عن هذا التقييم"
+                        >🚩</button>
+                      )}
                     </div>
                   ))}
                 </div>

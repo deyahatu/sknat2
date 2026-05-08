@@ -18,6 +18,7 @@ import invoiceRoutes from './routes/invoices.js';
 import messageRoutes from './routes/messages.js';
 import pushRoutes from './routes/push.js';
 import notificationRoutes from './routes/notifications.js';
+import reportRoutes from './routes/reports.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -47,6 +48,7 @@ app.use('/api/invoices', invoiceRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

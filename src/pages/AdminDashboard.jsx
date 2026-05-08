@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
-import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText } from 'react-icons/fi';
+import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText, FiFlag } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import './AdminDashboard.css';
 
@@ -13,6 +13,7 @@ const TABS = [
   { id: 'ratings', label: 'التقييمات', icon: <FiStar /> },
   { id: 'stats', label: 'الإحصائيات', icon: <FiBarChart2 /> },
   { id: 'audit', label: 'سجل النشاط', icon: <FiFileText /> },
+  { id: 'reports', label: 'بلاغات التقييمات', icon: <FiFlag /> },
 ];
 
 function exportCSV(data, filename) {
@@ -83,6 +84,7 @@ export default function AdminDashboard() {
           {activeTab === 'ratings' && <RatingsTab />}
           {activeTab === 'stats' && <StatsTab />}
           {activeTab === 'audit' && <AuditTab />}
+          {activeTab === 'reports' && <ReportsTab />}
         </main>
       </div>
     </div>
@@ -851,6 +853,105 @@ function StatsTab() {
             <FiDownload /> {exporting === 'payments' ? 'جاري...' : 'تصدير المدفوعات'}
           </button>
         </div>
+      </div>
+    </>
+  );
+}
+
+// ── Reports Tab (UC-41) ──
+function ReportsTab() {
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+
+  const reasonLabels = { OFFENSIVE: 'مسيء', INCORRECT: 'خاطئ', SPAM: 'سبام' };
+  const statusLabels = { PENDING: 'معلق', REVIEWED: 'تمت المراجعة', DISMISSED: 'مرفوض' };
+  const statusClass = { PENDING: '', REVIEWED: 'active', DISMISSED: 'inactive' };
+
+  const fetchReports = () => {
+    setLoading(true);
+    api.reports.list(filter)
+      .then((data) => setReports(data.reports || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchReports(); }, [filter]);
+
+  const handleDeleteReview = async (id) => {
+    if (!window.confirm('حذف التقييم وإغلاق البلاغ؟')) return;
+    try {
+      await api.reports.review(id, { action: 'delete_review' });
+      fetchReports();
+    } catch (err) {
+      alert('خطأ: ' + (err.message || 'فشل'));
+    }
+  };
+
+  const handleDismiss = async (id) => {
+    if (!window.confirm('رفض البلاغ؟')) return;
+    try {
+      await api.reports.review(id, { action: 'dismiss' });
+      fetchReports();
+    } catch (err) {
+      alert('خطأ: ' + (err.message || 'فشل'));
+    }
+  };
+
+  if (loading) return <div className="loading-state">جاري التحميل...</div>;
+
+  return (
+    <>
+      <div className="admin-filters">
+        <select className="admin-role-filter" value={filter} onChange={(e) => setFilter(e.target.value)}>
+          <option value="">كل الحالات</option>
+          <option value="PENDING">معلق</option>
+          <option value="REVIEWED">تمت المراجعة</option>
+          <option value="DISMISSED">مرفوض</option>
+        </select>
+      </div>
+
+      <div className="users-table-container">
+        <table className="users-table">
+          <thead>
+            <tr>
+              <th>المُبلِّغ</th>
+              <th>تعليق التقييم</th>
+              <th>السبب</th>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reports.map((r) => (
+              <tr key={r.id}>
+                <td>{r.reporter?.name || '—'}</td>
+                <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {r.review?.comment || '—'}
+                </td>
+                <td>{reasonLabels[r.reason] || r.reason}</td>
+                <td><span className={`status-badge ${statusClass[r.status] || ''}`}>{statusLabels[r.status] || r.status}</span></td>
+                <td>{new Date(r.createdAt).toLocaleDateString('ar-EG')}</td>
+                <td>
+                  {r.status === 'PENDING' && (
+                    <div className="action-buttons">
+                      <button className="action-btn delete-btn" onClick={() => handleDeleteReview(r.id)} title="حذف التقييم">
+                        <FiTrash2 />
+                      </button>
+                      <button className="action-btn" onClick={() => handleDismiss(r.id)} title="رفض البلاغ" style={{ color: '#6b7280' }}>
+                        <FiX />
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {reports.length === 0 && (
+              <tr><td colSpan="6" style={{ textAlign: 'center', padding: 40 }}>لا يوجد بلاغات</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </>
   );
