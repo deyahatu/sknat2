@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { FiCamera, FiTrash2 } from "react-icons/fi";
 import { api } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
+import Skeleton from "../../components/shared/Skeleton";
 
 const ROLE_LABELS = {
   OWNER: "مالك عقار",
@@ -202,7 +203,7 @@ export default function ManageProfile() {
     }
   }
 
-  if (loading) return <div className="owner-loading">جاري التحميل...</div>;
+  if (loading) return <div style={{ maxWidth: 600, margin: '0 auto', padding: 40 }}><Skeleton height={20} width="60%" /><div style={{ height: 12 }} /><Skeleton height={16} count={4} /></div>;
 
   if (loadError || !profile) {
     return (

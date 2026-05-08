@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FiCalendar } from 'react-icons/fi';
 import { api } from '../../utils/api';
+import Skeleton, { SkeletonCard } from '../../components/shared/Skeleton';
 
 const STATUS_FILTERS = [
   { value: '', label: 'الكل' },
@@ -93,7 +94,7 @@ export default function OwnerBookings() {
       <div className="owner-card">
         <div className="owner-table-wrap">
           {loading ? (
-            <div className="owner-loading">جاري التحميل...</div>
+            <div style={{ padding: 20 }}><Skeleton height={40} /><div style={{ height: 16 }} /><Skeleton height={20} count={5} /></div>
           ) : bookings.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
               <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>

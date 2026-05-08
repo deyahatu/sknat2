@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { FiEdit2, FiHome, FiMapPin, FiShield, FiTrash2 } from "react-icons/fi";
 import { api } from "../../utils/api";
 import ConfirmModal from "../../components/shared/ConfirmModal";
+import Skeleton, { SkeletonCard } from "../../components/shared/Skeleton";
 
 function formatDate(value) {
   if (!value) return "غير محدد";
@@ -93,7 +94,7 @@ export default function OwnerProperties() {
       {error && <div className="owner-form-error">{error}</div>}
 
       {loading ? (
-        <div className="owner-loading">جاري التحميل...</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, padding: 20 }}>{Array.from({ length: 4 }, (_, i) => <SkeletonCard key={i} />)}</div>
       ) : properties.length === 0 ? (
         <div className="owner-card">
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiBell } from 'react-icons/fi';
 import { api } from '../utils/api';
+import Skeleton from '../components/shared/Skeleton';
 
 function timeAgo(date) {
   const diff = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
@@ -58,7 +59,7 @@ export default function Notifications() {
         </div>
 
         {loading && (
-          <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af', fontSize: 15 }}>جاري التحميل...</div>
+          <div style={{ padding: 20 }}><Skeleton height={40} /><div style={{ height: 16 }} /><Skeleton height={20} count={5} /></div>
         )}
 
         {!loading && notifications.length === 0 && (

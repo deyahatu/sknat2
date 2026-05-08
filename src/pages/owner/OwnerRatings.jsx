@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../utils/api';
+import Skeleton from '../../components/shared/Skeleton';
 
 function Stars({ rating }) {
   return (
@@ -23,7 +24,7 @@ export default function OwnerRatings() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="owner-loading">جاري التحميل...</div>;
+  if (loading) return <div style={{ padding: 20 }}><Skeleton height={40} /><div style={{ height: 16 }} /><Skeleton height={20} count={5} /></div>;
 
   return (
     <>

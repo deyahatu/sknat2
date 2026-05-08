@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../utils/api";
 import ConfirmModal from "../../components/shared/ConfirmModal";
+import Skeleton from "../../components/shared/Skeleton";
 import arabBankLogo from "../../assets/arab-bank.jpg";
 import reflectLogo from "../../assets/reflect.jpg";
 import bopLogo from "../../assets/bank-of-palestine.png";
@@ -171,7 +172,7 @@ export default function BankAccount() {
     });
   }
 
-  if (loading) return <div className="owner-loading">جاري التحميل...</div>;
+  if (loading) return <div style={{ maxWidth: 600, margin: '0 auto', padding: 40 }}><Skeleton height={20} width="60%" /><div style={{ height: 12 }} /><Skeleton height={16} count={4} /></div>;
 
   return (
     <>

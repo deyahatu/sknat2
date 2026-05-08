@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiAlertCircle } from 'react-icons/fi';
 import { api } from '../utils/api';
+import Skeleton, { SkeletonCard } from '../components/shared/Skeleton';
 
 const TYPE_LABELS = {
   ACCOMMODATION: 'مشكلة بالسكن',
@@ -141,7 +142,7 @@ export default function Complaints() {
 
       {/* List */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>جاري التحميل...</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, padding: 20 }}>{Array.from({ length: 4 }, (_, i) => <SkeletonCard key={i} />)}</div>
       ) : complaints.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', background: '#f9fafb', borderRadius: 12 }}>
           <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>

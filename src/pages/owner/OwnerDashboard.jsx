@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 import AnimatedCounter from "../../components/shared/AnimatedCounter";
+import Skeleton from "../../components/shared/Skeleton";
 
 function Stars({ rating }) {
   return (
@@ -119,7 +120,7 @@ export default function OwnerDashboard() {
   }, []);
 
   if (loading) {
-    return <div className="owner-loading">جاري التحميل...</div>;
+    return <div style={{ padding: 20 }}><Skeleton height={40} /><div style={{ height: 16 }} /><Skeleton height={20} count={5} /></div>;
   }
 
   const firstName = user?.name?.split(" ")[0] || "";

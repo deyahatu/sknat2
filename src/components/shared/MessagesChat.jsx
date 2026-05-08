@@ -4,6 +4,7 @@ import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { connectSocket, getSocket } from '../../utils/socket';
 import { useToast } from '../../components/shared/Toast';
+import Skeleton from './Skeleton';
 
 const styles = {
   container: { display: 'flex', height: 'calc(100vh - 120px)', direction: 'rtl', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#fff' },
@@ -146,7 +147,7 @@ export default function MessagesChat() {
 
   const getInitial = (name) => name?.charAt(0)?.toUpperCase() || '?';
 
-  if (loading) return <div style={styles.loading}>جاري التحميل...</div>;
+  if (loading) return <div style={{ maxWidth: 600, margin: '0 auto', padding: 40 }}><Skeleton height={20} width="60%" /><div style={{ height: 12 }} /><Skeleton height={16} count={4} /></div>;
 
   return (
     <div style={styles.container}>
@@ -184,7 +185,7 @@ export default function MessagesChat() {
         {!selectedUser ? (
           <div style={styles.empty}>اختر محادثة للبدء</div>
         ) : chatLoading ? (
-          <div style={styles.empty}>جاري التحميل...</div>
+          <div style={{ maxWidth: 600, margin: '0 auto', padding: 40 }}><Skeleton height={20} width="60%" /><div style={{ height: 12 }} /><Skeleton height={16} count={4} /></div>
         ) : (
           <>
             <div style={styles.chatHeader}>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../utils/api";
+import Skeleton from "../../components/shared/Skeleton";
 
 const NUMBER_KEY_ALLOWLIST = [
   "Backspace",
@@ -218,7 +219,7 @@ export default function Withdrawals() {
 
         <div className="owner-table-wrap owner-withdrawals-table-wrap">
           {loading ? (
-            <div className="owner-loading">جاري التحميل...</div>
+            <div style={{ padding: 20 }}><Skeleton height={40} /><div style={{ height: 16 }} /><Skeleton height={20} count={5} /></div>
           ) : requests.length === 0 ? (
             <div className="owner-empty">لا توجد طلبات سحب</div>
           ) : (
