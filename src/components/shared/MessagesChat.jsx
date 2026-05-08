@@ -3,6 +3,7 @@ import { FiMessageSquare } from 'react-icons/fi';
 import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { connectSocket, getSocket } from '../../utils/socket';
+import { useToast } from '../../components/shared/Toast';
 
 const styles = {
   container: { display: 'flex', height: 'calc(100vh - 120px)', direction: 'rtl', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#fff' },
@@ -31,6 +32,7 @@ const styles = {
 
 export default function MessagesChat() {
   const { user } = useAuth();
+  const toast = useToast();
   const [conversations, setConversations] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -133,7 +135,7 @@ export default function MessagesChat() {
         return [{ userId: selectedUser, userName: otherUser?.name, userAvatar: otherUser?.avatar, userRole: otherUser?.role, lastMessage: newMsg.trim().slice(0, 50), lastMessageAt: new Date().toISOString(), unreadCount: 0 }, ...prev];
       });
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 

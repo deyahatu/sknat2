@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiCalendar, FiHome, FiMapPin, FiAlertCircle } from 'react-icons/fi';
+import { useToast } from '../../components/shared/Toast';
 import { api } from '../../utils/api';
 import StatusTimeline from '../../components/shared/StatusTimeline';
 import './MyBookings.css';
@@ -313,7 +314,7 @@ function MyBookings() {
   );
 }
 
-async function handleDownloadInvoice(paymentId) {
+async function handleDownloadInvoice(paymentId, toast) {
   try {
     const { invoice } = await api.invoices.get(paymentId);
     const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>فاتورة #${invoice.id}</title><style>
@@ -365,11 +366,12 @@ async function handleDownloadInvoice(paymentId) {
     win.document.write(html);
     win.document.close();
   } catch (err) {
-    alert('تعذر تحميل الفاتورة');
+    toast.error('تعذر تحميل الفاتورة');
   }
 }
 
 function BookingCard({ booking, onCancel, onPay, onRate }) {
+  const toast = useToast();
   const property = booking.property;
   const cover = property?.images?.[0];
 
@@ -430,7 +432,7 @@ function BookingCard({ booking, onCancel, onPay, onRate }) {
             </button>
           )}
           {(booking.status === 'PAID' || booking.status === 'COMPLETED') && booking.payment && (
-            <button onClick={() => handleDownloadInvoice(booking.payment.id)} className="btn btn-secondary" style={{ fontSize: 13 }}>
+            <button onClick={() => handleDownloadInvoice(booking.payment.id, toast)} className="btn btn-secondary" style={{ fontSize: 13 }}>
               📄 تحميل الفاتورة
             </button>
           )}

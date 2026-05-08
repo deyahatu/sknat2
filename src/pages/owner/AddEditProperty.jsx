@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import ConfirmModal from "../../components/shared/ConfirmModal";
 import {
   PROPERTY_KINDS,
   ROOM_KINDS,
@@ -93,6 +94,7 @@ export default function AddEditProperty() {
   const [step, setStep] = useState(isEdit ? 2 : 1);
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
   const [loadingEdit, setLoadingEdit] = useState(isEdit);
   // Track variants that existed on load so we can compute deletes on save
   const [originalVariantIds, setOriginalVariantIds] = useState([]);
@@ -685,15 +687,21 @@ export default function AddEditProperty() {
                   type="button"
                   className="wiz-link"
                   onClick={() => {
-                    if (!window.confirm("هذا سيمسح كل الغرف الحالية. متابعة؟"))
-                      return;
-                    setRooms([]);
-                    setRoomsGenerated(false);
-                    setSetupConfirmed(false);
-                    setPatterns([
-                      { ...makePattern(), name: "الغرفة 1", kind: "SINGLE" },
-                    ]);
-                    setTotalRooms(4);
+                    setConfirmState({
+                      open: true,
+                      title: 'تأكيد',
+                      message: 'هذا سيمسح كل الغرف الحالية. متابعة؟',
+                      action: () => {
+                        setRooms([]);
+                        setRoomsGenerated(false);
+                        setSetupConfirmed(false);
+                        setPatterns([
+                          { ...makePattern(), name: "الغرفة 1", kind: "SINGLE" },
+                        ]);
+                        setTotalRooms(4);
+                        setConfirmState((s) => ({ ...s, open: false }));
+                      },
+                    });
                   }}
                 >
                   إعادة التوليد
@@ -1305,6 +1313,16 @@ export default function AddEditProperty() {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="تأكيد"
+        variant="danger"
+        onConfirm={() => { confirmState.action?.(); }}
+        onCancel={() => setConfirmState((s) => ({ ...s, open: false }))}
+      />
     </>
   );
 }

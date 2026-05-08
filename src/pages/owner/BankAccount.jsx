@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../../utils/api";
+import ConfirmModal from "../../components/shared/ConfirmModal";
 import arabBankLogo from "../../assets/arab-bank.jpg";
 import reflectLogo from "../../assets/reflect.jpg";
 import bopLogo from "../../assets/bank-of-palestine.png";
@@ -60,6 +61,7 @@ export default function BankAccount() {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
 
   const selectedBank = BANKS.find((b) => b.id === selectedBankId);
 
@@ -140,26 +142,33 @@ export default function BankAccount() {
     }
   }
 
-  async function handleDelete() {
-    if (!window.confirm("هل أنت متأكد من حذف الحساب البنكي؟")) return;
-    setDeleting(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      await api.withdrawals.deleteBankAccount();
-      setHasBankAccount(false);
-      setSelectedBankId(null);
-      setForm({
-        bankAccountHolder: "",
-        bankAccountNumber: "",
-        confirmAccountNumber: "",
-      });
-      setSuccess("تم حذف الحساب البنكي بنجاح");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setDeleting(false);
-    }
+  function handleDelete() {
+    setConfirmState({
+      open: true,
+      title: 'تأكيد الحذف',
+      message: 'هل أنت متأكد من حذف الحساب البنكي؟',
+      action: async () => {
+        setDeleting(true);
+        setError(null);
+        setSuccess(null);
+        setConfirmState((s) => ({ ...s, open: false }));
+        try {
+          await api.withdrawals.deleteBankAccount();
+          setHasBankAccount(false);
+          setSelectedBankId(null);
+          setForm({
+            bankAccountHolder: "",
+            bankAccountNumber: "",
+            confirmAccountNumber: "",
+          });
+          setSuccess("تم حذف الحساب البنكي بنجاح");
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setDeleting(false);
+        }
+      },
+    });
   }
 
   if (loading) return <div className="owner-loading">جاري التحميل...</div>;
@@ -290,6 +299,16 @@ export default function BankAccount() {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="تأكيد"
+        variant="danger"
+        onConfirm={async () => { await confirmState.action?.(); }}
+        onCancel={() => setConfirmState((s) => ({ ...s, open: false }))}
+      />
     </>
   );
 }

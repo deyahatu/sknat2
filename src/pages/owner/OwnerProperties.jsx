@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FiEdit2, FiHome, FiMapPin, FiShield, FiTrash2 } from "react-icons/fi";
 import { api } from "../../utils/api";
+import ConfirmModal from "../../components/shared/ConfirmModal";
 
 function formatDate(value) {
   if (!value) return "غير محدد";
@@ -35,6 +36,7 @@ export default function OwnerProperties() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
   const navigate = useNavigate();
 
   async function load() {
@@ -53,17 +55,24 @@ export default function OwnerProperties() {
     load();
   }, []);
 
-  async function handleDelete(id, title) {
-    if (!window.confirm(`هل أنت متأكد من حذف "${title}"؟`)) return;
-    setDeleting(id);
-    try {
-      await api.properties.delete(id);
-      await load();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setDeleting(null);
-    }
+  function handleDelete(id, title) {
+    setConfirmState({
+      open: true,
+      title: 'تأكيد الحذف',
+      message: `هل أنت متأكد من حذف "${title}"؟`,
+      action: async () => {
+        setDeleting(id);
+        try {
+          await api.properties.delete(id);
+          await load();
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setDeleting(null);
+          setConfirmState((s) => ({ ...s, open: false }));
+        }
+      },
+    });
   }
 
   return (
@@ -163,6 +172,16 @@ export default function OwnerProperties() {
           })}
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="تأكيد"
+        variant="danger"
+        onConfirm={async () => { await confirmState.action?.(); }}
+        onCancel={() => setConfirmState((s) => ({ ...s, open: false }))}
+      />
     </>
   );
 }
