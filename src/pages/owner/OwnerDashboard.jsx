@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { FiHome, FiClock, FiCheckCircle, FiDollarSign, FiMapPin, FiCalendar, FiTrendingUp } from "react-icons/fi";
 import { api } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 import AnimatedCounter from "../../components/shared/AnimatedCounter";
@@ -134,11 +135,11 @@ export default function OwnerDashboard() {
       <div className="owner-welcome">
         <div className="owner-welcome-text">
           <h1 className="owner-welcome-greeting">
-            {getGreeting()}، {firstName} 👋
+            {getGreeting()}، {firstName}
           </h1>
         </div>
         <div className="owner-welcome-date">
-          <span className="owner-welcome-date-icon">📅</span>
+          <span className="owner-welcome-date-icon"><FiCalendar /></span>
           <span>{getTodayStr()}</span>
         </div>
       </div>
@@ -148,28 +149,28 @@ export default function OwnerDashboard() {
       {/* Stat Cards */}
       <div className="owner-stats-grid">
         <div className="owner-stat-card blue">
-          <div className="owner-stat-icon blue">🏠</div>
+          <div className="owner-stat-icon blue"><FiHome /></div>
           <div className="owner-stat-info">
             <p className="owner-stat-value"><AnimatedCounter end={stats.properties} /></p>
             <p className="owner-stat-label">عقاراتي</p>
           </div>
         </div>
         <div className="owner-stat-card orange">
-          <div className="owner-stat-icon orange">⏳</div>
+          <div className="owner-stat-icon orange"><FiClock /></div>
           <div className="owner-stat-info">
             <p className="owner-stat-value"><AnimatedCounter end={stats.pending} /></p>
             <p className="owner-stat-label">طلبات قيد الانتظار</p>
           </div>
         </div>
         <div className="owner-stat-card green">
-          <div className="owner-stat-icon green">✅</div>
+          <div className="owner-stat-icon green"><FiCheckCircle /></div>
           <div className="owner-stat-info">
             <p className="owner-stat-value"><AnimatedCounter end={stats.approved} /></p>
             <p className="owner-stat-label">طلبات مقبولة</p>
           </div>
         </div>
         <div className="owner-stat-card purple">
-          <div className="owner-stat-icon purple">💰</div>
+          <div className="owner-stat-icon purple"><FiDollarSign /></div>
           <div className="owner-stat-info">
             <p className="owner-stat-value"><AnimatedCounter end={stats.balance} /></p>
             <p className="owner-stat-label">الرصيد المالي</p>
@@ -194,24 +195,24 @@ export default function OwnerDashboard() {
               {topImage ? (
                 <img src={topImage} alt={topProperty.title} />
               ) : (
-                <span className="owner-top-property-img-placeholder">🏠</span>
+                <span className="owner-top-property-img-placeholder"><FiHome size={32} /></span>
               )}
-              <span className="owner-top-property-badge">🏆 الأكثر حجزاً</span>
+              <span className="owner-top-property-badge"><FiTrendingUp style={{ marginLeft: 4 }} /> الأكثر حجزاً</span>
             </div>
             <div className="owner-top-property-info">
               <h3 className="owner-top-property-title">{topProperty.title}</h3>
               {topProperty.address && (
                 <p className="owner-top-property-address">
-                  <span>📍</span> {topProperty.address}
+                  <FiMapPin style={{ flexShrink: 0 }} /> {topProperty.address}
                 </p>
               )}
               <div className="owner-top-property-stats">
                 <span className="owner-top-property-stat primary">
-                  <span>📅</span> {topProperty.bookingCount} حجز
+                  <FiCalendar /> {topProperty.bookingCount} حجز
                 </span>
                 {topProperty.roomVariants?.length > 0 && (
                   <span className="owner-top-property-stat success">
-                    <span>💵</span> {Number(topProperty.roomVariants[0].fullPrice).toLocaleString('en-US')} د.أ
+                    <FiDollarSign /> {Number(topProperty.roomVariants[0].fullPrice).toLocaleString('en-US')} ₪
                   </span>
                 )}
               </div>

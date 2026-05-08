@@ -1,24 +1,29 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import {
+  FiGrid, FiHome, FiPlus, FiCalendar, FiStar, FiUser,
+  FiCreditCard, FiDollarSign, FiMessageSquare, FiAlertCircle,
+  FiSettings, FiLogOut, FiX,
+} from "react-icons/fi";
 
 const NAV_ITEMS = [
-  { to: "/owner", label: "لوحة التحكم", icon: "⊞", end: true },
+  { to: "/owner", label: "لوحة التحكم", icon: <FiGrid />, end: true },
   { section: "العقارات" },
-  { to: "/owner/properties", label: "عقاراتي", icon: "🏠" },
-  { to: "/owner/properties/add", label: "إضافة عقار", icon: "+" },
+  { to: "/owner/properties", label: "عقاراتي", icon: <FiHome /> },
+  { to: "/owner/properties/add", label: "إضافة عقار", icon: <FiPlus /> },
   { section: "الحجوزات" },
-  { to: "/owner/bookings", label: "الحجوزات", icon: "📋" },
+  { to: "/owner/bookings", label: "الحجوزات", icon: <FiCalendar /> },
   { section: "التقييمات" },
-  { to: "/owner/ratings", label: "تقييمات العقارات", icon: "⭐" },
-  { to: "/owner/rate-students", label: "تقييم الطلاب", icon: "👤" },
+  { to: "/owner/ratings", label: "تقييمات العقارات", icon: <FiStar /> },
+  { to: "/owner/rate-students", label: "تقييم الطلاب", icon: <FiUser /> },
   { section: "المالية" },
-  { to: "/owner/bank-account", label: "الحساب البنكي", icon: "🏦" },
-  { to: "/owner/withdrawals", label: "طلبات السحب", icon: "💰" },
+  { to: "/owner/bank-account", label: "الحساب البنكي", icon: <FiCreditCard /> },
+  { to: "/owner/withdrawals", label: "طلبات السحب", icon: <FiDollarSign /> },
   { section: "التواصل" },
-  { to: "/owner/messages", label: "الرسائل", icon: "💬" },
-  { to: "/owner/complaints", label: "الشكاوى", icon: "⚠️" },
+  { to: "/owner/messages", label: "الرسائل", icon: <FiMessageSquare /> },
+  { to: "/owner/complaints", label: "الشكاوى", icon: <FiAlertCircle /> },
   { section: "الحساب" },
-  { to: "/owner/manage-profile", label: "الملف الشخصي", icon: "🪪" },
+  { to: "/owner/manage-profile", label: "الملف الشخصي", icon: <FiSettings /> },
 ];
 
 export default function OwnerSidebar({ open, onClose }) {
@@ -40,9 +45,9 @@ export default function OwnerSidebar({ open, onClose }) {
       />
       <aside className={`owner-sidebar${open ? " open" : ""}`}>
         <div className="owner-sidebar-header">
-          <span className="owner-sidebar-title">سكنات 🏠</span>
+          <span className="owner-sidebar-title">سكنات</span>
           <button className="owner-sidebar-close" onClick={onClose}>
-            ✕
+            <FiX />
           </button>
         </div>
 
@@ -73,7 +78,7 @@ export default function OwnerSidebar({ open, onClose }) {
                 }
                 onClick={onClose}
               >
-                <span>{item.icon}</span>
+                {item.icon}
                 <span>{item.label}</span>
               </NavLink>
             );
@@ -82,7 +87,7 @@ export default function OwnerSidebar({ open, onClose }) {
 
         <div className="owner-sidebar-footer">
           <button className="owner-sidebar-logout" onClick={handleLogout}>
-            <span>🚪</span>
+            <FiLogOut />
             <span>تسجيل الخروج</span>
           </button>
         </div>
