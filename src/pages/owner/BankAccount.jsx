@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useToast } from "../../hooks/useToast";
+import { useToast } from "../../components/shared/Toast";
 import { api } from "../../utils/api";
 import ConfirmModal from "../../components/shared/ConfirmModal";
 import Skeleton from "../../components/shared/Skeleton";
