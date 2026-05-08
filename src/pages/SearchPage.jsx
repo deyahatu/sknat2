@@ -292,10 +292,12 @@ function SearchPage() {
             ))}
           </div>
         ) : (
-          <div className="no-results">
-            <span className="no-results-icon">🔍</span>
-            <h3>لا توجد نتائج</h3>
-            <p>حاول تعديل معايير البحث أو مسح الفلاتر</p>
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <FiSearch size={36} color="#d1d5db" />
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لم يتم العثور على نتائج</h3>
+            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 20 }}>جرب معايير بحث مختلفة</p>
             {hasActiveFilters && (
               <button className="btn btn-primary" onClick={clearFilters}>
                 مسح الفلاتر

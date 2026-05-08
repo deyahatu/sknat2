@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FiBell } from 'react-icons/fi';
 import { api } from '../utils/api';
 
 function timeAgo(date) {
@@ -61,11 +62,12 @@ export default function Notifications() {
         )}
 
         {!loading && notifications.length === 0 && (
-          <div style={{
-            background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb',
-            padding: 60, textAlign: 'center', color: '#9ca3af', fontSize: 15,
-          }}>
-            لا يوجد إشعارات
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', textAlign: 'center', padding: '60px 20px' }}>
+            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <FiBell size={36} color="#d1d5db" />
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا يوجد إشعارات</h3>
+            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 0 }}>ستظهر إشعاراتك هنا عند وصولها</p>
           </div>
         )}
 

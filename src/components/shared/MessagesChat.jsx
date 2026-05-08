@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { FiMessageSquare } from 'react-icons/fi';
 import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { connectSocket, getSocket } from '../../utils/socket';
@@ -151,7 +152,13 @@ export default function MessagesChat() {
       <div style={styles.sidebar}>
         <div style={styles.sidebarHeader}>المحادثات</div>
         {conversations.length === 0 ? (
-          <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>لا توجد محادثات بعد</div>
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <FiMessageSquare size={36} color="#d1d5db" />
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا يوجد محادثات</h3>
+            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 20 }}>ستظهر محادثاتك مع الملاك هنا</p>
+          </div>
         ) : (
           conversations.map(conv => (
             <div

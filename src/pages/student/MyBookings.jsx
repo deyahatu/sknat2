@@ -165,13 +165,13 @@ function MyBookings() {
             <p>{error}</p>
           </div>
         ) : visibleBookings.length === 0 ? (
-          <div className="my-bookings-empty">
-            <FiCalendar />
-            <h3>لا توجد حجوزات</h3>
-            <p>ابحث عن سكن وأرسل طلب حجز للبدء</p>
-            <Link to="/search" className="btn btn-primary">
-              ابحث عن سكن
-            </Link>
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <FiCalendar size={36} color="#d1d5db" />
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>ما عندك حجوزات بعد</h3>
+            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 20 }}>ابحث عن سكن وأرسل طلب حجز للبدء</p>
+            <Link to="/search" style={{ display: 'inline-block', padding: '10px 24px', background: '#4f46e5', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>ابحث عن سكن</Link>
           </div>
         ) : (
           <div className="my-bookings-list">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { FiCalendar } from 'react-icons/fi';
 import { api } from '../../utils/api';
 
 const STATUS_FILTERS = [
@@ -94,7 +95,13 @@ export default function OwnerBookings() {
           {loading ? (
             <div className="owner-loading">جاري التحميل...</div>
           ) : bookings.length === 0 ? (
-            <div className="owner-empty">لا توجد حجوزات</div>
+            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <FiCalendar size={36} color="#d1d5db" />
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا توجد حجوزات</h3>
+              <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 0 }}>ستظهر حجوزات عقاراتك هنا</p>
+            </div>
           ) : (
             <table className="owner-table">
               <thead>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { FiAlertCircle } from 'react-icons/fi';
 import { api } from '../utils/api';
 
 const TYPE_LABELS = {
@@ -142,8 +143,12 @@ export default function Complaints() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>جاري التحميل...</div>
       ) : complaints.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280', background: '#f9fafb', borderRadius: 12 }}>
-          لا يوجد شكاوى مقدمة بعد.
+        <div style={{ textAlign: 'center', padding: '60px 20px', background: '#f9fafb', borderRadius: 12 }}>
+          <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <FiAlertCircle size={36} color="#d1d5db" />
+          </div>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا توجد شكاوى</h3>
+          <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 0 }}>لم تقدم أي شكوى حتى الآن</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

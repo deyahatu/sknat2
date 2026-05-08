@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FiEdit2, FiMapPin, FiShield, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiHome, FiMapPin, FiShield, FiTrash2 } from "react-icons/fi";
 import { api } from "../../utils/api";
 
 function formatDate(value) {
@@ -87,7 +87,14 @@ export default function OwnerProperties() {
         <div className="owner-loading">جاري التحميل...</div>
       ) : properties.length === 0 ? (
         <div className="owner-card">
-          <div className="owner-empty">لا توجد عقارات. أضف عقارك الأول!</div>
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <FiHome size={36} color="#d1d5db" />
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا توجد عقارات</h3>
+            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 20 }}>أضف عقارك الأول وابدأ باستقبال الحجوزات</p>
+            <Link to="/owner/properties/add" style={{ display: 'inline-block', padding: '10px 24px', background: '#4f46e5', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>أضف عقارك الأول</Link>
+          </div>
         </div>
       ) : (
         <div className="owner-properties-grid">
