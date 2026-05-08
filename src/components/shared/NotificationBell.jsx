@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiBell } from 'react-icons/fi';
 import { api } from '../../utils/api';
+import './NotificationBell.css';
 
 export default function NotificationBell() {
   const [count, setCount] = useState(0);
@@ -54,62 +55,45 @@ export default function NotificationBell() {
   }
 
   return (
-    <div className="notif-bell-wrap" ref={ref} style={{ position: 'relative' }}>
+    <div className="nb-wrap" ref={ref}>
       <button
-        className="notif-bell-btn"
+        className="nb-btn"
         onClick={() => setOpen(!open)}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', fontSize: 20, color: '#374151', padding: 8 }}
       >
         <FiBell />
         {count > 0 && (
-          <span style={{
-            position: 'absolute', top: 2, right: 2, background: '#dc2626', color: '#fff',
-            fontSize: 10, fontWeight: 700, padding: '1px 5px', borderRadius: 10, minWidth: 16, textAlign: 'center',
-          }}>{count}</span>
+          <span className="nb-badge">{count}</span>
         )}
       </button>
       {open && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, width: 320, background: '#fff',
-          borderRadius: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb',
-          zIndex: 1000, direction: 'rtl', overflow: 'hidden',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
-            <strong style={{ fontSize: 15 }}>الإشعارات</strong>
+        <div className="nb-dropdown">
+          <div className="nb-dropdown-header">
+            <strong className="nb-dropdown-header-title">الإشعارات</strong>
             {count > 0 && (
-              <button onClick={handleReadAll} style={{ background: 'none', border: 'none', color: '#4f46e5', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+              <button onClick={handleReadAll} className="nb-read-all-btn">
                 قراءة الكل
               </button>
             )}
           </div>
-          <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+          <div className="nb-list">
             {notifications.length === 0 && (
-              <div style={{ padding: 30, textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>لا يوجد إشعارات</div>
+              <div className="nb-empty">لا يوجد إشعارات</div>
             )}
             {notifications.map((n) => (
               <div
                 key={n.id}
                 onClick={() => handleClick(n)}
-                style={{
-                  padding: '10px 16px', cursor: 'pointer', borderBottom: '1px solid #f9fafb',
-                  background: n.isRead ? '#fff' : '#f0f4ff',
-                  transition: 'background 0.1s',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
-                onMouseLeave={(e) => e.currentTarget.style.background = n.isRead ? '#fff' : '#f0f4ff'}
+                className={`nb-item ${!n.isRead ? 'nb-item-unread' : ''}`}
               >
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', marginBottom: 2 }}>{n.title}</div>
-                <div style={{ fontSize: 12, color: '#6b7280' }}>{n.body}</div>
-                <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{timeAgo(n.createdAt)}</div>
+                <div className="nb-item-title">{n.title}</div>
+                <div className="nb-item-body">{n.body}</div>
+                <div className="nb-item-time">{timeAgo(n.createdAt)}</div>
               </div>
             ))}
           </div>
           <button
             onClick={() => { setOpen(false); navigate('/notifications'); }}
-            style={{
-              width: '100%', padding: 12, background: '#f9fafb', border: 'none', borderTop: '1px solid #e5e7eb',
-              cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#4f46e5', fontFamily: 'inherit',
-            }}
+            className="nb-view-all"
           >
             عرض الكل
           </button>
