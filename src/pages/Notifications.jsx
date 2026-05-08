@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiBell } from 'react-icons/fi';
 import { api } from '../utils/api';
 import Skeleton from '../components/shared/Skeleton';
+import './Notifications.css';
 
 function timeAgo(date) {
   const diff = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
@@ -40,70 +41,54 @@ export default function Notifications() {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
-    <div className="page" style={{ minHeight: '100vh', background: '#f9fafb', direction: 'rtl', padding: '32px 16px' }}>
-      <div style={{ maxWidth: 680, margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><FiBell /> الإشعارات</h1>
+    <div className="page notif-page">
+      <div className="notif-inner">
+        <div className="notif-header">
+          <h1 className="notif-title"><FiBell /> الإشعارات</h1>
           {unreadCount > 0 && (
-            <button
-              onClick={handleReadAll}
-              style={{
-                background: 'none', border: '1px solid #4f46e5', color: '#4f46e5',
-                borderRadius: 8, padding: '6px 16px', fontSize: 13, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'inherit',
-              }}
-            >
+            <button className="notif-read-all-btn" onClick={handleReadAll}>
               قراءة الكل
             </button>
           )}
         </div>
 
         {loading && (
-          <div style={{ padding: 20 }}><Skeleton height={40} /><div style={{ height: 16 }} /><Skeleton height={20} count={5} /></div>
+          <div className="notif-loading">
+            <Skeleton height={40} />
+            <div className="notif-loading-gap" />
+            <Skeleton height={20} count={5} />
+          </div>
         )}
 
         {!loading && notifications.length === 0 && (
-          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div className="notif-empty">
+            <div className="notif-empty-icon">
               <FiBell size={36} color="#d1d5db" />
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا يوجد إشعارات</h3>
-            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 0 }}>ستظهر إشعاراتك هنا عند وصولها</p>
+            <h3 className="notif-empty-title">لا يوجد إشعارات</h3>
+            <p className="notif-empty-subtitle">ستظهر إشعاراتك هنا عند وصولها</p>
           </div>
         )}
 
         {!loading && notifications.length > 0 && (
-          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-            {notifications.map((n, idx) => (
+          <div className="notif-list">
+            {notifications.map((n) => (
               <div
                 key={n.id}
+                className={`notif-item${n.isRead ? '' : ' notif-item-unread'}`}
+                data-clickable={n.url ? 'true' : 'false'}
                 onClick={() => handleClick(n)}
-                style={{
-                  padding: '14px 20px',
-                  borderBottom: idx < notifications.length - 1 ? '1px solid #f3f4f6' : 'none',
-                  background: n.isRead ? '#fff' : '#eef2ff',
-                  cursor: n.url ? 'pointer' : 'default',
-                  transition: 'background 0.15s',
-                  display: 'flex',
-                  gap: 12,
-                  alignItems: 'flex-start',
-                }}
                 onMouseEnter={(e) => { if (n.url) e.currentTarget.style.background = '#f9fafb'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = n.isRead ? '#fff' : '#eef2ff'; }}
               >
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: n.isRead ? 500 : 700, color: '#111827', marginBottom: 3 }}>
+                <div className="notif-item-content">
+                  <div className={`notif-item-title ${n.isRead ? 'read' : 'unread'}`}>
                     {n.title}
                   </div>
-                  <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5 }}>{n.body}</div>
-                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 5 }}>{timeAgo(n.createdAt)}</div>
+                  <div className="notif-item-body">{n.body}</div>
+                  <div className="notif-item-time">{timeAgo(n.createdAt)}</div>
                 </div>
-                {!n.isRead && (
-                  <div style={{
-                    width: 8, height: 8, borderRadius: '50%', background: '#4f46e5',
-                    flexShrink: 0, marginTop: 6,
-                  }} />
-                )}
+                {!n.isRead && <div className="notif-item-dot" />}
               </div>
             ))}
           </div>
