@@ -224,7 +224,7 @@ function UsersTab({ currentUser }) {
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id} style={{ opacity: user.isActive === false ? 0.6 : 1 }}>
+                <tr key={user.id} className={user.isActive === false ? 'at-user-opacity' : ''}>
                   <td>
                     <div className="user-cell-info">
                       <div className="user-cell-avatar">{user.name.charAt(0).toUpperCase()}</div>
@@ -270,7 +270,7 @@ function UsersTab({ currentUser }) {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: 40 }}>لا يوجد مستخدمين</td>
+                  <td colSpan="5" className="at-td-center">لا يوجد مستخدمين</td>
                 </tr>
               )}
             </tbody>
@@ -415,7 +415,7 @@ function PropertiesTab() {
               </tr>
             ))}
             {properties.length === 0 && (
-              <tr><td colSpan="5" style={{ textAlign: 'center', padding: 40 }}>لا يوجد عقارات</td></tr>
+              <tr><td colSpan="5" className="at-td-center">لا يوجد عقارات</td></tr>
             )}
           </tbody>
         </table>
@@ -495,7 +495,7 @@ function RatingsTab() {
                 <td>{r.student?.name || '—'}</td>
                 <td>{r.property?.title || '—'}</td>
                 <td>{'⭐'.repeat(r.rating)}</td>
-                <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <td className="at-truncate">
                   {r.comment || '—'}
                 </td>
                 <td>{new Date(r.createdAt).toLocaleDateString('ar-EG')}</td>
@@ -507,7 +507,7 @@ function RatingsTab() {
               </tr>
             ))}
             {reviews.length === 0 && (
-              <tr><td colSpan="6" style={{ textAlign: 'center', padding: 40 }}>لا يوجد تقييمات</td></tr>
+              <tr><td colSpan="6" className="at-td-center">لا يوجد تقييمات</td></tr>
             )}
           </tbody>
         </table>
@@ -628,7 +628,7 @@ function RefundsTab() {
               </tr>
             ))}
             {refunds.length === 0 && (
-              <tr><td colSpan="7" style={{ textAlign: 'center', padding: 40 }}>لا يوجد طلبات استرداد</td></tr>
+              <tr><td colSpan="7" className="at-td-center">لا يوجد طلبات استرداد</td></tr>
             )}
           </tbody>
         </table>
@@ -740,7 +740,7 @@ function WithdrawalsTab() {
                 <td>{w.owner?.name || '—'}</td>
                 <td>{Number(w.amount).toLocaleString('en-US')} ₪</td>
                 <td>{w.bankName || '—'}</td>
-                <td style={{ direction: 'ltr' }}>{w.bankAccountNumber || '—'}</td>
+                <td className="at-dir-ltr">{w.bankAccountNumber || '—'}</td>
                 <td><span className={`status-badge ${statusClass[w.status] || ''}`}>{statusLabels[w.status] || w.status}</span></td>
                 <td>{new Date(w.createdAt).toLocaleDateString('ar-EG')}</td>
                 <td>
@@ -758,7 +758,7 @@ function WithdrawalsTab() {
               </tr>
             ))}
             {withdrawals.length === 0 && (
-              <tr><td colSpan="7" style={{ textAlign: 'center', padding: 40 }}>لا يوجد طلبات سحب</td></tr>
+              <tr><td colSpan="7" className="at-td-center">لا يوجد طلبات سحب</td></tr>
             )}
           </tbody>
         </table>
@@ -850,14 +850,14 @@ function AuditTab() {
                 <td>{log.userName}</td>
                 <td><span className="role-badge">{actionLabels[log.action] || log.action}</span></td>
                 <td>{entityLabels[log.entity] || log.entity}</td>
-                <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <td className="at-truncate">
                   {log.details || '—'}
                 </td>
                 <td>{new Date(log.createdAt).toLocaleString('ar-EG')}</td>
               </tr>
             ))}
             {logs.length === 0 && (
-              <tr><td colSpan="5" style={{ textAlign: 'center', padding: 40 }}>لا يوجد سجلات</td></tr>
+              <tr><td colSpan="5" className="at-td-center">لا يوجد سجلات</td></tr>
             )}
           </tbody>
         </table>
@@ -1151,7 +1151,7 @@ function ReportsTab() {
             {reports.map((r) => (
               <tr key={r.id}>
                 <td>{r.reporter?.name || '—'}</td>
-                <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <td className="at-truncate">
                   {r.review?.comment || '—'}
                 </td>
                 <td>{reasonLabels[r.reason] || r.reason}</td>
@@ -1172,7 +1172,7 @@ function ReportsTab() {
               </tr>
             ))}
             {reports.length === 0 && (
-              <tr><td colSpan="6" style={{ textAlign: 'center', padding: 40 }}>لا يوجد بلاغات</td></tr>
+              <tr><td colSpan="6" className="at-td-center">لا يوجد بلاغات</td></tr>
             )}
           </tbody>
         </table>
@@ -1270,13 +1270,13 @@ function ComplaintsTab() {
             {complaints.map((c) => (
               <tr key={c.id}>
                 <td>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontWeight: 600 }}>{c.user?.name || c.userName || '—'}</span>
-                    <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{c.user?.email || ''}</span>
+                  <div className="at-complaint-user">
+                    <span className="at-complaint-user-name">{c.user?.name || c.userName || '—'}</span>
+                    <span className="at-complaint-user-email">{c.user?.email || ''}</span>
                   </div>
                 </td>
                 <td><span className="role-badge">{TYPE_LABELS[c.type] || c.type}</span></td>
-                <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.subject}</td>
+                <td className="at-truncate-sm">{c.subject}</td>
                 <td>
                   <span className={`status-badge ${STATUS_CLASS[c.status] || ''}`}>
                     {STATUS_LABELS[c.status] || c.status}
@@ -1284,11 +1284,11 @@ function ComplaintsTab() {
                 </td>
                 <td>{new Date(c.createdAt).toLocaleDateString('ar-EG')}</td>
                 <td>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 220 }}>
+                  <div className="at-complaint-form">
                     <select
                       defaultValue={c.status}
                       onChange={(e) => setStatusEdits((s) => ({ ...s, [c.id]: e.target.value }))}
-                      style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: '0.85rem' }}
+                      className="at-complaint-select"
                     >
                       <option value="OPEN">مفتوحة</option>
                       <option value="IN_REVIEW">قيد المراجعة</option>
@@ -1300,13 +1300,12 @@ function ComplaintsTab() {
                       defaultValue={c.adminResponse || ''}
                       rows={2}
                       onChange={(e) => setReplies((r) => ({ ...r, [c.id]: e.target.value }))}
-                      style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: '0.85rem', resize: 'vertical' }}
+                      className="at-complaint-textarea"
                     />
                     <button
-                      className="action-btn"
+                      className="action-btn at-complaint-save-btn"
                       onClick={() => handleSave(c.id)}
                       disabled={saving[c.id]}
-                      style={{ color: '#fff', background: '#4f46e5', borderRadius: 6, padding: '4px 12px', border: 'none', cursor: 'pointer', fontWeight: 600 }}
                     >
                       {saving[c.id] ? 'جاري...' : 'حفظ'}
                     </button>
@@ -1315,7 +1314,7 @@ function ComplaintsTab() {
               </tr>
             ))}
             {complaints.length === 0 && (
-              <tr><td colSpan="6" style={{ textAlign: 'center', padding: 40 }}>لا يوجد شكاوى</td></tr>
+              <tr><td colSpan="6" className="at-td-center">لا يوجد شكاوى</td></tr>
             )}
           </tbody>
         </table>

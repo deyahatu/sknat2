@@ -746,6 +746,85 @@
   }
 }
 
+/* ── Admin Tab utility classes ── */
+.at-user-opacity {
+  opacity: 0.6;
+}
+
+.at-truncate {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.at-truncate-sm {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.at-dir-ltr {
+  direction: ltr;
+}
+
+.at-td-center {
+  text-align: center;
+  padding: 40px;
+}
+
+.at-complaint-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.at-complaint-user {
+  display: flex;
+  flex-direction: column;
+}
+
+.at-complaint-user-name {
+  font-weight: 600;
+}
+
+.at-complaint-user-email {
+  font-size: 0.8rem;
+  color: var(--text-light, #6b7280);
+}
+
+.at-complaint-select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light, #d1d5db);
+  font-size: 0.85rem;
+}
+
+.at-complaint-textarea {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light, #d1d5db);
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
+.at-complaint-save-btn {
+  color: #fff;
+  background: var(--primary, #4f46e5);
+  border-radius: 6px;
+  padding: 4px 12px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.at-complaint-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Mobile: sidebar becomes top bar */
 @media (max-width: 768px) {
   .admin-layout {
