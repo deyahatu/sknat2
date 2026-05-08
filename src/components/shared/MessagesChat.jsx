@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import { connectSocket, getSocket } from '../../utils/socket';
 
 const styles = {
   container: { display: 'flex', height: 'calc(100vh - 120px)', direction: 'rtl', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#fff' },
@@ -36,10 +37,52 @@ export default function MessagesChat() {
   const [newMsg, setNewMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const [chatLoading, setChatLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
+  const selectedUserRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+
+  // Keep ref in sync with state so socket callbacks see latest value
+  useEffect(() => { selectedUserRef.current = selectedUser; }, [selectedUser]);
 
   useEffect(() => {
     loadConversations();
+
+    const socket = connectSocket();
+
+    socket.on('new_message', (message) => {
+      const currentSelected = selectedUserRef.current;
+      if (message.senderId === currentSelected) {
+        setMessages(prev => [...prev, message]);
+      }
+      // Update conversation sidebar
+      setConversations(prev => {
+        const existing = prev.find(c => c.userId === message.senderId);
+        if (existing) {
+          return prev.map(c => c.userId === message.senderId ? {
+            ...c,
+            lastMessage: message.content.length > 50 ? message.content.slice(0, 50) + '...' : message.content,
+            lastMessageAt: message.createdAt,
+            unreadCount: message.senderId === currentSelected ? 0 : c.unreadCount + 1,
+          } : c);
+        }
+        return [{ userId: message.senderId, userName: message.sender?.name, userAvatar: message.sender?.avatar, lastMessage: message.content.slice(0, 50), lastMessageAt: message.createdAt, unreadCount: 1 }, ...prev];
+      });
+    });
+
+    socket.on('typing', ({ from }) => {
+      if (from === selectedUserRef.current) setIsTyping(true);
+    });
+
+    socket.on('stop_typing', ({ from }) => {
+      if (from === selectedUserRef.current) setIsTyping(false);
+    });
+
+    return () => {
+      socket.off('new_message');
+      socket.off('typing');
+      socket.off('stop_typing');
+    };
   }, []);
 
   useEffect(() => {
@@ -149,13 +192,30 @@ export default function MessagesChat() {
                   <div style={styles.msgTime}>{formatTime(msg.createdAt)}</div>
                 </div>
               ))}
+              {isTyping && <div style={{ padding: '8px 16px', color: '#6b7280', fontSize: 13, fontStyle: 'italic' }}>يكتب...</div>}
               <div ref={messagesEndRef} />
             </div>
             <form onSubmit={sendMessage} style={styles.inputArea}>
               <input
                 style={styles.input}
                 value={newMsg}
-                onChange={e => setNewMsg(e.target.value)}
+                onChange={e => {
+                  setNewMsg(e.target.value);
+                  const socket = getSocket();
+                  if (socket && selectedUser) {
+                    socket.emit('typing', { to: selectedUser });
+                    clearTimeout(typingTimeoutRef.current);
+                    typingTimeoutRef.current = setTimeout(() => {
+                      socket.emit('stop_typing', { to: selectedUser });
+                    }, 1500);
+                  }
+                }}
+                onBlur={() => {
+                  const socket = getSocket();
+                  if (socket && selectedUser) {
+                    socket.emit('stop_typing', { to: selectedUser });
+                  }
+                }}
                 placeholder="اكتب رسالتك..."
               />
               <button type="submit" style={styles.sendBtn} disabled={!newMsg.trim()}>إرسال</button>

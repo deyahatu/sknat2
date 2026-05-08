@@ -2,6 +2,10 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import { createServer } from 'http';
+import { Server as SocketIO } from 'socket.io';
+import { setIO } from './utils/socket.js';
+import { verifyToken } from './utils/jwt.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import propertyRoutes from './routes/properties.js';
@@ -63,6 +67,51 @@ app.use((err, req, res, _next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT} (schema v2)`);
+const server = createServer(app);
+
+const io = new SocketIO(server, {
+  cors: {
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true,
+  },
+});
+
+setIO(io);
+
+const onlineUsers = new Map();
+
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token || socket.handshake.headers?.cookie?.match(/token=([^;]+)/)?.[1];
+    if (!token) return next(new Error('Authentication required'));
+    const decoded = verifyToken(token);
+    socket.userId = decoded.userId;
+    next();
+  } catch {
+    next(new Error('Invalid token'));
+  }
+});
+
+io.on('connection', (socket) => {
+  const { userId } = socket;
+  socket.join(`user_${userId}`);
+  onlineUsers.set(userId, socket.id);
+  io.emit('online_users', Array.from(onlineUsers.keys()));
+
+  socket.on('typing', ({ to }) => {
+    io.to(`user_${to}`).emit('typing', { from: userId });
+  });
+
+  socket.on('stop_typing', ({ to }) => {
+    io.to(`user_${to}`).emit('stop_typing', { from: userId });
+  });
+
+  socket.on('disconnect', () => {
+    onlineUsers.delete(userId);
+    io.emit('online_users', Array.from(onlineUsers.keys()));
+  });
+});
+
+server.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
 import { authenticate } from '../middleware/auth.js';
+import { emitToUser } from '../utils/socket.js';
 
 const router = Router();
 
@@ -101,6 +102,7 @@ router.post('/', authenticate, async (req, res, next) => {
       },
     });
 
+    emitToUser(receiverId, 'new_message', message);
     res.status(201).json({ message });
   } catch (err) {
     next(err);
