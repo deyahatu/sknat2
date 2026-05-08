@@ -146,6 +146,7 @@ export const api = {
   admin: {
     stats: () => request('/admin/stats'),
     monthlyStats: () => request('/admin/stats/monthly'),
+    recentActivity: () => request('/admin/stats/activity'),
     exportData: (type) => request(`/admin/export/${type}`),
     approveWithdrawal: (id) => request(`/withdrawals/${id}/approve`, { method: 'PATCH' }),
     rejectWithdrawal: (id, reason) => request(`/withdrawals/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) }),

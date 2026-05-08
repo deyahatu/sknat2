@@ -60,6 +60,52 @@ router.get('/stats', authenticate, authorize('ADMIN'), async (req, res, next) =>
   }
 });
 
+// Recent activity (last 10 events)
+router.get('/stats/activity', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const [recentBookings, recentPayments] = await Promise.all([
+      prisma.booking.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true, status: true, createdAt: true,
+          student: { select: { name: true } },
+          property: { select: { title: true } },
+          roomVariant: { select: { name: true } },
+        },
+      }),
+      prisma.payment.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true, amount: true, status: true, createdAt: true,
+          student: { select: { name: true } },
+          booking: { select: { property: { select: { title: true } } } },
+        },
+      }),
+    ]);
+
+    const activities = [
+      ...recentBookings.map(b => ({
+        type: 'booking',
+        text: `${b.student.name} — حجز ${b.roomVariant?.name || ''} في ${b.property.title}`,
+        status: b.status,
+        time: b.createdAt,
+      })),
+      ...recentPayments.map(p => ({
+        type: 'payment',
+        text: `${p.student.name} — دفع ${Number(p.amount)} ₪ لـ ${p.booking?.property?.title || ''}`,
+        status: p.status,
+        time: p.createdAt,
+      })),
+    ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 8);
+
+    res.json({ activities });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Monthly stats for charts (last 6 months)
 router.get('/stats/monthly', authenticate, authorize('ADMIN'), async (req, res, next) => {
   try {

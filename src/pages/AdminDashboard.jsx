@@ -870,10 +870,12 @@ function StatsTab() {
   const toast = useToast();
   const [stats, setStats] = useState(null);
   const [monthly, setMonthly] = useState([]);
+  const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(null);
 
   useEffect(() => {
+    api.admin.recentActivity().then(d => setActivities(d.activities || [])).catch(() => {});
     Promise.all([
       api.admin.stats(),
       api.admin.monthlyStats(),
@@ -962,6 +964,67 @@ function StatsTab() {
             <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{d.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* Occupancy + Recent Activity */}
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16, marginBottom: 24 }}>
+        {/* Occupancy Ring */}
+        <div style={{ background: '#fff', borderRadius: 16, padding: 28, border: '1px solid #e8ecf4', textAlign: 'center' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginBottom: 20 }}>معدل الإشغال</div>
+          <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto 16px' }}>
+            <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f0f0f0" strokeWidth="3" />
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke={occupancyRate >= 70 ? '#10b981' : occupancyRate >= 40 ? '#d97706' : '#dc2626'} strokeWidth="3" strokeDasharray={`${occupancyRate} ${100 - occupancyRate}`} strokeLinecap="round" style={{ transition: 'stroke-dasharray 1s ease' }} />
+            </svg>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontSize: 32, fontWeight: 900, color: '#1e293b' }}>{occupancyRate}%</span>
+            </div>
+          </div>
+          <div style={{ fontSize: 13, color: '#64748b' }}>{stats.occupiedRooms || 0} محجوزة من {stats.totalRooms || 0} غرفة</div>
+        </div>
+
+        {/* Recent Activity */}
+        <div style={{ background: '#fff', borderRadius: 16, padding: 20, border: '1px solid #e8ecf4' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginBottom: 14 }}>آخر النشاطات</div>
+          {activities.length === 0 ? (
+            <div style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: 30 }}>لا توجد نشاطات</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {activities.map((a, i) => {
+                const statusColors = { PENDING: '#d97706', APPROVED: '#4f46e5', PAID: '#059669', COMPLETED: '#10b981', REJECTED: '#dc2626', CANCELLED: '#6b7280' };
+                const statusLabels = { PENDING: 'معلق', APPROVED: 'مقبول', PAID: 'مدفوع', COMPLETED: 'مكتمل', REJECTED: 'مرفوض', CANCELLED: 'ملغى' };
+                const timeAgo = (() => {
+                  const diff = Math.floor((Date.now() - new Date(a.time).getTime()) / 60000);
+                  if (diff < 1) return 'الآن';
+                  if (diff < 60) return `منذ ${diff} د`;
+                  if (diff < 1440) return `منذ ${Math.floor(diff / 60)} س`;
+                  return `منذ ${Math.floor(diff / 1440)} يوم`;
+                })();
+                return (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0',
+                    borderBottom: i < activities.length - 1 ? '1px solid #f5f5f5' : 'none',
+                  }}>
+                    <div style={{
+                      width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                      background: a.type === 'payment' ? '#059669' : (statusColors[a.status] || '#94a3b8'),
+                    }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.text}</div>
+                    </div>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 8,
+                      background: `${statusColors[a.status] || '#94a3b8'}15`,
+                      color: statusColors[a.status] || '#94a3b8',
+                      whiteSpace: 'nowrap',
+                    }}>{statusLabels[a.status] || a.status}</span>
+                    <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>{timeAgo}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Charts — 2-column grid */}
