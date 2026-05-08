@@ -31,6 +31,7 @@ import StudentMessages from './pages/student/Messages';
 import OwnerMessages from './pages/owner/OwnerMessages';
 import Complaints from './pages/Complaints';
 import Notifications from './pages/Notifications';
+import NotFound from './pages/NotFound';
 
 function GuestRoute({ children }) {
   const { user, loading } = useAuth();
@@ -108,6 +109,7 @@ function App() {
             <Route path="/notifications" element={<ProtectedRoute roles={['STUDENT', 'OWNER', 'ADMIN']}><Notifications /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
           </Route>
+          <Route path="*" element={<NotFound />} />
         </Routes>
           </AuthProvider>
         </Router>
