@@ -1,20 +1,20 @@
 /* Owner Section Styles */
 :root {
-  --owner-primary: #2563eb;
-  --owner-sidebar-bg: #0f2040;
-  --owner-sidebar-text: #e2e8f0;
-  --owner-sidebar-hover: #1e3a5f;
-  --owner-sidebar-active: #2563eb;
-  --owner-bg: #eff6ff;
+  --owner-primary: #4f46e5;
+  --owner-sidebar-bg: #0f172a;
+  --owner-sidebar-text: #cbd5e1;
+  --owner-sidebar-hover: #1e293b;
+  --owner-sidebar-active: #4f46e5;
+  --owner-bg: #f8fafc;
   --owner-card-bg: #ffffff;
-  --owner-orange: #f59e0b;
+  --owner-orange: #d97706;
   --owner-green: #10b981;
-  --owner-red: #ef4444;
-  --owner-text: #1e293b;
-  --owner-text-muted: #64748b;
+  --owner-red: #dc2626;
+  --owner-text: #0f172a;
+  --owner-text-muted: #475569;
   --owner-border: #e2e8f0;
-  --owner-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --owner-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --owner-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --owner-shadow-md: 0 4px 8px rgba(15, 23, 42, 0.06);
 }
 
 .owner-layout {
@@ -78,7 +78,7 @@
 }
 
 .owner-menu-btn:hover {
-  background: #1e3a5f;
+  background: #1e293b;
 }
 
 .owner-header-avatar {
@@ -249,6 +249,7 @@
     background 0.15s,
     color 0.15s;
   border-right: 3px solid transparent;
+  border-radius: 10px;
 }
 
 .owner-sidebar-link:hover {
@@ -257,9 +258,10 @@
 }
 
 .owner-sidebar-link.active {
-  background: rgba(37, 100, 235, 0.156);
-  color: #93c5fd;
+  background: rgba(79, 70, 229, 0.15);
+  color: #a5b4fc;
   border-right-color: var(--owner-primary);
+  box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.3);
 }
 
 .owner-sidebar-link svg {
@@ -303,7 +305,7 @@
 
 /* ─── Welcome Banner ─── */
 .owner-welcome {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 60%, #e0e7ff 100%);
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 60%, #ede9fe 100%);
   border-radius: 18px;
   padding: 26px 30px;
   margin-bottom: 24px;
@@ -314,7 +316,7 @@
   flex-wrap: wrap;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.08);
 }
 
 .owner-welcome::before {
@@ -324,7 +326,7 @@
   left: -60px;
   width: 220px;
   height: 220px;
-  background: rgba(37, 99, 235, 0.09);
+  background: rgba(79, 70, 229, 0.09);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -351,7 +353,7 @@
 .owner-welcome-greeting {
   font-size: 1.7rem;
   font-weight: 800;
-  color: #1e3a8a;
+  color: #312e81;
   margin: 0;
   line-height: 1.2;
   letter-spacing: -0.3px;
@@ -368,9 +370,9 @@
   border-radius: 999px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #1e40af;
+  color: #3730a3;
   border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.08);
   position: relative;
   z-index: 1;
 }
@@ -441,8 +443,8 @@
 
 .owner-stat-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 22px rgba(15, 32, 64, 0.08);
-  border-color: rgba(37, 99, 235, 0.15);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+  border-color: rgba(79, 70, 229, 0.15);
 }
 
 .owner-stat-icon {
@@ -457,7 +459,7 @@
 }
 
 .owner-stat-icon.blue {
-  background: #dbeafe;
+  background: #e0e7ff;
   color: var(--owner-primary);
 }
 .owner-stat-icon.orange {
@@ -613,8 +615,8 @@
 }
 
 .owner-top-property-stat.primary {
-  background: #eff6ff;
-  color: #1e40af;
+  background: #eef2ff;
+  color: #3730a3;
 }
 
 .owner-top-property-stat.success {
@@ -649,9 +651,15 @@
 /* ─── Cards / Panels ─── */
 .owner-card {
   background: var(--owner-card-bg);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: var(--owner-shadow-md);
   overflow: hidden;
+  border: 1px solid var(--owner-border);
+  transition: box-shadow 0.2s ease;
+}
+
+.owner-card:hover {
+  box-shadow: var(--owner-shadow-md);
 }
 
 .owner-card-header {
@@ -685,7 +693,7 @@
 
 /* ─── Form Panels ─── */
 .owner-form-panel {
-  border: 1px solid rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(79, 70, 229, 0.12);
   border-radius: 22px;
   box-shadow: 0 18px 36px rgba(15, 32, 64, 0.08);
   overflow: hidden;
@@ -694,7 +702,7 @@
 .owner-form-panel-header {
   position: relative;
   padding: 18px 22px;
-  background: linear-gradient(135deg, #0f2040 0%, #17386a 54%, #2563eb 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 54%, #4f46e5 100%);
   border-bottom: none;
   overflow: hidden;
 }
@@ -752,12 +760,12 @@
 }
 
 .owner-form-panel .owner-form-group:hover {
-  border-color: rgba(37, 99, 235, 0.18);
+  border-color: rgba(79, 70, 229, 0.18);
 }
 
 .owner-form-panel .owner-form-group:focus-within {
-  border-color: rgba(37, 99, 235, 0.26);
-  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.08);
+  border-color: rgba(79, 70, 229, 0.26);
+  box-shadow: 0 14px 28px rgba(79, 70, 229, 0.08);
   transform: translateY(-1px);
 }
 
@@ -787,7 +795,7 @@
 .owner-form-panel .owner-form-select:focus,
 .owner-form-panel .owner-form-textarea:focus {
   border-color: var(--owner-primary);
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08);
   background: white;
 }
 
@@ -802,8 +810,8 @@
   -webkit-appearance: none;
   -moz-appearance: none;
   background-image:
-    linear-gradient(45deg, transparent 50%, #2563eb 50%),
-    linear-gradient(135deg, #2563eb 50%, transparent 50%);
+    linear-gradient(45deg, transparent 50%, #4f46e5 50%),
+    linear-gradient(135deg, #4f46e5 50%, transparent 50%);
   background-position:
     calc(16px) calc(50% - 3px),
     calc(10px) calc(50% - 3px);
@@ -824,8 +832,8 @@
 .owner-form-panel .owner-service-check {
   padding: 10px 12px;
   border-radius: 14px;
-  background: rgba(37, 99, 235, 0.05);
-  border: 1px solid rgba(37, 99, 235, 0.08);
+  background: rgba(79, 70, 229, 0.05);
+  border: 1px solid rgba(79, 70, 229, 0.08);
   transition:
     transform 0.18s ease,
     border-color 0.18s ease,
@@ -834,8 +842,8 @@
 
 .owner-form-panel .owner-service-check:hover {
   transform: translateY(-1px);
-  border-color: rgba(37, 99, 235, 0.18);
-  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(79, 70, 229, 0.18);
+  background: rgba(79, 70, 229, 0.08);
 }
 
 .owner-form-panel .owner-image-preview {
@@ -851,7 +859,7 @@
   padding: 16px 18px;
   border-radius: 22px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(243, 247, 255, 0.96) 100%);
-  border: 1px solid rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(79, 70, 229, 0.1);
   box-shadow: 0 16px 30px rgba(15, 32, 64, 0.07);
 }
 
@@ -867,14 +875,14 @@
 
 .owner-form-submit-btn {
   flex: 1.2;
-  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 52%, #3b82f6 100%);
+  background: linear-gradient(135deg, #4338ca 0%, #4f46e5 52%, #6366f1 100%);
   color: white;
-  box-shadow: 0 14px 24px rgba(37, 99, 235, 0.22);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
 }
 
 .owner-form-submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 18px 30px rgba(37, 99, 235, 0.28);
+  box-shadow: 0 18px 30px rgba(79, 70, 229, 0.28);
 }
 
 .owner-form-cancel-btn {
@@ -888,7 +896,7 @@
 .owner-form-cancel-btn:hover {
   background: #f8fafc;
   color: #0f172a;
-  border-color: rgba(37, 99, 235, 0.16);
+  border-color: rgba(79, 70, 229, 0.16);
   transform: translateY(-1px);
 }
 
@@ -911,7 +919,7 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -919,7 +927,7 @@
   font-weight: 700;
   font-size: 0.95rem;
   flex-shrink: 0;
-  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 2px 5px rgba(79, 70, 229, 0.25);
 }
 
 .owner-list-avatar.orange {
@@ -990,8 +998,8 @@
   color: #991b1b;
 }
 .owner-badge.paid {
-  background: #dbeafe;
-  color: #1e40af;
+  background: #c7d2fe;
+  color: #3730a3;
 }
 .owner-badge.completed {
   background: #f0fdf4;
@@ -1052,7 +1060,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: 10px;
   border: none;
   cursor: pointer;
   font-size: 0.88rem;
@@ -1101,7 +1109,7 @@
 }
 
 .owner-btn-outline:hover {
-  background: #eff6ff;
+  background: #eef2ff;
 }
 
 .owner-btn-ghost {
@@ -1157,12 +1165,12 @@
   width: 100%;
   padding: 10px 14px;
   border: 1.5px solid var(--owner-border);
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.9rem;
   color: var(--owner-text);
   background: white;
   box-sizing: border-box;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   font-family: inherit;
 }
 
@@ -1171,6 +1179,7 @@
 .owner-form-textarea:focus {
   outline: none;
   border-color: var(--owner-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
 .owner-form-textarea {
@@ -1241,7 +1250,7 @@
   padding: 24px 28px;
   margin-bottom: 20px;
   border-radius: 28px;
-  background: linear-gradient(135deg, #0f2040 0%, #17386a 54%, #2563eb 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 54%, #4f46e5 100%);
   box-shadow: 0 22px 44px rgba(15, 32, 64, 0.18);
   overflow: hidden;
 }
@@ -1287,7 +1296,7 @@
   padding: 28px;
   margin-bottom: 24px;
   border-radius: 28px;
-  background: linear-gradient(135deg, #0f2040 0%, #17386a 54%, #2563eb 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 54%, #4f46e5 100%);
   box-shadow: 0 24px 50px rgba(15, 32, 64, 0.2);
   overflow: hidden;
 }
@@ -1363,7 +1372,7 @@
   position: relative;
   z-index: 1;
   padding-inline: 18px;
-  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.24);
+  box-shadow: 0 12px 26px rgba(79, 70, 229, 0.24);
   flex-shrink: 0;
 }
 
@@ -1374,8 +1383,8 @@
 }
 
 .owner-property-panel {
-  --owner-property-accent: #2563eb;
-  --owner-property-accent-soft: rgba(37, 99, 235, 0.12);
+  --owner-property-accent: #4f46e5;
+  --owner-property-accent-soft: rgba(79, 70, 229, 0.12);
   position: relative;
   padding: 22px;
   border-radius: 24px;
@@ -1426,7 +1435,7 @@
 
 .owner-property-panel:hover {
   transform: translateY(-6px);
-  border-color: rgba(37, 99, 235, 0.22);
+  border-color: rgba(79, 70, 229, 0.22);
   box-shadow: 0 24px 46px rgba(15, 32, 64, 0.12);
 }
 
@@ -1724,7 +1733,7 @@
 
 /* ─── Withdrawal card ─── */
 .owner-wallet-banner {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
   color: white;
   border-radius: 12px;
   padding: 24px;
@@ -1906,7 +1915,7 @@
 .owner-withdrawals-bank-link:hover {
   transform: translateY(-1px);
   box-shadow: 0 16px 30px rgba(15, 32, 64, 0.18);
-  background: #eff6ff;
+  background: #eef2ff;
 }
 
 .owner-withdrawals-bank-link.attention {
@@ -1977,7 +1986,7 @@
 .owner-withdrawals-balance-card,
 .owner-withdrawals-request-card,
 .owner-withdrawals-history-card {
-  border: 1px solid rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(79, 70, 229, 0.1);
   border-radius: 24px;
   box-shadow: 0 18px 38px rgba(15, 32, 64, 0.08);
 }
@@ -1999,7 +2008,7 @@
   width: 180px;
   height: 180px;
   border-radius: 50%;
-  background: rgba(37, 99, 235, 0.07);
+  background: rgba(79, 70, 229, 0.07);
   pointer-events: none;
 }
 
@@ -2012,7 +2021,7 @@
 }
 
 .owner-withdrawals-balance-kicker {
-  color: #1d4ed8;
+  color: #4338ca;
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -2085,8 +2094,8 @@
   min-height: 44px;
   padding: 0 18px;
   border-radius: 14px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: #eef2ff;
+  color: #4338ca;
   text-decoration: none;
   font-weight: 700;
   transition:
@@ -2095,7 +2104,7 @@
 }
 
 .owner-withdrawals-secondary-link:hover {
-  background: #dbeafe;
+  background: #c7d2fe;
   transform: translateY(-1px);
 }
 
@@ -2131,14 +2140,14 @@
   padding: 14px 16px;
   border-radius: 16px;
   background: #f8fbff;
-  border-color: #dbe7ff;
+  border-color: #c7d2fe;
   font-size: 1rem;
 }
 
 .owner-withdrawals-input:focus {
   background: white;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
 .owner-withdrawals-submit-btn {
@@ -2146,10 +2155,10 @@
   justify-content: center;
   min-height: 54px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #17386a 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%);
   color: white;
   font-weight: 700;
-  box-shadow: 0 16px 28px rgba(37, 99, 235, 0.24);
+  box-shadow: 0 16px 28px rgba(79, 70, 229, 0.24);
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease,
@@ -2158,7 +2167,7 @@
 
 .owner-withdrawals-submit-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 20px 34px rgba(37, 99, 235, 0.28);
+  box-shadow: 0 20px 34px rgba(79, 70, 229, 0.28);
 }
 
 .owner-withdrawals-history-card {
@@ -2200,7 +2209,7 @@
 
 .owner-withdrawals-filter-bar .owner-filter-btn {
   padding: 8px 14px;
-  border-color: #dbeafe;
+  border-color: #c7d2fe;
   background: #f8fbff;
   color: #47607d;
   font-weight: 600;
@@ -2208,10 +2217,10 @@
 
 .owner-withdrawals-filter-bar .owner-filter-btn:hover,
 .owner-withdrawals-filter-bar .owner-filter-btn.active {
-  background: linear-gradient(135deg, #17386a 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%);
   border-color: transparent;
   color: white;
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.2);
 }
 
 .owner-withdrawals-table-wrap {
@@ -2250,7 +2259,7 @@
 }
 
 .owner-withdrawals-table tr:hover td {
-  background: #eff6ff;
+  background: #eef2ff;
 }
 
 .owner-withdrawal-amount {
@@ -2336,7 +2345,7 @@
 .owner-profile-hero {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #0f2040 0%, #17386a 54%, #2563eb 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 54%, #4f46e5 100%);
   color: white;
   border-radius: 28px;
   padding: 28px 30px;
@@ -2417,7 +2426,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #2563eb;
+  border: 2px solid #4f46e5;
   box-shadow: 0 6px 14px rgba(15, 32, 64, 0.18);
   cursor: pointer;
   transition:
@@ -2521,7 +2530,7 @@
 }
 
 .owner-profile-grid .owner-card {
-  border: 1px solid rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(79, 70, 229, 0.1);
   border-radius: 24px;
   box-shadow: 0 18px 38px rgba(15, 32, 64, 0.08);
   overflow: hidden;
@@ -2552,7 +2561,7 @@
   padding: 16px;
   border-radius: 18px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  border: 1px solid rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.08);
 }
 
 .owner-profile-grid .owner-form-label {
@@ -2565,7 +2574,7 @@
 .owner-profile-grid .owner-form-input {
   min-height: 52px;
   border-radius: 16px;
-  border-color: #dbe7ff;
+  border-color: #c7d2fe;
   background: #ffffff;
   transition:
     border-color 0.15s ease,
@@ -2574,9 +2583,9 @@
 }
 
 .owner-profile-grid .owner-form-input:focus {
-  border-color: #2563eb;
+  border-color: #4f46e5;
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08);
 }
 
 .owner-profile-input-locked {
@@ -2590,9 +2599,9 @@
   min-height: 50px;
   padding-inline: 20px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #17386a 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%);
   font-weight: 700;
-  box-shadow: 0 16px 28px rgba(37, 99, 235, 0.18);
+  box-shadow: 0 16px 28px rgba(79, 70, 229, 0.18);
 }
 
 .owner-profile-grid .owner-btn-primary:hover:not(:disabled) {
@@ -2613,7 +2622,7 @@
   gap: 16px;
   padding: 16px 18px;
   margin-bottom: 12px;
-  border: 1px solid rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.08);
   border-radius: 18px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
 }
@@ -2660,7 +2669,7 @@
 
 .owner-profile-actions .owner-btn-ghost {
   background: #f8fafc;
-  border-color: #dbe7ff;
+  border-color: #c7d2fe;
   color: #39506d;
   font-weight: 700;
 }
@@ -2719,7 +2728,7 @@
 
 .owner-bank-selector-card,
 .owner-bank-form-card {
-  border: 1px solid rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(79, 70, 229, 0.1);
   border-radius: 24px;
   box-shadow: 0 18px 38px rgba(15, 32, 64, 0.08);
 }
@@ -2732,7 +2741,7 @@
 .owner-bank-unified-card {
   width: 100%;
   max-width: 860px;
-  border: 1px solid rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(79, 70, 229, 0.1);
   border-radius: 24px;
   box-shadow: 0 18px 38px rgba(15, 32, 64, 0.08);
   overflow: hidden;
@@ -2788,7 +2797,7 @@
   position: absolute;
   inset: 0 0 auto 0;
   height: 4px;
-  background: linear-gradient(90deg, #2563eb 0%, transparent 100%);
+  background: linear-gradient(90deg, #4f46e5 0%, transparent 100%);
   opacity: 0;
   transition: opacity 0.18s ease;
 }
@@ -2801,25 +2810,25 @@
   width: 150px;
   height: 150px;
   border-radius: 50%;
-  background: rgba(37, 99, 235, 0.06);
+  background: rgba(79, 70, 229, 0.06);
   opacity: 0;
   transition: opacity 0.18s ease;
   z-index: -1;
 }
 
 .owner-bank-option:hover {
-  border-color: rgba(37, 99, 235, 0.22);
+  border-color: rgba(79, 70, 229, 0.22);
   background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
   transform: translateY(-4px);
   box-shadow: 0 20px 34px rgba(15, 32, 64, 0.1);
 }
 
 .owner-bank-option.active {
-  border-color: rgba(37, 99, 235, 0.2);
+  border-color: rgba(79, 70, 229, 0.2);
   background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
   box-shadow:
-    0 0 0 3px rgba(37, 99, 235, 0.08),
-    0 18px 32px rgba(37, 99, 235, 0.12);
+    0 0 0 3px rgba(79, 70, 229, 0.08),
+    0 18px 32px rgba(79, 70, 229, 0.12);
 }
 
 .owner-bank-option:hover::before,
@@ -2845,10 +2854,10 @@
 }
 
 .owner-bank-option.active .owner-bank-logo {
-  border-color: #2563eb;
+  border-color: #4f46e5;
   box-shadow:
-    0 0 0 4px rgba(37, 99, 235, 0.14),
-    0 10px 22px rgba(37, 99, 235, 0.16);
+    0 0 0 4px rgba(79, 70, 229, 0.14),
+    0 10px 22px rgba(79, 70, 229, 0.16);
   transform: scale(1.02);
 }
 
@@ -2887,7 +2896,7 @@
   padding: 16px;
   border-radius: 18px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  border: 1px solid rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.08);
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
@@ -2895,8 +2904,8 @@
 }
 
 .owner-bank-form-card .owner-form-group:focus-within {
-  border-color: rgba(37, 99, 235, 0.22);
-  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.08);
+  border-color: rgba(79, 70, 229, 0.22);
+  box-shadow: 0 14px 28px rgba(79, 70, 229, 0.08);
   transform: translateY(-1px);
 }
 
@@ -2911,7 +2920,7 @@
   min-height: 54px;
   padding: 14px 16px;
   border-radius: 16px;
-  border-color: #dbe7ff;
+  border-color: #c7d2fe;
   background: #ffffff;
   font-weight: 600;
   transition:
@@ -2921,8 +2930,8 @@
 }
 
 .owner-bank-form-card .owner-form-input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08);
   background: white;
 }
 
@@ -2931,9 +2940,9 @@
   min-height: 54px;
   justify-content: center;
   border-radius: 16px;
-  background: linear-gradient(135deg, #17386a 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%);
   font-weight: 700;
-  box-shadow: 0 16px 28px rgba(37, 99, 235, 0.18);
+  box-shadow: 0 16px 28px rgba(79, 70, 229, 0.18);
 }
 
 .owner-bank-form-submit:hover:not(:disabled) {
