@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useToast } from "../../hooks/useToast";
 import { api } from "../../utils/api";
 import ConfirmModal from "../../components/shared/ConfirmModal";
 import Skeleton from "../../components/shared/Skeleton";
@@ -50,6 +51,7 @@ function findBankByName(name) {
 }
 
 export default function BankAccount() {
+  const toast = useToast();
   const [selectedBankId, setSelectedBankId] = useState(null);
   const [form, setForm] = useState({
     bankAccountHolder: "",
@@ -138,6 +140,7 @@ export default function BankAccount() {
       setSuccess("تم حفظ بيانات الحساب بنجاح");
     } catch (err) {
       setError(err.message);
+      toast.error(err.message || 'حدث خطأ');
     } finally {
       setSaving(false);
     }
