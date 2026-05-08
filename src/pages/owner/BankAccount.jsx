@@ -176,13 +176,13 @@ export default function BankAccount() {
     });
   }
 
-  if (loading) return <div style={{ maxWidth: 600, margin: '0 auto', padding: 40 }}><Skeleton height={20} width="60%" /><div style={{ height: 12 }} /><Skeleton height={16} count={4} /></div>;
+  if (loading) return <div className="owner-skeleton-wrap-centered"><Skeleton height={20} width="60%" /><div className="owner-skeleton-spacer-sm" /><Skeleton height={16} count={4} /></div>;
 
   return (
     <>
       <div className="owner-section-hero owner-bank-hero">
         <div className="owner-bank-hero-copy">
-          <h1 className="owner-page-title owner-section-hero-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h1 className="owner-page-title owner-section-hero-title">
             <FiCreditCard /> الحساب البنكي
           </h1>
         </div>
@@ -193,7 +193,7 @@ export default function BankAccount() {
             onClick={handleDelete}
             disabled={deleting}
           >
-            {deleting ? "جاري الحذف..." : <><FiTrash2 style={{ marginLeft: 6 }} /> حذف الحساب</>}
+            {deleting ? "جاري الحذف..." : <><FiTrash2 className="icon-ml-6" /> حذف الحساب</>}
           </button>
         )}
       </div>

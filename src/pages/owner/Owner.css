@@ -1018,6 +1018,157 @@
   font-size: 0.9rem;
 }
 
+/* ─── Rich Empty State (icon + title + desc + cta) ─── */
+.owner-empty-body {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.owner-empty-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.owner-empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.owner-empty-desc {
+  color: #9ca3af;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.owner-empty-cta {
+  display: inline-block;
+  padding: 10px 24px;
+  background: var(--primary, #4f46e5);
+  color: #fff;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* ─── Section hero title flex row ─── */
+.owner-section-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ─── Skeleton loading wrapper ─── */
+.owner-skeleton-wrap {
+  padding: 20px;
+}
+
+.owner-skeleton-spacer {
+  height: 16px;
+}
+
+/* ─── Loading wrapper variants ─── */
+.owner-skeleton-wrap-centered {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 40px;
+}
+
+.owner-skeleton-spacer-sm {
+  height: 12px;
+}
+
+/* ─── RateStudents bookings list ─── */
+.owner-rate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ─── RateStudents star input span ─── */
+.owner-star-input .filled,
+.owner-star-input .empty {
+  font-size: 28px;
+  cursor: pointer;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.owner-star-input .filled {
+  color: #f59e0b;
+  transform: scale(1.1);
+}
+
+.owner-star-input .empty {
+  color: #d1d5db;
+  transform: scale(1);
+}
+
+/* ─── RateStudents student sub-text ─── */
+.owner-rate-student-sub {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: var(--owner-text-muted);
+}
+
+/* ─── OwnerBookings pending actions flex ─── */
+.owner-pending-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ─── OwnerProperties skeleton grid ─── */
+.owner-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 20px;
+}
+
+/* ─── OwnerDashboard / BankAccount icon inline nudge ─── */
+.icon-ml {
+  margin-left: 4px;
+}
+
+.icon-ml-6 {
+  margin-left: 6px;
+}
+
+.icon-ml-8 {
+  margin-left: 8px;
+}
+
+.icon-shrink-0 {
+  flex-shrink: 0;
+}
+
+/* ─── ManageProfile / Withdrawals card title with icon ─── */
+.owner-card-title-flex {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── Auth success / message box ─── */
+.owner-success-centered {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+/* ─── Property card room info ─── */
+.owner-property-room-info {
+  font-size: 13px;
+  color: #555;
+  margin-top: 4px;
+}
+
 /* ─── Tables ─── */
 .owner-table-wrap {
   overflow-x: auto;

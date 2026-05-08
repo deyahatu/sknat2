@@ -40,13 +40,13 @@ function Favorites() {
             <p>{error}</p>
           </div>
         ) : favorites.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div className="fav-empty-body">
+            <div className="fav-empty-icon">
               <FiHeart size={36} color="#d1d5db" />
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>ما ضفت شي للمفضلة</h3>
-            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 20 }}>اضغط على أيقونة القلب في صفحة السكن لإضافته إلى المفضلة</p>
-            <Link to="/search" style={{ display: 'inline-block', padding: '10px 24px', background: '#4f46e5', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>تصفح العقارات</Link>
+            <h3 className="fav-empty-title">ما ضفت شي للمفضلة</h3>
+            <p className="fav-empty-desc">اضغط على أيقونة القلب في صفحة السكن لإضافته إلى المفضلة</p>
+            <Link to="/search" className="fav-empty-cta">تصفح العقارات</Link>
           </div>
         ) : (
           <div className="favorites-grid">

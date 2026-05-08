@@ -58,18 +58,7 @@ function LoginPage() {
           </div>
 
           {successMessage && (
-            <div
-              style={{
-                background: '#d4edda',
-                color: '#155724',
-                padding: '12px',
-                borderRadius: '8px',
-                marginBottom: '16px',
-                textAlign: 'center',
-                fontSize: '14px',
-                border: '1px solid #c3e6cb',
-              }}
-            >
+            <div className="auth-success-message">
               {successMessage}
             </div>
           )}
@@ -77,7 +66,7 @@ function LoginPage() {
           <form className="auth-form" onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="email">البريد الإلكتروني</label>
-              <div className="input-wrapper" style={{ borderColor: fieldErrors.email ? '#dc2626' : undefined }}>
+              <div className={`input-wrapper${fieldErrors.email ? ' auth-field-error-border' : ''}`}>
                 <FiMail className="input-icon" />
                 <input
                   id="email"
@@ -89,12 +78,12 @@ function LoginPage() {
                   dir="ltr"
                 />
               </div>
-              {fieldErrors.email && <span style={{ color: '#dc2626', fontSize: 12, marginTop: 4, display: 'block' }}>{fieldErrors.email}</span>}
+              {fieldErrors.email && <span className="auth-field-error">{fieldErrors.email}</span>}
             </div>
 
             <div className="form-group">
               <label htmlFor="password">كلمة المرور</label>
-              <div className="input-wrapper" style={{ borderColor: fieldErrors.password ? '#dc2626' : undefined }}>
+              <div className={`input-wrapper${fieldErrors.password ? ' auth-field-error-border' : ''}`}>
                 <FiLock className="input-icon" />
                 <input
                   id="password"
@@ -113,7 +102,7 @@ function LoginPage() {
                   {showPassword ? <FiEyeOff /> : <FiEye />}
                 </button>
               </div>
-              {fieldErrors.password && <span style={{ color: '#dc2626', fontSize: 12, marginTop: 4, display: 'block' }}>{fieldErrors.password}</span>}
+              {fieldErrors.password && <span className="auth-field-error">{fieldErrors.password}</span>}
             </div>
 
             <div className="form-actions">

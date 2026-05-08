@@ -103,7 +103,7 @@ export default function Withdrawals() {
     <>
       <div className="owner-section-hero owner-withdrawals-hero">
         <div className="owner-withdrawals-hero-copy">
-          <h1 className="owner-page-title owner-section-hero-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h1 className="owner-page-title owner-section-hero-title">
             <FiDollarSign /> طلبات السحب
           </h1>
         </div>
@@ -221,14 +221,14 @@ export default function Withdrawals() {
 
         <div className="owner-table-wrap owner-withdrawals-table-wrap">
           {loading ? (
-            <div style={{ padding: 20 }}><Skeleton height={40} /><div style={{ height: 16 }} /><Skeleton height={20} count={5} /></div>
+            <div className="owner-skeleton-wrap"><Skeleton height={40} /><div className="owner-skeleton-spacer" /><Skeleton height={20} count={5} /></div>
           ) : requests.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <div className="owner-empty-body">
+              <div className="owner-empty-icon">
                 <FiDollarSign size={36} color="#d1d5db" />
               </div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا توجد طلبات سحب</h3>
-              <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 0 }}>طلبات السحب الخاصة بك ستظهر هنا</p>
+              <h3 className="owner-empty-title">لا توجد طلبات سحب</h3>
+              <p className="owner-empty-desc">طلبات السحب الخاصة بك ستظهر هنا</p>
             </div>
           ) : (
             <table className="owner-table owner-withdrawals-table">

@@ -208,12 +208,7 @@ function RegisterPage() {
                   }
                   placeholder="••••••"
                   dir="ltr"
-                  style={{
-                    fontSize: "1.6rem",
-                    textAlign: "center",
-                    letterSpacing: "8px",
-                    fontWeight: 700,
-                  }}
+                  className="auth-otp-input"
                   autoFocus
                   required
                 />
@@ -221,14 +216,7 @@ function RegisterPage() {
 
               {otpError && <div className="auth-error">{otpError}</div>}
               {otpSuccess && (
-                <div
-                  className="auth-error"
-                  style={{
-                    background: "#dcfce7",
-                    color: "#166534",
-                    border: "1px solid #bbf7d0",
-                  }}
-                >
+                <div className="auth-error auth-otp-success">
                   {otpSuccess}
                 </div>
               )}
@@ -242,21 +230,14 @@ function RegisterPage() {
               </button>
             </form>
 
-            <div className="auth-footer" style={{ textAlign: "center" }}>
+            <div className="auth-footer auth-footer-center">
               <p>
                 لم يصلك الرمز؟{" "}
                 <button
                   type="button"
                   onClick={handleResend}
                   disabled={resendCooldown > 0 || resending}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: resendCooldown > 0 ? "#94a3b8" : "#2563eb",
-                    fontWeight: 700,
-                    cursor: resendCooldown > 0 ? "not-allowed" : "pointer",
-                    padding: 0,
-                  }}
+                  className="auth-ghost-btn"
                 >
                   {resending
                     ? "جاري الإرسال..."
@@ -274,13 +255,7 @@ function RegisterPage() {
                     setOtpError(null);
                     setOtpSuccess(null);
                   }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#64748b",
-                    cursor: "pointer",
-                    fontSize: "0.9rem",
-                  }}
+                  className="auth-ghost-btn-subtle"
                 >
                   ← العودة لتعديل البيانات
                 </button>
@@ -442,8 +417,7 @@ function RegisterPage() {
               </label>
               <button
                 type="button"
-                className="btn btn-outline"
-                style={{ width: "100%", marginBottom: 8 }}
+                className="btn btn-outline auth-upload-btn"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {formData.idPhoto ? "تم رفع الصورة ✓" : "رفع الصورة"}
@@ -452,7 +426,7 @@ function RegisterPage() {
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                style={{ display: "none" }}
+                className="auth-file-input-hidden"
                 onChange={handleIdPhoto}
               />
             </div>

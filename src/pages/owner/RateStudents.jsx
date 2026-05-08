@@ -23,7 +23,6 @@ function StarInput({ value, onChange }) {
         <span
           key={s}
           className={s <= display ? "filled" : "empty"}
-          style={{ fontSize: 28, cursor: 'pointer', color: s <= display ? '#f59e0b' : '#d1d5db', transition: 'color 0.15s, transform 0.15s', transform: s <= display ? 'scale(1.1)' : 'scale(1)' }}
           onMouseEnter={() => setHover(s)}
           onMouseLeave={() => setHover(0)}
           onClick={() => onChange(s)}
@@ -122,12 +121,12 @@ export default function RateStudents() {
     }
   }
 
-  if (loading) return <div style={{ padding: 20 }}><Skeleton height={40} /><div style={{ height: 16 }} /><Skeleton height={20} count={5} /></div>;
+  if (loading) return <div className="owner-skeleton-wrap"><Skeleton height={40} /><div className="owner-skeleton-spacer" /><Skeleton height={20} count={5} /></div>;
 
   return (
     <>
       <div className="owner-section-hero">
-        <h1 className="owner-page-title owner-section-hero-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <h1 className="owner-page-title owner-section-hero-title">
           <FiUsers /> تقييم الطلاب
         </h1>
       </div>
@@ -135,16 +134,16 @@ export default function RateStudents() {
       {success && <div className="owner-form-success">{success}</div>}
       {bookings.length === 0 ? (
         <div className="owner-card">
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div className="owner-empty-body">
+            <div className="owner-empty-icon">
               <FiUsers size={36} color="#d1d5db" />
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا توجد حجوزات مكتملة</h3>
-            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 0 }}>عند اكتمال حجز ما، يمكنك تقييم الطالب من هنا</p>
+            <h3 className="owner-empty-title">لا توجد حجوزات مكتملة</h3>
+            <p className="owner-empty-desc">عند اكتمال حجز ما، يمكنك تقييم الطالب من هنا</p>
           </div>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="owner-rate-list">
           {bookings.map((b) => {
             const isRated = !!given[b.id];
             const current = ratings[b.id] || emptyRatings();
@@ -155,13 +154,7 @@ export default function RateStudents() {
                     <h3 className="owner-card-title">
                       {b.student?.name || "—"}
                     </h3>
-                    <p
-                      style={{
-                        margin: "2px 0 0",
-                        fontSize: "0.82rem",
-                        color: "var(--owner-text-muted)",
-                      }}
-                    >
+                    <p className="owner-rate-student-sub">
                       {b.property?.title} ·{" "}
                       {new Date(b.startDate).toLocaleDateString("ar-SA")} –{" "}
                       {new Date(b.endDate).toLocaleDateString("ar-SA")}
@@ -171,7 +164,7 @@ export default function RateStudents() {
                     <span className="owner-badge approved">تم التقييم</span>
                   )}
                 </div>
-                <div style={{ padding: "16px 20px" }}>
+                <div className="owner-card-body">
                   {DIMENSIONS.map((d) => (
                     <div key={d.key} className="owner-form-group">
                       <label className="owner-form-label">{d.label}</label>

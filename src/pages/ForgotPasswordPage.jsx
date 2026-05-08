@@ -37,9 +37,9 @@ function ForgotPasswordPage() {
           {error && <div className="auth-error">{error}</div>}
 
           {sent ? (
-            <div className="auth-success" style={{ textAlign: 'center', padding: '2rem 0' }}>
+            <div className="auth-success auth-success-centered">
               <h3>إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط الاستعادة</h3>
-              <p style={{ marginTop: '12px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              <p className="auth-success-note">
                 تحقق من بريدك الإلكتروني واتبع الرابط لإعادة تعيين كلمة المرور
               </p>
             </div>

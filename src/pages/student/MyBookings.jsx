@@ -135,7 +135,7 @@ function MyBookings() {
     <div className="page my-bookings-page">
       <div className="container">
         <div className="my-bookings-header">
-          <h1><FiCalendar style={{ marginLeft: 8, verticalAlign: 'middle' }} /> حجوزاتي</h1>
+          <h1><FiCalendar className="mb-icon-ml" /> حجوزاتي</h1>
           <p>تتبّع حالة طلبات الحجز والمدفوعات</p>
         </div>
 
@@ -167,13 +167,13 @@ function MyBookings() {
             <p>{error}</p>
           </div>
         ) : visibleBookings.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div className="mb-empty-body">
+            <div className="mb-empty-icon">
               <FiCalendar size={36} color="#d1d5db" />
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>ما عندك حجوزات بعد</h3>
-            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 20 }}>ابحث عن سكن وأرسل طلب حجز للبدء</p>
-            <Link to="/search" style={{ display: 'inline-block', padding: '10px 24px', background: '#4f46e5', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>ابحث عن سكن</Link>
+            <h3 className="mb-empty-title">ما عندك حجوزات بعد</h3>
+            <p className="mb-empty-desc">ابحث عن سكن وأرسل طلب حجز للبدء</p>
+            <Link to="/search" className="mb-empty-cta">ابحث عن سكن</Link>
           </div>
         ) : (
           <div className="my-bookings-list">
@@ -432,8 +432,8 @@ function BookingCard({ booking, onCancel, onPay, onRate }) {
             </button>
           )}
           {(booking.status === 'PAID' || booking.status === 'COMPLETED') && booking.payment && (
-            <button onClick={() => handleDownloadInvoice(booking.payment.id, toast)} className="btn btn-secondary" style={{ fontSize: 13 }}>
-              <FiFileText style={{ marginLeft: 4, verticalAlign: 'middle' }} /> تحميل الفاتورة
+            <button onClick={() => handleDownloadInvoice(booking.payment.id, toast)} className="btn btn-secondary mb-invoice-btn">
+              <FiFileText className="mb-icon-ml-sm" /> تحميل الفاتورة
             </button>
           )}
           {canCancel && (

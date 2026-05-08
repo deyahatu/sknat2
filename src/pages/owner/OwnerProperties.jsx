@@ -94,16 +94,16 @@ export default function OwnerProperties() {
       {error && <div className="owner-form-error">{error}</div>}
 
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, padding: 20 }}>{Array.from({ length: 4 }, (_, i) => <SkeletonCard key={i} />)}</div>
+        <div className="owner-skeleton-grid">{Array.from({ length: 4 }, (_, i) => <SkeletonCard key={i} />)}</div>
       ) : properties.length === 0 ? (
         <div className="owner-card">
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div className="owner-empty-body">
+            <div className="owner-empty-icon">
               <FiHome size={36} color="#d1d5db" />
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا توجد عقارات</h3>
-            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 20 }}>أضف عقارك الأول وابدأ باستقبال الحجوزات</p>
-            <Link to="/owner/properties/add" style={{ display: 'inline-block', padding: '10px 24px', background: '#4f46e5', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>أضف عقارك الأول</Link>
+            <h3 className="owner-empty-title">لا توجد عقارات</h3>
+            <p className="owner-empty-desc">أضف عقارك الأول وابدأ باستقبال الحجوزات</p>
+            <Link to="/owner/properties/add" className="owner-empty-cta">أضف عقارك الأول</Link>
           </div>
         </div>
       ) : (
@@ -138,7 +138,7 @@ export default function OwnerProperties() {
                   {getPropertySummary(p)}
                 </p>
                 {p.roomVariants && p.roomVariants.length > 0 && (
-                  <div style={{ fontSize: 13, color: "#555", marginTop: 4 }}>
+                  <div className="owner-property-room-info">
                     الغرف: {p.roomVariants.length} | متاح:{" "}
                     {p.roomVariants.filter((v) => !v.isOccupied).length} | محجوز:{" "}
                     {p.roomVariants.filter((v) => v.isOccupied).length}

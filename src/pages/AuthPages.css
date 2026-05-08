@@ -207,3 +207,98 @@
   .auth-card { padding: 28px 20px; }
   .auth-header h1 { font-size: 1.4rem; }
 }
+
+/* ─── Field-level validation errors ─── */
+.auth-field-error {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+.auth-field-error-border {
+  border-color: #dc2626 !important;
+}
+
+/* ─── Success message box ─── */
+.auth-success-message {
+  background: #d4edda;
+  color: #155724;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 14px;
+  border: 1px solid #c3e6cb;
+}
+
+/* ─── Auth success centered content ─── */
+.auth-success-centered {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.auth-success-centered .auth-footer {
+  margin-top: 1rem;
+}
+
+/* ─── Auth footer centered ─── */
+.auth-footer-center {
+  text-align: center;
+}
+
+/* ─── OTP input ─── */
+.auth-otp-input {
+  font-size: 1.6rem;
+  text-align: center;
+  letter-spacing: 8px;
+  font-weight: 700;
+}
+
+/* ─── OTP success override ─── */
+.auth-otp-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+/* ─── Inline ghost button (OTP resend / back) ─── */
+.auth-ghost-btn {
+  background: none;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  color: #2563eb;
+}
+
+.auth-ghost-btn:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.auth-ghost-btn-subtle {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+}
+
+/* ─── Upload button / file input ─── */
+.auth-upload-btn {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.auth-file-input-hidden {
+  display: none;
+}
+
+/* ─── Success sub-note ─── */
+.auth-success-note {
+  margin-top: 12px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}

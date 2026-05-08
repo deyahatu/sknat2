@@ -121,7 +121,7 @@ export default function OwnerDashboard() {
   }, []);
 
   if (loading) {
-    return <div style={{ padding: 20 }}><Skeleton height={40} /><div style={{ height: 16 }} /><Skeleton height={20} count={5} /></div>;
+    return <div className="owner-skeleton-wrap"><Skeleton height={40} /><div className="owner-skeleton-spacer" /><Skeleton height={20} count={5} /></div>;
   }
 
   const firstName = user?.name?.split(" ")[0] || "";
@@ -197,13 +197,13 @@ export default function OwnerDashboard() {
               ) : (
                 <span className="owner-top-property-img-placeholder"><FiHome size={32} /></span>
               )}
-              <span className="owner-top-property-badge"><FiTrendingUp style={{ marginLeft: 4 }} /> الأكثر حجزاً</span>
+              <span className="owner-top-property-badge"><FiTrendingUp className="icon-ml" /> الأكثر حجزاً</span>
             </div>
             <div className="owner-top-property-info">
               <h3 className="owner-top-property-title">{topProperty.title}</h3>
               {topProperty.address && (
                 <p className="owner-top-property-address">
-                  <FiMapPin style={{ flexShrink: 0 }} /> {topProperty.address}
+                  <FiMapPin className="icon-shrink-0" /> {topProperty.address}
                 </p>
               )}
               <div className="owner-top-property-stats">

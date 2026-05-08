@@ -74,7 +74,7 @@ export default function OwnerBookings() {
   return (
     <>
       <div className="owner-section-hero">
-        <h1 className="owner-page-title owner-section-hero-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <h1 className="owner-page-title owner-section-hero-title">
           <FiCalendar /> الحجوزات
         </h1>
       </div>
@@ -96,14 +96,14 @@ export default function OwnerBookings() {
       <div className="owner-card">
         <div className="owner-table-wrap">
           {loading ? (
-            <div style={{ padding: 20 }}><Skeleton height={40} /><div style={{ height: 16 }} /><Skeleton height={20} count={5} /></div>
+            <div className="owner-skeleton-wrap"><Skeleton height={40} /><div className="owner-skeleton-spacer" /><Skeleton height={20} count={5} /></div>
           ) : bookings.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <div className="owner-empty-body">
+              <div className="owner-empty-icon">
                 <FiCalendar size={36} color="#d1d5db" />
               </div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا توجد حجوزات</h3>
-              <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 0 }}>ستظهر حجوزات عقاراتك هنا</p>
+              <h3 className="owner-empty-title">لا توجد حجوزات</h3>
+              <p className="owner-empty-desc">ستظهر حجوزات عقاراتك هنا</p>
             </div>
           ) : (
             <table className="owner-table">
@@ -129,7 +129,7 @@ export default function OwnerBookings() {
                       <td><span className={`owner-badge ${st.cls}`}>{st.label}</span></td>
                       <td>
                         {b.status === 'PENDING' && (
-                          <div style={{ display: 'flex', gap: 6 }}>
+                          <div className="owner-pending-actions">
                             <button
                               className="owner-btn owner-btn-success owner-btn-sm"
                               disabled={!!actionLoading}

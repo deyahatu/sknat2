@@ -203,7 +203,7 @@ export default function ManageProfile() {
     }
   }
 
-  if (loading) return <div style={{ maxWidth: 600, margin: '0 auto', padding: 40 }}><Skeleton height={20} width="60%" /><div style={{ height: 12 }} /><Skeleton height={16} count={4} /></div>;
+  if (loading) return <div className="owner-skeleton-wrap-centered"><Skeleton height={20} width="60%" /><div className="owner-skeleton-spacer-sm" /><Skeleton height={16} count={4} /></div>;
 
   if (loadError || !profile) {
     return (
@@ -290,7 +290,7 @@ export default function ManageProfile() {
         <div className="owner-profile-col">
           <div className="owner-card">
             <div className="owner-card-header">
-              <h2 className="owner-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h2 className="owner-card-title owner-card-title-flex">
                 <FiUser size={18} /> المعلومات الشخصية
               </h2>
             </div>
@@ -363,7 +363,7 @@ export default function ManageProfile() {
 
           <div className="owner-card owner-profile-card-gap">
             <div className="owner-card-header">
-              <h2 className="owner-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h2 className="owner-card-title owner-card-title-flex">
                 <FiLock size={18} /> تغيير كلمة المرور
               </h2>
             </div>
