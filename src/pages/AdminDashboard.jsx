@@ -896,80 +896,132 @@ function StatsTab() {
     }
   };
 
-  if (loading) return <div className="loading-state">جاري التحميل...</div>;
+  if (loading) return <div style={{ padding: 20 }}><Skeleton height={40} /><div style={{ height: 16 }} /><Skeleton height={20} count={5} /></div>;
   if (!stats) return <div className="admin-error">تعذر تحميل الإحصائيات</div>;
+
+  const highlights = [
+    { label: 'إجمالي الإيرادات', value: `${stats.totalRevenue?.toLocaleString('en-US')} ₪`, color: '#059669', bg: '#ecfdf5', icon: <FiDollarSign /> },
+    { label: 'المستخدمين', value: stats.totalUsers, color: '#4f46e5', bg: '#eef2ff', icon: <FiUsers /> },
+    { label: 'الحجوزات', value: stats.totalBookings, color: '#0891b2', bg: '#ecfeff', icon: <FiCreditCard /> },
+    { label: 'العقارات', value: stats.totalProperties, color: '#d97706', bg: '#fffbeb', icon: <FiHome /> },
+  ];
+
+  const details = [
+    { label: 'الطلاب', value: stats.totalStudents },
+    { label: 'الملاك', value: stats.totalOwners },
+    { label: 'المدفوعات', value: stats.totalPayments },
+    { label: 'حجوزات معلقة', value: stats.pendingBookings, warn: stats.pendingBookings > 0 },
+    { label: 'التقييمات', value: stats.totalReviews },
+    { label: 'طلبات استرداد', value: stats.pendingRefunds, warn: stats.pendingRefunds > 0 },
+    { label: 'طلبات سحب', value: stats.pendingWithdrawals, warn: stats.pendingWithdrawals > 0 },
+  ];
 
   return (
     <>
-      <div className="admin-stats-grid">
-        <div className="stat-card"><div className="stat-content"><div className="stat-number">{stats.totalUsers}</div><div className="stat-label">المستخدمين</div></div></div>
-        <div className="stat-card"><div className="stat-content"><div className="stat-number">{stats.totalStudents}</div><div className="stat-label">الطلاب</div></div></div>
-        <div className="stat-card"><div className="stat-content"><div className="stat-number">{stats.totalOwners}</div><div className="stat-label">الملاك</div></div></div>
-        <div className="stat-card"><div className="stat-content"><div className="stat-number">{stats.totalProperties}</div><div className="stat-label">العقارات</div></div></div>
-        <div className="stat-card"><div className="stat-content"><div className="stat-number">{stats.totalBookings}</div><div className="stat-label">الحجوزات</div></div></div>
-        <div className="stat-card"><div className="stat-content"><div className="stat-number">{stats.pendingBookings}</div><div className="stat-label">حجوزات معلقة</div></div></div>
-        <div className="stat-card"><div className="stat-content"><div className="stat-number">{stats.totalPayments}</div><div className="stat-label">المدفوعات</div></div></div>
-        <div className="stat-card"><div className="stat-content"><div className="stat-number">{stats.totalRevenue?.toLocaleString('en-US')} ₪</div><div className="stat-label">إجمالي الإيرادات</div></div></div>
-        <div className="stat-card"><div className="stat-content"><div className="stat-number">{stats.totalReviews}</div><div className="stat-label">التقييمات</div></div></div>
-        <div className="stat-card"><div className="stat-content"><div className="stat-number">{stats.pendingRefunds}</div><div className="stat-label">طلبات استرداد</div></div></div>
-        <div className="stat-card"><div className="stat-content"><div className="stat-number">{stats.pendingWithdrawals}</div><div className="stat-label">طلبات سحب</div></div></div>
+      {/* Highlight cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
+        {highlights.map((h, i) => (
+          <div key={i} style={{
+            background: h.bg, borderRadius: 16, padding: '24px 20px',
+            display: 'flex', alignItems: 'center', gap: 16,
+            border: `1px solid ${h.color}22`, transition: 'transform 0.2s',
+          }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <div style={{
+              width: 48, height: 48, borderRadius: 14,
+              background: `${h.color}18`, color: h.color,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+            }}>{h.icon}</div>
+            <div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: h.color, lineHeight: 1 }}>{h.value}</div>
+              <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{h.label}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
+      {/* Detail stats row */}
+      <div style={{
+        display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 28,
+        background: '#fff', borderRadius: 14, padding: '18px 20px',
+        border: '1px solid #e8ecf4',
+      }}>
+        {details.map((d, i) => (
+          <div key={i} style={{
+            flex: '1 1 120px', textAlign: 'center', padding: '8px 0',
+            borderLeft: i < details.length - 1 ? '1px solid #f0f0f0' : 'none',
+          }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: d.warn ? '#dc2626' : '#1e293b' }}>{d.value}</div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{d.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts — 2-column grid */}
       {monthly.length > 0 && (
-        <>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginBottom: 24 }}>
           <div className="chart-section">
             <h3>الحجوزات الشهرية</h3>
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={240}>
               <BarChart data={monthly}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="bookings" fill="#4f46e5" name="حجوزات" radius={[6, 6, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                <Tooltip contentStyle={{ borderRadius: 10, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
+                <Bar dataKey="bookings" fill="#4f46e5" name="حجوزات" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           <div className="chart-section">
             <h3>نمو المستخدمين</h3>
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={240}>
               <LineChart data={monthly}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Line type="monotone" dataKey="users" stroke="#10b981" strokeWidth={3} name="مستخدمين جدد" dot={{ r: 5 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                <Tooltip contentStyle={{ borderRadius: 10, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
+                <Line type="monotone" dataKey="users" stroke="#10b981" strokeWidth={3} name="مستخدمين جدد" dot={{ r: 5, fill: '#10b981' }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="chart-section">
+          <div className="chart-section" style={{ gridColumn: '1 / -1' }}>
             <h3>الإيرادات الشهرية (₪)</h3>
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={240}>
               <BarChart data={monthly}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="revenue" fill="#059669" name="إيرادات" radius={[6, 6, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip contentStyle={{ borderRadius: 10, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
+                <Bar dataKey="revenue" fill="#059669" name="إيرادات" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </>
+        </div>
       )}
 
-      <div className="export-section">
-        <h3>تصدير البيانات</h3>
-        <div className="export-buttons">
-          <button className="export-btn" onClick={() => handleExport('users')} disabled={exporting === 'users'}>
-            <FiDownload /> {exporting === 'users' ? 'جاري...' : 'تصدير المستخدمين'}
-          </button>
-          <button className="export-btn" onClick={() => handleExport('bookings')} disabled={exporting === 'bookings'}>
-            <FiDownload /> {exporting === 'bookings' ? 'جاري...' : 'تصدير الحجوزات'}
-          </button>
-          <button className="export-btn" onClick={() => handleExport('payments')} disabled={exporting === 'payments'}>
-            <FiDownload /> {exporting === 'payments' ? 'جاري...' : 'تصدير المدفوعات'}
-          </button>
+      {/* Export */}
+      <div style={{
+        background: '#f8fafc', borderRadius: 14, padding: '20px 24px',
+        border: '1px solid #e8ecf4', display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+      }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#1e293b' }}>تصدير البيانات</div>
+          <div style={{ fontSize: 12, color: '#94a3b8' }}>حمّل ملف CSV لأي قسم</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {['users', 'bookings', 'payments'].map(type => {
+            const labels = { users: 'المستخدمين', bookings: 'الحجوزات', payments: 'المدفوعات' };
+            return (
+              <button key={type} className="export-btn" onClick={() => handleExport(type)} disabled={exporting === type}>
+                <FiDownload /> {exporting === type ? 'جاري...' : labels[type]}
+              </button>
+            );
+          })}
         </div>
       </div>
     </>
