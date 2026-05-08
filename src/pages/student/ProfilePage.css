@@ -380,6 +380,18 @@
   word-break: break-word;
 }
 
+/* ---- Inline Icon Helper ---- */
+.pp-icon {
+  margin-left: 6px;
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+.pp-icon-lg {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
   .student-profile-grid {

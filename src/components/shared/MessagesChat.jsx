@@ -5,31 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { connectSocket, getSocket } from '../../utils/socket';
 import { useToast } from '../../components/shared/Toast';
 import Skeleton from './Skeleton';
-
-const styles = {
-  container: { display: 'flex', height: 'calc(100vh - 120px)', direction: 'rtl', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#fff' },
-  sidebar: { width: '320px', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', background: '#f8fafc' },
-  sidebarHeader: { padding: '16px', borderBottom: '1px solid #e2e8f0', fontWeight: '700', fontSize: '18px' },
-  convItem: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' },
-  convItemActive: { background: '#e0f2fe' },
-  avatar: { width: '40px', height: '40px', borderRadius: '50%', background: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '16px', flexShrink: 0 },
-  convInfo: { flex: 1, overflow: 'hidden' },
-  convName: { fontWeight: '600', fontSize: '14px', marginBottom: '2px' },
-  convPreview: { fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  badge: { background: '#ef4444', color: '#fff', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700' },
-  chatArea: { flex: 1, display: 'flex', flexDirection: 'column' },
-  chatHeader: { padding: '14px 20px', borderBottom: '1px solid #e2e8f0', fontWeight: '600', fontSize: '16px', background: '#f8fafc' },
-  messagesArea: { flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' },
-  msgBubble: { maxWidth: '70%', padding: '10px 14px', borderRadius: '12px', fontSize: '14px', lineHeight: '1.5' },
-  msgMine: { alignSelf: 'flex-start', background: '#3b82f6', color: '#fff', borderBottomLeftRadius: '4px' },
-  msgOther: { alignSelf: 'flex-end', background: '#f1f5f9', color: '#1e293b', borderBottomRightRadius: '4px' },
-  msgTime: { fontSize: '10px', marginTop: '4px', opacity: 0.7 },
-  inputArea: { padding: '14px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px' },
-  input: { flex: 1, border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', outline: 'none', direction: 'rtl' },
-  sendBtn: { background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' },
-  empty: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '16px' },
-  loading: { textAlign: 'center', padding: '40px', color: '#64748b' },
-};
+import './MessagesChat.css';
 
 export default function MessagesChat() {
   const { user } = useAuth();
@@ -147,68 +123,83 @@ export default function MessagesChat() {
 
   const getInitial = (name) => name?.charAt(0)?.toUpperCase() || '?';
 
-  if (loading) return <div style={{ maxWidth: 600, margin: '0 auto', padding: 40 }}><Skeleton height={20} width="60%" /><div style={{ height: 12 }} /><Skeleton height={16} count={4} /></div>;
+  if (loading) return (
+    <div className="mc-skeleton-wrap">
+      <Skeleton height={20} width="60%" />
+      <div className="mc-skeleton-gap" />
+      <Skeleton height={16} count={4} />
+    </div>
+  );
 
   return (
-    <div style={styles.container}>
+    <div className="mc-container">
       {/* Conversations sidebar */}
-      <div style={styles.sidebar}>
-        <div style={styles.sidebarHeader}>المحادثات</div>
+      <div className="mc-sidebar">
+        <div className="mc-sidebar-title">المحادثات</div>
         {conversations.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div className="mc-no-convs">
+            <div className="mc-no-convs-icon">
               <FiMessageSquare size={36} color="#d1d5db" />
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', marginBottom: 8 }}>لا يوجد محادثات</h3>
-            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 20 }}>ستظهر محادثاتك مع الملاك هنا</p>
+            <h3 className="mc-no-convs-title">لا يوجد محادثات</h3>
+            <p className="mc-no-convs-sub">ستظهر محادثاتك مع الملاك هنا</p>
           </div>
         ) : (
           conversations.map(conv => (
             <div
               key={conv.userId}
-              style={{ ...styles.convItem, ...(selectedUser === conv.userId ? styles.convItemActive : {}) }}
+              className={`mc-conv-item${selectedUser === conv.userId ? ' mc-conv-item-active' : ''}`}
               onClick={() => selectConversation(conv.userId)}
             >
-              <div style={styles.avatar}>{getInitial(conv.userName)}</div>
-              <div style={styles.convInfo}>
-                <div style={styles.convName}>{conv.userName}</div>
-                <div style={styles.convPreview}>{conv.lastMessage}</div>
+              <div className="mc-conv-avatar">{getInitial(conv.userName)}</div>
+              <div className="mc-conv-info">
+                <div className="mc-conv-name">{conv.userName}</div>
+                <div className="mc-conv-last-msg">{conv.lastMessage}</div>
               </div>
-              {conv.unreadCount > 0 && <div style={styles.badge}>{conv.unreadCount}</div>}
+              {conv.unreadCount > 0 && <div className="mc-conv-unread">{conv.unreadCount}</div>}
             </div>
           ))
         )}
       </div>
 
       {/* Chat area */}
-      <div style={styles.chatArea}>
+      <div className="mc-chat-area">
         {!selectedUser ? (
-          <div style={styles.empty}>اختر محادثة للبدء</div>
+          <div className="mc-empty">اختر محادثة للبدء</div>
         ) : chatLoading ? (
-          <div style={{ maxWidth: 600, margin: '0 auto', padding: 40 }}><Skeleton height={20} width="60%" /><div style={{ height: 12 }} /><Skeleton height={16} count={4} /></div>
+          <div className="mc-skeleton-wrap">
+            <Skeleton height={20} width="60%" />
+            <div className="mc-skeleton-gap" />
+            <Skeleton height={16} count={4} />
+          </div>
         ) : (
           <>
-            <div style={styles.chatHeader}>
+            <div className="mc-chat-header">
               {otherUser?.name || 'محادثة'}
-              <span style={{ fontSize: '12px', color: '#64748b', marginRight: '8px' }}>
+              <span className="mc-chat-header-name">
                 ({otherUser?.role === 'OWNER' ? 'مالك' : otherUser?.role === 'STUDENT' ? 'طالب' : otherUser?.role})
               </span>
             </div>
-            <div style={styles.messagesArea}>
-              {messages.length === 0 && <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '40px' }}>لا توجد رسائل بعد. ابدأ المحادثة!</div>}
+            <div className="mc-messages-list">
+              {messages.length === 0 && (
+                <div className="mc-msgs-empty">لا توجد رسائل بعد. ابدأ المحادثة!</div>
+              )}
               {messages.map(msg => (
-                <div key={msg.id} style={{ ...styles.msgBubble, ...(msg.senderId === user.id ? styles.msgMine : styles.msgOther) }}>
+                <div
+                  key={msg.id}
+                  className={`mc-message${msg.senderId === user.id ? ' mc-message-mine' : ' mc-message-other'}`}
+                >
                   <div>{msg.content}</div>
-                  <div style={styles.msgTime}>{formatTime(msg.createdAt)}</div>
+                  <div className="mc-message-time">{formatTime(msg.createdAt)}</div>
                 </div>
               ))}
-              {isTyping && <div style={{ padding: '8px 16px', color: '#6b7280', fontSize: 13, fontStyle: 'italic' }}>يكتب...</div>}
+              {isTyping && <div className="mc-typing">يكتب...</div>}
               <div ref={messagesEndRef} />
             </div>
-            <form onSubmit={sendMessage} style={styles.inputArea}>
+            <form onSubmit={sendMessage} className="mc-input-bar">
               <input
                 aria-label="اكتب رسالة"
-                style={styles.input}
+                className="mc-input"
                 value={newMsg}
                 onChange={e => {
                   setNewMsg(e.target.value);
@@ -229,7 +220,7 @@ export default function MessagesChat() {
                 }}
                 placeholder="اكتب رسالتك..."
               />
-              <button type="submit" style={styles.sendBtn} disabled={!newMsg.trim()}>إرسال</button>
+              <button type="submit" className="mc-send-btn" disabled={!newMsg.trim()}>إرسال</button>
             </form>
           </>
         )}
