@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import AnimatedCounter from '../components/shared/AnimatedCounter';
+import { FiSearch, FiHome, FiCreditCard, FiStar, FiArrowLeft, FiCheckCircle, FiFileText, FiShield } from "react-icons/fi";
+import AnimatedCounter from "../components/shared/AnimatedCounter";
 import "./HomePage.css";
 
 function HomePage() {
@@ -14,125 +15,139 @@ function HomePage() {
   };
 
   return (
-    <div className="landing-page">
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="hero-overlay" />
-        <div className="hero-container">
-          <span className="hero-brand">🏠 سكنات</span>
-          <h1 className="hero-title gradient-text">ابحث عن سكنك الطلابي المثالي</h1>
-          <p className="hero-subtitle">
-            منصة سكنات تربط الطلاب بأصحاب العقارات لتوفير أفضل خيارات السكن
-            الطلابي بأسعار مناسبة
+    <div className="landing">
+      {/* ═══ Hero ═══ */}
+      <section className="hero">
+        <div className="hero__orb hero__orb--1" />
+        <div className="hero__orb hero__orb--2" />
+        <div className="hero__orb hero__orb--3" />
+        <div className="hero__noise" />
+
+        <div className="hero__inner">
+          <div className="hero__badge">
+            <FiHome className="hero__badge-icon" />
+            <span>منصة السكن الطلابي في فلسطين</span>
+          </div>
+
+          <h1 className="hero__title">
+            اعثر على
+            <span className="hero__title-accent"> سكنك المثالي </span>
+            بخطوات بسيطة
+          </h1>
+
+          <p className="hero__sub">
+            نربط الطلاب بأصحاب العقارات لتوفير خيارات سكن موثوقة وبأسعار مناسبة —
+            غرف مفردة، مزدوجة، استوديوهات، وشقق كاملة.
           </p>
 
-          <form className="hero-search-bar" onSubmit={handleSearch}>
+          <form className="hero__search" onSubmit={handleSearch}>
+            <FiSearch className="hero__search-icon" />
             <input
               type="text"
-              placeholder="ابحث عن سكن، منطقة، أو مدينة..."
+              placeholder="ابحث بالحي، المدينة، أو اسم السكن..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              aria-label="بحث عن سكن"
             />
-            <button type="submit">بحث</button>
+            <button type="submit">
+              ابحث الآن
+              <FiArrowLeft className="hero__search-arrow" />
+            </button>
           </form>
 
-          <div className="hero-cta-buttons">
-            <Link to="/search" className="btn-primary">
-              ابحث الآن
+          <div className="hero__ctas">
+            <Link to="/search" className="hero__cta hero__cta--solid">
+              تصفّح العقارات
             </Link>
-            <Link to="/register" className="btn-outline">
+            <Link to="/register" className="hero__cta hero__cta--ghost">
               سجّل كمالك عقار
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="stats-section">
-        <div className="stats-container">
-          <div className="stat-card">
-            <span className="stat-number"><AnimatedCounter end={100} suffix="+" /></span>
-            <span className="stat-label">عقار متاح</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-number"><AnimatedCounter end={500} suffix="+" /></span>
-            <span className="stat-label">طالب مسجّل</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-number"><AnimatedCounter end={3} /></span>
-            <span className="stat-label">مدن فلسطينية</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-number"><AnimatedCounter end={1000} suffix="+" /></span>
-            <span className="stat-label">حجز ناجح</span>
+      {/* ═══ Stats ═══ */}
+      <section className="stats">
+        <div className="stats__grid">
+          {[
+            { end: 100, suffix: "+", label: "عقار متاح", icon: <FiHome /> },
+            { end: 500, suffix: "+", label: "طالب مسجّل", icon: <FiCheckCircle /> },
+            { end: 3, suffix: "", label: "مدن فلسطينية", icon: <FiShield /> },
+            { end: 1000, suffix: "+", label: "حجز ناجح", icon: <FiFileText /> },
+          ].map((s, i) => (
+            <div className="stats__card" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
+              <div className="stats__icon">{s.icon}</div>
+              <span className="stats__number">
+                <AnimatedCounter end={s.end} suffix={s.suffix} />
+              </span>
+              <span className="stats__label">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══ Features ═══ */}
+      <section className="features">
+        <div className="features__inner">
+          <span className="section-eyebrow">المميزات</span>
+          <h2 className="section-title">لماذا يختار الطلاب سكنات؟</h2>
+
+          <div className="features__grid">
+            {[
+              { icon: <FiSearch />, title: "بحث ذكي", desc: "فلتر حسب الحي، السعر، نوع الغرفة، الحرم الجامعي، والجنس" },
+              { icon: <FiHome />, title: "خيارات متنوعة", desc: "غرف مفردة ومزدوجة، استوديوهات مستقلة، وشقق كاملة بأسعار تنافسية" },
+              { icon: <FiCreditCard />, title: "دفع آمن", desc: "نظام دفع إلكتروني مع إيصالات وفواتير قابلة للطباعة" },
+              { icon: <FiStar />, title: "تقييمات موثوقة", desc: "آراء حقيقية من طلاب سابقين تساعدك باتخاذ القرار الصحيح" },
+            ].map((f, i) => (
+              <div className="features__card" key={i} style={{ animationDelay: `${i * 0.08}s` }}>
+                <div className="features__card-icon">{f.icon}</div>
+                <h3>{f.title}</h3>
+                <p>{f.desc}</p>
+                <div className="features__card-shine" />
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="features-section">
-        <div className="section-container">
-          <h2 className="section-heading">لماذا سكنات؟</h2>
-          <div className="features-grid">
-            <div className="feature-card">
-              <span className="feature-emoji">🔍</span>
-              <h3>بحث متقدم</h3>
-              <p>فلترة حسب الحي، السعر، نوع الغرفة، والجنس</p>
-            </div>
-            <div className="feature-card">
-              <span className="feature-emoji">🛏️</span>
-              <h3>غرف متنوعة</h3>
-              <p>مفردة، مزدوجة، استوديو، وشقق كاملة</p>
-            </div>
-            <div className="feature-card">
-              <span className="feature-emoji">💳</span>
-              <h3>دفع آمن</h3>
-              <p>نظام دفع إلكتروني مع فواتير وإيصالات</p>
-            </div>
-            <div className="feature-card">
-              <span className="feature-emoji">⭐</span>
-              <h3>تقييمات حقيقية</h3>
-              <p>آراء الطلاب تساعدك باختيار السكن الأفضل</p>
-            </div>
+      {/* ═══ How It Works ═══ */}
+      <section className="steps">
+        <div className="steps__inner">
+          <span className="section-eyebrow">كيف تعمل؟</span>
+          <h2 className="section-title">ثلاث خطوات فقط</h2>
+
+          <div className="steps__grid">
+            {[
+              { num: "01", icon: <FiSearch />, title: "ابحث", desc: "تصفّح العقارات المتاحة واستخدم الفلاتر لتضييق النتائج حسب احتياجاتك" },
+              { num: "02", icon: <FiFileText />, title: "احجز", desc: "اختر الغرفة المناسبة وأرسل طلب حجز — المالك يقبل أو يرفض خلال ساعات" },
+              { num: "03", icon: <FiCheckCircle />, title: "اسكن", desc: "أكمل الدفع واستلم غرفتك — فاتورة إلكترونية فورية" },
+            ].map((s, i) => (
+              <div className="steps__card" key={i}>
+                <div className="steps__num">{s.num}</div>
+                <div className="steps__card-icon">{s.icon}</div>
+                <h3>{s.title}</h3>
+                <p>{s.desc}</p>
+                {i < 2 && <div className="steps__connector" />}
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="how-section">
-        <div className="section-container">
-          <h2 className="section-heading">كيف تعمل المنصة؟</h2>
-          <div className="steps-grid">
-            <div className="step-card">
-              <span className="step-number">1</span>
-              <span className="step-emoji">🔍</span>
-              <h3>ابحث</h3>
-              <p>تصفّح العقارات المتاحة وفلتر حسب احتياجاتك</p>
-            </div>
-            <div className="step-card">
-              <span className="step-number">2</span>
-              <span className="step-emoji">📋</span>
-              <h3>احجز</h3>
-              <p>أرسل طلب حجز واتفق مع المالك</p>
-            </div>
-            <div className="step-card">
-              <span className="step-number">3</span>
-              <span className="step-emoji">🏠</span>
-              <h3>اسكن</h3>
-              <p>ادفع واستلم غرفتك</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="cta-section">
-        <div className="cta-container">
+      {/* ═══ CTA ═══ */}
+      <section className="cta">
+        <div className="cta__noise" />
+        <div className="cta__inner">
           <h2>جاهز تلاقي سكنك؟</h2>
-          <p>سجّل الآن مجاناً وابدأ البحث</p>
-          <Link to="/register" className="btn-cta">
-            ابدأ الآن
-          </Link>
+          <p>انضم لمئات الطلاب الذين وجدوا سكنهم المثالي عبر سكنات</p>
+          <div className="cta__buttons">
+            <Link to="/register" className="cta__btn cta__btn--primary">
+              أنشئ حساب مجاناً
+            </Link>
+            <Link to="/search" className="cta__btn cta__btn--outline">
+              تصفّح بدون تسجيل
+            </Link>
+          </div>
         </div>
       </section>
     </div>
