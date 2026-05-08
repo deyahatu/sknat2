@@ -18,7 +18,7 @@ export default function OwnerLayout() {
         <header className="owner-header">
           <div className="owner-header-right">
             <Link to="/owner" className="owner-header-logo">
-              سكنات 🏠
+              سكنات
             </Link>
           </div>
           <button
