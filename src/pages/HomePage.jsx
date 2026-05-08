@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import AnimatedCounter from '../components/shared/AnimatedCounter';
 import "./HomePage.css";
 
 function HomePage() {
@@ -19,7 +20,7 @@ function HomePage() {
         <div className="hero-overlay" />
         <div className="hero-container">
           <span className="hero-brand">🏠 سكنات</span>
-          <h1 className="hero-title">ابحث عن سكنك الطلابي المثالي</h1>
+          <h1 className="hero-title gradient-text">ابحث عن سكنك الطلابي المثالي</h1>
           <p className="hero-subtitle">
             منصة سكنات تربط الطلاب بأصحاب العقارات لتوفير أفضل خيارات السكن
             الطلابي بأسعار مناسبة
@@ -50,19 +51,19 @@ function HomePage() {
       <section className="stats-section">
         <div className="stats-container">
           <div className="stat-card">
-            <span className="stat-number">100+</span>
+            <span className="stat-number"><AnimatedCounter end={100} suffix="+" /></span>
             <span className="stat-label">عقار متاح</span>
           </div>
           <div className="stat-card">
-            <span className="stat-number">500+</span>
+            <span className="stat-number"><AnimatedCounter end={500} suffix="+" /></span>
             <span className="stat-label">طالب مسجّل</span>
           </div>
           <div className="stat-card">
-            <span className="stat-number">3</span>
+            <span className="stat-number"><AnimatedCounter end={3} /></span>
             <span className="stat-label">مدن فلسطينية</span>
           </div>
           <div className="stat-card">
-            <span className="stat-number">1000+</span>
+            <span className="stat-number"><AnimatedCounter end={1000} suffix="+" /></span>
             <span className="stat-label">حجز ناجح</span>
           </div>
         </div>

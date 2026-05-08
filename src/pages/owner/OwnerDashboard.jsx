@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
+import AnimatedCounter from "../../components/shared/AnimatedCounter";
 
 function Stars({ rating }) {
   return (
@@ -148,28 +149,28 @@ export default function OwnerDashboard() {
         <div className="owner-stat-card blue">
           <div className="owner-stat-icon blue">🏠</div>
           <div className="owner-stat-info">
-            <p className="owner-stat-value">{stats.properties}</p>
+            <p className="owner-stat-value"><AnimatedCounter end={stats.properties} /></p>
             <p className="owner-stat-label">عقاراتي</p>
           </div>
         </div>
         <div className="owner-stat-card orange">
           <div className="owner-stat-icon orange">⏳</div>
           <div className="owner-stat-info">
-            <p className="owner-stat-value">{stats.pending}</p>
+            <p className="owner-stat-value"><AnimatedCounter end={stats.pending} /></p>
             <p className="owner-stat-label">طلبات قيد الانتظار</p>
           </div>
         </div>
         <div className="owner-stat-card green">
           <div className="owner-stat-icon green">✅</div>
           <div className="owner-stat-info">
-            <p className="owner-stat-value">{stats.approved}</p>
+            <p className="owner-stat-value"><AnimatedCounter end={stats.approved} /></p>
             <p className="owner-stat-label">طلبات مقبولة</p>
           </div>
         </div>
         <div className="owner-stat-card purple">
           <div className="owner-stat-icon purple">💰</div>
           <div className="owner-stat-info">
-            <p className="owner-stat-value">{stats.balance.toFixed(2)}</p>
+            <p className="owner-stat-value"><AnimatedCounter end={stats.balance} /></p>
             <p className="owner-stat-label">الرصيد المالي</p>
           </div>
         </div>

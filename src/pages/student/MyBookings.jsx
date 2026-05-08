@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiCalendar, FiHome, FiMapPin, FiAlertCircle } from 'react-icons/fi';
 import { api } from '../../utils/api';
+import StatusTimeline from '../../components/shared/StatusTimeline';
 import './MyBookings.css';
 
 const STATUS_LABELS = {
@@ -392,6 +393,8 @@ function BookingCard({ booking, onCancel, onPay, onRate }) {
             المبلغ المدفوع: <strong>{Number(booking.payment.amount).toLocaleString('en-US')} ₪</strong>
           </div>
         )}
+
+        <StatusTimeline status={booking.status} />
 
         <div className="booking-card-actions">
           {canPay && (
