@@ -260,6 +260,7 @@ export default function ManageProfile() {
               type="file"
               accept="image/jpeg,image/png,image/webp"
               onChange={handleAvatarChange}
+              aria-label="رفع صورة شخصية"
               hidden
             />
           </div>
@@ -307,6 +308,7 @@ export default function ManageProfile() {
                 <div className="owner-form-group">
                   <label className="owner-form-label">الاسم الكامل</label>
                   <input
+                    aria-label="الاسم الكامل"
                     className="owner-form-input"
                     value={info.name}
                     onChange={(e) => setInfo({ ...info, name: e.target.value })}
@@ -317,6 +319,7 @@ export default function ManageProfile() {
                 <div className="owner-form-group">
                   <label className="owner-form-label">رقم الجوال</label>
                   <input
+                    aria-label="رقم الجوال"
                     className="owner-form-input"
                     value={info.phone}
                     onChange={(e) =>
@@ -333,6 +336,7 @@ export default function ManageProfile() {
                 <div className="owner-form-group">
                   <label className="owner-form-label">البريد الإلكتروني</label>
                   <input
+                    aria-label="البريد الإلكتروني"
                     className="owner-form-input"
                     type="email"
                     value={info.email}
@@ -377,6 +381,7 @@ export default function ManageProfile() {
                     كلمة المرور الحالية
                   </label>
                   <input
+                    aria-label="كلمة المرور الحالية"
                     className="owner-form-input"
                     type="password"
                     value={pwd.currentPassword}
@@ -392,6 +397,7 @@ export default function ManageProfile() {
                     كلمة المرور الجديدة
                   </label>
                   <input
+                    aria-label="كلمة المرور الجديدة"
                     className="owner-form-input"
                     type="password"
                     value={pwd.newPassword}
@@ -408,6 +414,7 @@ export default function ManageProfile() {
                     تأكيد كلمة المرور الجديدة
                   </label>
                   <input
+                    aria-label="تأكيد كلمة المرور الجديدة"
                     className="owner-form-input"
                     type="password"
                     value={pwd.confirmPassword}

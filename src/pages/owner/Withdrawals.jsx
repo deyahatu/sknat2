@@ -167,6 +167,7 @@ export default function Withdrawals() {
               <div className="owner-form-group">
                 <label className="owner-form-label">المبلغ</label>
                 <input
+                  aria-label="مبلغ السحب"
                   className="owner-form-input owner-withdrawals-input"
                   type="number"
                   min="10"

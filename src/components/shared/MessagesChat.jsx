@@ -207,6 +207,7 @@ export default function MessagesChat() {
             </div>
             <form onSubmit={sendMessage} style={styles.inputArea}>
               <input
+                aria-label="اكتب رسالة"
                 style={styles.input}
                 value={newMsg}
                 onChange={e => {
