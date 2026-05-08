@@ -317,28 +317,50 @@ async function handleDownloadInvoice(paymentId) {
   try {
     const { invoice } = await api.invoices.get(paymentId);
     const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>فاتورة #${invoice.id}</title><style>
-      body{font-family:Arial,sans-serif;max-width:600px;margin:40px auto;padding:20px}
-      h1{text-align:center;color:#1e1b4b}
-      .info{border:1px solid #eee;border-radius:8px;padding:16px;margin:16px 0}
-      .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5f5f5}
-      .row:last-child{border:none}
-      .total{font-size:20px;font-weight:700;color:#059669;text-align:center;margin:20px 0}
-      .footer{text-align:center;color:#888;font-size:12px;margin-top:30px}
-      @media print{body{margin:0}}
-    </style></head><body>
-      <h1>🏠 سكنات — فاتورة</h1>
-      <div class="info">
-        <div class="row"><span>رقم الفاتورة:</span><strong>#${invoice.id}</strong></div>
-        <div class="row"><span>التاريخ:</span><strong>${invoice.date}</strong></div>
-        <div class="row"><span>الطالب:</span><strong>${invoice.student.name}</strong></div>
-        <div class="row"><span>السكن:</span><strong>${invoice.property.title}</strong></div>
-        <div class="row"><span>الغرفة:</span><strong>${invoice.room.name}</strong></div>
-        <div class="row"><span>الفترة:</span><strong>${invoice.startDate} — ${invoice.endDate}</strong></div>
-      </div>
-      <div class="total">${invoice.amount.toLocaleString('en-US')} ₪</div>
-      <div class="footer">منصة سكنات للسكن الطلابي</div>
-      <script>window.print()</script>
-    </body></html>`;
+  body{font-family:'Tajawal',Arial,sans-serif;max-width:600px;margin:40px auto;padding:20px;color:#1a1a1a}
+  .logo{text-align:center;font-size:28px;font-weight:800;color:#1e1b4b;margin-bottom:8px}
+  .logo-sub{text-align:center;font-size:12px;color:#6b7280;margin-bottom:30px}
+  .inv-id{text-align:center;font-size:20px;font-weight:700;margin-bottom:24px;color:#4f46e5}
+  .section{border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-bottom:16px}
+  .section-title{font-size:13px;font-weight:700;color:#6b7280;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px}
+  .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:14px}
+  .row:last-child{border:none}
+  .row-label{color:#6b7280}
+  .row-value{font-weight:600}
+  .total-box{text-align:center;padding:20px;background:#f0fdf4;border-radius:10px;margin:20px 0}
+  .total-amount{font-size:28px;font-weight:800;color:#059669}
+  .total-label{font-size:12px;color:#6b7280;margin-top:4px}
+  .footer{text-align:center;color:#9ca3af;font-size:11px;margin-top:30px;padding-top:16px;border-top:1px solid #e5e7eb}
+  @media print{body{margin:0;padding:20px}button{display:none!important}}
+</style></head><body>
+  <div class="logo">🏠 سكنات</div>
+  <div class="logo-sub">منصة السكن الطلابي</div>
+  <div class="inv-id">فاتورة #${invoice.id}</div>
+  <div class="section">
+    <div class="section-title">معلومات الفاتورة</div>
+    <div class="row"><span class="row-label">التاريخ:</span><span class="row-value">${invoice.date}</span></div>
+    <div class="row"><span class="row-label">الطالب:</span><span class="row-value">${invoice.student.name}</span></div>
+  </div>
+  <div class="section">
+    <div class="section-title">تفاصيل الحجز</div>
+    <div class="row"><span class="row-label">السكن:</span><span class="row-value">${invoice.property.title}</span></div>
+    <div class="row"><span class="row-label">الغرفة:</span><span class="row-value">${invoice.room?.name || '—'}</span></div>
+    <div class="row"><span class="row-label">الموقع:</span><span class="row-value">${invoice.property.city}${invoice.property.address ? '، ' + invoice.property.address : ''}</span></div>
+    <div class="row"><span class="row-label">الفترة:</span><span class="row-value">${invoice.startDate} — ${invoice.endDate}</span></div>
+    <div class="row"><span class="row-label">المالك:</span><span class="row-value">${invoice.property.owner?.name || '—'}</span></div>
+  </div>
+  <div class="total-box">
+    <div class="total-amount">${invoice.amount.toLocaleString('en-US')} ₪</div>
+    <div class="total-label">المبلغ الإجمالي المدفوع</div>
+  </div>
+  <div class="footer">
+    منصة سكنات للسكن الطلابي — فاتورة إلكترونية<br>
+    هذه الفاتورة صادرة إلكترونياً ولا تحتاج إلى توقيع
+  </div>
+  <div style="text-align:center;margin-top:20px">
+    <button onclick="window.print()" style="padding:10px 24px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer">طباعة الفاتورة</button>
+  </div>
+</body></html>`;
     const win = window.open('', '_blank');
     win.document.write(html);
     win.document.close();
