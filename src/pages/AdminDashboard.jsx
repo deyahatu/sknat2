@@ -1197,13 +1197,15 @@ function ComplaintsTab() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [replies, setReplies] = useState({});
-  const [statusEdits, setStatusEdits] = useState({});
-  const [saving, setSaving] = useState({});
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+  const [changingStatus, setChangingStatus] = useState(false);
 
   const TYPE_LABELS = { ACCOMMODATION: 'سكن', USER_ISSUE: 'مستخدم', TECHNICAL: 'تقني', OTHER: 'أخرى' };
   const STATUS_LABELS = { OPEN: 'مفتوحة', IN_REVIEW: 'قيد المراجعة', RESOLVED: 'محلولة', REJECTED: 'مرفوضة' };
-  const STATUS_CLASS = { OPEN: '', IN_REVIEW: '', RESOLVED: 'active', REJECTED: 'inactive' };
+  const STATUS_COLORS = { OPEN: '#4f46e5', IN_REVIEW: '#d97706', RESOLVED: '#10b981', REJECTED: '#dc2626' };
+  const TYPE_ICONS = { ACCOMMODATION: <FiHome />, USER_ISSUE: <FiUsers />, TECHNICAL: <FiAlertTriangle />, OTHER: <FiFileText /> };
 
   const fetchComplaints = () => {
     setLoading(true);
@@ -1218,51 +1220,158 @@ function ComplaintsTab() {
 
   useEffect(() => { fetchComplaints(); }, [statusFilter, typeFilter]);
 
-  const handleSave = async (id) => {
-    setSaving((s) => ({ ...s, [id]: true }));
+  const openTicket = async (c) => {
     try {
-      await api.complaints.update(id, {
-        status: statusEdits[id] || complaints.find((c) => c.id === id)?.status,
-        adminResponse: replies[id] || '',
-      });
-      fetchComplaints();
-    } catch (err) {
-      toast.error(err.message || 'فشل');
-    } finally {
-      setSaving((s) => ({ ...s, [id]: false }));
-    }
+      const data = await api.complaints.get(c.id);
+      setSelectedTicket(data.complaint);
+    } catch { setSelectedTicket(c); }
   };
 
-  const [expanded, setExpanded] = useState(null);
+  const handleReply = async () => {
+    if (!replyText.trim() || !selectedTicket) return;
+    setSendingReply(true);
+    try {
+      await api.complaints.reply(selectedTicket.id, replyText);
+      setReplyText('');
+      const data = await api.complaints.get(selectedTicket.id);
+      setSelectedTicket(data.complaint);
+      fetchComplaints();
+      toast.success('تم إرسال الرد.');
+    } catch (err) { toast.error(err.message || 'فشل'); }
+    finally { setSendingReply(false); }
+  };
+
+  const handleStatusChange = async (status) => {
+    setChangingStatus(true);
+    try {
+      await api.complaints.update(selectedTicket.id, { status });
+      const data = await api.complaints.get(selectedTicket.id);
+      setSelectedTicket(data.complaint);
+      fetchComplaints();
+      toast.success('تم تحديث الحالة.');
+    } catch (err) { toast.error(err.message || 'فشل'); }
+    finally { setChangingStatus(false); }
+  };
+
+  function timeAgo(date) {
+    const diff = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
+    if (diff < 1) return 'الآن';
+    if (diff < 60) return `منذ ${diff} د`;
+    if (diff < 1440) return `منذ ${Math.floor(diff / 60)} س`;
+    return `منذ ${Math.floor(diff / 1440)} يوم`;
+  }
 
   if (loading) return <div className="loading-state">جاري التحميل...</div>;
 
-  const STATUS_COLORS = { OPEN: '#4f46e5', IN_REVIEW: '#d97706', RESOLVED: '#10b981', REJECTED: '#dc2626' };
-  const TYPE_ICONS = { ACCOMMODATION: <FiHome />, USER_ISSUE: <FiUsers />, TECHNICAL: <FiAlertTriangle />, OTHER: <FiFileText /> };
+  // ── Ticket Detail ──
+  if (selectedTicket) {
+    const sc = STATUS_COLORS[selectedTicket.status] || '#94a3b8';
+    const replies = selectedTicket.replies || [];
+    return (
+      <>
+        <button onClick={() => setSelectedTicket(null)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--primary)', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}>
+          → العودة للقائمة
+        </button>
 
+        <div style={{ background: 'var(--bg-primary)', borderRadius: 16, border: '1px solid var(--border-light)', padding: 24, marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-light)', padding: '4px 12px', borderRadius: 8 }}>
+              TK-{String(selectedTicket.ticketNumber).padStart(4, '0')}
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 14px', borderRadius: 999, background: `${sc}15`, color: sc }}>
+              {STATUS_LABELS[selectedTicket.status]}
+            </span>
+            <select
+              value={selectedTicket.status}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              disabled={changingStatus}
+              className="ac-select"
+              style={{ marginRight: 'auto', fontSize: 12 }}
+            >
+              <option value="OPEN">مفتوحة</option>
+              <option value="IN_REVIEW">قيد المراجعة</option>
+              <option value="RESOLVED">محلولة</option>
+              <option value="REJECTED">مرفوضة</option>
+            </select>
+          </div>
+          <h2 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 6px' }}>{selectedTicket.subject}</h2>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            {selectedTicket.user?.name || selectedTicket.userName} &middot; {TYPE_LABELS[selectedTicket.type]} &middot; {timeAgo(selectedTicket.createdAt)}
+          </div>
+        </div>
+
+        {/* Thread */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+          {/* Original */}
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
+              {selectedTicket.userName?.charAt(0)}
+            </div>
+            <div style={{ flex: 1, background: 'var(--bg-primary)', border: '1px solid var(--border-light)', borderRadius: 14, padding: '14px 18px', maxWidth: '75%' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                {selectedTicket.userName}
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>{timeAgo(selectedTicket.createdAt)}</span>
+              </div>
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.8, color: 'var(--text-secondary)' }}>{selectedTicket.description}</p>
+              {selectedTicket.image && <img src={selectedTicket.image} alt="" style={{ maxWidth: 240, borderRadius: 8, marginTop: 10 }} />}
+            </div>
+          </div>
+
+          {replies.map((r) => {
+            const isAdmin = r.userRole === 'ADMIN';
+            return (
+              <div key={r.id} style={{ display: 'flex', gap: 12, flexDirection: isAdmin ? 'row-reverse' : 'row' }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: isAdmin ? '#059669' : 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
+                  {r.userName?.charAt(0)}
+                </div>
+                <div style={{ flex: 1, background: isAdmin ? '#ecfdf5' : 'var(--bg-primary)', border: `1px solid ${isAdmin ? '#a7f3d0' : 'var(--border-light)'}`, borderRadius: 14, padding: '14px 18px', maxWidth: '75%' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {r.userName}
+                    {isAdmin && <span style={{ fontSize: 10, background: '#059669', color: '#fff', padding: '1px 8px', borderRadius: 6, fontWeight: 700 }}>مدير</span>}
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>{timeAgo(r.createdAt)}</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.8, color: 'var(--text-secondary)' }}>{r.message}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Reply */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+          <textarea
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            placeholder="اكتب رد..."
+            rows={3}
+            className="ac-textarea"
+            style={{ flex: 1, minHeight: 50 }}
+          />
+          <button
+            className={`ac-save-btn ${sendingReply ? 'btn-loading' : ''}`}
+            onClick={handleReply}
+            disabled={sendingReply || !replyText.trim()}
+            style={{ minHeight: 50 }}
+          >
+            {!sendingReply && 'إرسال'}
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  // ── Ticket List ──
   return (
     <>
-      {/* Stats row */}
       <div className="as-details-row" style={{ marginBottom: 20 }}>
-        <div className="as-detail-item">
-          <div className="as-detail-value" style={{ color: '#4f46e5' }}>{complaints.filter(c => c.status === 'OPEN').length}</div>
-          <div className="as-detail-label">مفتوحة</div>
-        </div>
-        <div className="as-detail-item">
-          <div className="as-detail-value" style={{ color: '#d97706' }}>{complaints.filter(c => c.status === 'IN_REVIEW').length}</div>
-          <div className="as-detail-label">قيد المراجعة</div>
-        </div>
-        <div className="as-detail-item">
-          <div className="as-detail-value" style={{ color: '#10b981' }}>{complaints.filter(c => c.status === 'RESOLVED').length}</div>
-          <div className="as-detail-label">محلولة</div>
-        </div>
-        <div className="as-detail-item">
-          <div className="as-detail-value" style={{ color: '#dc2626' }}>{complaints.filter(c => c.status === 'REJECTED').length}</div>
-          <div className="as-detail-label">مرفوضة</div>
-        </div>
+        {Object.entries(STATUS_COLORS).map(([key, color]) => (
+          <div key={key} className="as-detail-item">
+            <div className="as-detail-value" style={{ color }}>{complaints.filter(c => c.status === key).length}</div>
+            <div className="as-detail-label">{STATUS_LABELS[key]}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Filters */}
       <div className="admin-filters">
         <select className="admin-role-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">كل الحالات</option>
@@ -1280,81 +1389,28 @@ function ComplaintsTab() {
         </select>
       </div>
 
-      {/* Complaint Cards */}
       <div className="ac-list">
         {complaints.map((c) => {
-          const isOpen = expanded === c.id;
           const color = STATUS_COLORS[c.status] || '#94a3b8';
+          const replyCount = c._count?.replies || c.replies?.length || 0;
           return (
-            <div key={c.id} className={`ac-card ${isOpen ? 'ac-card-expanded' : ''}`} style={{ borderRight: `4px solid ${color}` }}>
-              <div className="ac-card-header" onClick={() => setExpanded(isOpen ? null : c.id)}>
+            <div key={c.id} className="ac-card" style={{ borderRight: `4px solid ${color}`, cursor: 'pointer' }} onClick={() => openTicket(c)}>
+              <div className="ac-card-header">
                 <div className="ac-card-icon" style={{ background: `${color}12`, color }}>
                   {TYPE_ICONS[c.type] || <FiFileText />}
                 </div>
                 <div className="ac-card-info">
-                  <div className="ac-card-subject">{c.subject}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: 'var(--primary)' }}>TK-{String(c.ticketNumber).padStart(4, '0')}</span>
+                    <span className="ac-card-subject">{c.subject}</span>
+                  </div>
                   <div className="ac-card-meta">
                     {c.user?.name || c.userName || '—'} &middot; {TYPE_LABELS[c.type]} &middot; {new Date(c.createdAt).toLocaleDateString('ar-EG')}
+                    {replyCount > 0 && <> &middot; {replyCount} رد</>}
                   </div>
                 </div>
                 <span className="ac-card-status" style={{ background: `${color}15`, color }}>{STATUS_LABELS[c.status]}</span>
-                <span className="ac-card-chevron">{isOpen ? '▲' : '▼'}</span>
               </div>
-
-              {isOpen && (
-                <div className="ac-card-body">
-                  <div className="ac-card-desc">
-                    <strong>التفاصيل:</strong>
-                    <p>{c.description}</p>
-                  </div>
-
-                  {c.image && (
-                    <div className="ac-card-image">
-                      <img src={c.image} alt="مرفق" />
-                    </div>
-                  )}
-
-                  {c.adminResponse && (
-                    <div className="ac-card-prev-response">
-                      <strong>الرد السابق:</strong>
-                      <p>{c.adminResponse}</p>
-                    </div>
-                  )}
-
-                  <div className="ac-card-actions">
-                    <div className="ac-card-action-row">
-                      <label>تغيير الحالة:</label>
-                      <select
-                        defaultValue={c.status}
-                        onChange={(e) => setStatusEdits((s) => ({ ...s, [c.id]: e.target.value }))}
-                        className="ac-select"
-                      >
-                        <option value="OPEN">مفتوحة</option>
-                        <option value="IN_REVIEW">قيد المراجعة</option>
-                        <option value="RESOLVED">محلولة</option>
-                        <option value="REJECTED">مرفوضة</option>
-                      </select>
-                    </div>
-                    <div className="ac-card-action-row">
-                      <label>الرد:</label>
-                      <textarea
-                        placeholder="اكتب رد على الشكوى..."
-                        defaultValue={c.adminResponse || ''}
-                        rows={3}
-                        onChange={(e) => setReplies((r) => ({ ...r, [c.id]: e.target.value }))}
-                        className="ac-textarea"
-                      />
-                    </div>
-                    <button
-                      className="ac-save-btn"
-                      onClick={() => handleSave(c.id)}
-                      disabled={saving[c.id]}
-                    >
-                      {saving[c.id] ? 'جاري الحفظ...' : 'حفظ التغييرات'}
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           );
         })}
