@@ -43,7 +43,7 @@ export default function Notifications() {
     <div className="page" style={{ minHeight: '100vh', background: '#f9fafb', direction: 'rtl', padding: '32px 16px' }}>
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: 0 }}>الإشعارات</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><FiBell /> الإشعارات</h1>
           {unreadCount > 0 && (
             <button
               onClick={handleReadAll}

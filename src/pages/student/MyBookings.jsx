@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiCalendar, FiHome, FiMapPin, FiAlertCircle } from 'react-icons/fi';
+import { FiCalendar, FiHome, FiMapPin, FiAlertCircle, FiFileText } from 'react-icons/fi';
 import { useToast } from '../../components/shared/Toast';
 import { api } from '../../utils/api';
 import StatusTimeline from '../../components/shared/StatusTimeline';
@@ -135,7 +135,7 @@ function MyBookings() {
     <div className="page my-bookings-page">
       <div className="container">
         <div className="my-bookings-header">
-          <h1>حجوزاتي</h1>
+          <h1><FiCalendar style={{ marginLeft: 8, verticalAlign: 'middle' }} /> حجوزاتي</h1>
           <p>تتبّع حالة طلبات الحجز والمدفوعات</p>
         </div>
 
@@ -433,7 +433,7 @@ function BookingCard({ booking, onCancel, onPay, onRate }) {
           )}
           {(booking.status === 'PAID' || booking.status === 'COMPLETED') && booking.payment && (
             <button onClick={() => handleDownloadInvoice(booking.payment.id, toast)} className="btn btn-secondary" style={{ fontSize: 13 }}>
-              📄 تحميل الفاتورة
+              <FiFileText style={{ marginLeft: 4, verticalAlign: 'middle' }} /> تحميل الفاتورة
             </button>
           )}
           {canCancel && (

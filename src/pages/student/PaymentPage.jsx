@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { FiCreditCard, FiLock, FiArrowRight } from 'react-icons/fi';
+import { FiCreditCard, FiLock, FiArrowRight, FiShield } from 'react-icons/fi';
 import { api } from '../../utils/api';
 import './PaymentPage.css';
 
@@ -199,7 +199,8 @@ function PaymentPage() {
               </div>
 
               <p className="payment-secure-note">
-                <FiLock />
+                <FiShield style={{ marginLeft: 6 }} />
+                <FiLock style={{ marginLeft: 4 }} />
                 جميع المعاملات مشفّرة ومؤمّنة
               </p>
             </form>

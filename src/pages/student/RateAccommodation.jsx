@@ -89,7 +89,7 @@ function RateAccommodation() {
 
         <div className="rate-card">
           <div className="rate-header">
-            <h1>تقييم السكن</h1>
+            <h1><FiStar style={{ marginLeft: 8, verticalAlign: 'middle', color: '#f59e0b' }} /> تقييم السكن</h1>
             <p>شاركنا تجربتك في "{booking.property.title}"</p>
           </div>
 

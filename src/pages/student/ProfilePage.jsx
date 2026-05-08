@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { FiCamera, FiTrash2 } from "react-icons/fi";
+import { FiCamera, FiTrash2, FiUser, FiMail, FiPhone, FiLock, FiBook, FiHash, FiCalendar, FiShield } from "react-icons/fi";
 import { api } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 import "./ProfilePage.css";
@@ -311,7 +311,7 @@ export default function ProfilePage() {
           <div className="student-profile-col">
             <div className="student-card">
               <div className="student-card-header">
-                <h2 className="student-card-title">المعلومات الشخصية</h2>
+                <h2 className="student-card-title"><FiUser style={{ marginLeft: 8, verticalAlign: 'middle' }} /> المعلومات الشخصية</h2>
               </div>
               <div className="student-profile-card-body">
                 {infoStatus.message && (
@@ -328,7 +328,7 @@ export default function ProfilePage() {
 
                 <form onSubmit={handleSaveInfo}>
                   <div className="student-form-group">
-                    <label className="student-form-label">الاسم الكامل</label>
+                    <label className="student-form-label"><FiUser style={{ marginLeft: 6, verticalAlign: 'middle', fontSize: 14 }} /> الاسم الكامل</label>
                     <input
                       className="student-form-input"
                       value={info.name}
@@ -340,7 +340,7 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="student-form-group">
-                    <label className="student-form-label">رقم الجوال</label>
+                    <label className="student-form-label"><FiPhone style={{ marginLeft: 6, verticalAlign: 'middle', fontSize: 14 }} /> رقم الجوال</label>
                     <input
                       className="student-form-input"
                       value={info.phone}
@@ -358,7 +358,7 @@ export default function ProfilePage() {
 
                   <div className="student-form-group">
                     <label className="student-form-label">
-                      البريد الجامعي
+                      <FiMail style={{ marginLeft: 6, verticalAlign: 'middle', fontSize: 14 }} /> البريد الجامعي
                     </label>
                     <input
                       className="student-form-input student-form-input-locked"
@@ -369,7 +369,7 @@ export default function ProfilePage() {
                       title="لا يمكن تغيير البريد الجامعي بعد التسجيل"
                     />
                     <p className="student-form-hint">
-                      🔒 لا يمكن تغيير البريد الجامعي بعد التسجيل
+                      <FiLock style={{ verticalAlign: 'middle', marginLeft: 4 }} /> لا يمكن تغيير البريد الجامعي بعد التسجيل
                     </p>
                   </div>
 
@@ -386,7 +386,7 @@ export default function ProfilePage() {
 
             <div className="student-card student-profile-card-gap">
               <div className="student-card-header">
-                <h2 className="student-card-title">تغيير كلمة المرور</h2>
+                <h2 className="student-card-title"><FiLock style={{ marginLeft: 8, verticalAlign: 'middle' }} /> تغيير كلمة المرور</h2>
               </div>
               <div className="student-profile-card-body">
                 {passwordStatus.message && (
@@ -477,12 +477,12 @@ export default function ProfilePage() {
           <div className="student-profile-col">
             <div className="student-card">
               <div className="student-card-header">
-                <h2 className="student-card-title">بيانات التحقق</h2>
+                <h2 className="student-card-title"><FiShield style={{ marginLeft: 8, verticalAlign: 'middle' }} /> بيانات التحقق</h2>
               </div>
               <div className="student-profile-card-body">
                 <div className="student-profile-info-row">
                   <span className="student-profile-info-label">
-                    الرقم الجامعي
+                    <FiHash style={{ marginLeft: 6, verticalAlign: 'middle', fontSize: 14 }} /> الرقم الجامعي
                   </span>
                   <span className="student-profile-info-value" dir="ltr">
                     {profile.idNumber || "—"}
@@ -490,14 +490,14 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="student-profile-info-row">
-                  <span className="student-profile-info-label">التخصص</span>
+                  <span className="student-profile-info-label"><FiBook style={{ marginLeft: 6, verticalAlign: 'middle', fontSize: 14 }} /> التخصص</span>
                   <span className="student-profile-info-value">
                     {profile.major || "—"}
                   </span>
                 </div>
 
                 <div className="student-profile-info-row">
-                  <span className="student-profile-info-label">الجنس</span>
+                  <span className="student-profile-info-label"><FiUser style={{ marginLeft: 6, verticalAlign: 'middle', fontSize: 14 }} /> الجنس</span>
                   <span className="student-profile-info-value">
                     {profile.gender === "MALE"
                       ? "ذكر"
@@ -509,7 +509,7 @@ export default function ProfilePage() {
 
                 <div className="student-profile-info-row">
                   <span className="student-profile-info-label">
-                    البريد الإلكتروني
+                    <FiMail style={{ marginLeft: 6, verticalAlign: 'middle', fontSize: 14 }} /> البريد الإلكتروني
                   </span>
                   <span className="student-profile-info-value" dir="ltr">
                     {profile.email}
@@ -518,13 +518,13 @@ export default function ProfilePage() {
 
                 <div className="student-profile-info-row">
                   <span className="student-profile-info-label">
-                    تاريخ الانضمام
+                    <FiCalendar style={{ marginLeft: 6, verticalAlign: 'middle', fontSize: 14 }} /> تاريخ الانضمام
                   </span>
                   <span className="student-profile-info-value">{joined}</span>
                 </div>
 
                 <div className="student-profile-info-row">
-                  <span className="student-profile-info-label">الصلاحيات</span>
+                  <span className="student-profile-info-label"><FiShield style={{ marginLeft: 6, verticalAlign: 'middle', fontSize: 14 }} /> الصلاحيات</span>
                   <span className="student-badge approved">طالب</span>
                 </div>
               </div>
@@ -536,13 +536,13 @@ export default function ProfilePage() {
               </div>
               <div className="student-profile-card-body">
                 <div className="student-profile-info-row">
-                  <span className="student-profile-info-label">الحساب</span>
+                  <span className="student-profile-info-label"><FiUser style={{ marginLeft: 6, verticalAlign: 'middle', fontSize: 14 }} /> الحساب</span>
                   <span className="student-badge approved">مفعّل</span>
                 </div>
 
                 <div className="student-profile-info-row">
                   <span className="student-profile-info-label">
-                    رقم الجوال
+                    <FiPhone style={{ marginLeft: 6, verticalAlign: 'middle', fontSize: 14 }} /> رقم الجوال
                   </span>
                   <span className="student-profile-info-value" dir="ltr">
                     {profile.phone || "—"}
@@ -551,7 +551,7 @@ export default function ProfilePage() {
 
                 <div className="student-profile-info-row">
                   <span className="student-profile-info-label">
-                    آخر تحديث
+                    <FiCalendar style={{ marginLeft: 6, verticalAlign: 'middle', fontSize: 14 }} /> آخر تحديث
                   </span>
                   <span className="student-profile-info-value">
                     {formatDate(profile.updatedAt)}

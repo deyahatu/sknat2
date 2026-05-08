@@ -62,7 +62,7 @@ export default function Complaints() {
   return (
     <div className="page" style={{ maxWidth: 800, margin: '0 auto', padding: '2rem 1rem', direction: 'rtl', fontFamily: 'inherit' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>شكاواي</h1>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><FiAlertCircle /> شكاواي</h1>
         <button
           onClick={() => { setShowForm(true); setError(''); }}
           style={{
