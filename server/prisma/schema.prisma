@@ -129,6 +129,7 @@ enum ComplaintStatus {
     notifications Notification[]
     reports       Report[]
     complaints    Complaint[]
+    ticketReplies TicketReply[]
 
     @@map("users")
   }
@@ -463,6 +464,7 @@ model Report {
 
 model Complaint {
   id            String          @id @default(uuid())
+  ticketNumber  Int             @unique @default(autoincrement())
   userId        String
   userName      String
   type          ComplaintType
@@ -474,9 +476,26 @@ model Complaint {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replies TicketReply[]
 
   @@index([userId])
   @@index([status])
   @@map("complaints")
+}
+
+model TicketReply {
+  id          String   @id @default(uuid())
+  complaintId String
+  userId      String
+  userName    String
+  userRole    String
+  message     String
+  createdAt   DateTime @default(now())
+
+  complaint Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([complaintId])
+  @@map("ticket_replies")
 }

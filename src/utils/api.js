@@ -140,8 +140,10 @@ export const api = {
   complaints: {
     create: (body) => request('/complaints', { method: 'POST', body: JSON.stringify(body) }),
     mine: () => request('/complaints/mine'),
+    get: (id) => request(`/complaints/${id}`),
     list: (params) => request(`/complaints${buildQuery(params)}`),
     update: (id, body) => request(`/complaints/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    reply: (id, message) => request(`/complaints/${id}/replies`, { method: 'POST', body: JSON.stringify({ message }) }),
   },
   admin: {
     stats: () => request('/admin/stats'),

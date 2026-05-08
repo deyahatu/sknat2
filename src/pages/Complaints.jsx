@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { FiAlertCircle, FiPlus, FiHome, FiUsers, FiTool, FiMoreHorizontal, FiClock, FiCheckCircle, FiXCircle, FiEye, FiMessageCircle } from 'react-icons/fi';
+import { useState, useEffect, useRef } from 'react';
+import { FiAlertCircle, FiPlus, FiHome, FiUsers, FiTool, FiMoreHorizontal, FiClock, FiCheckCircle, FiXCircle, FiEye, FiSend, FiArrowRight, FiHash } from 'react-icons/fi';
 import { api } from '../utils/api';
 import { useToast } from '../components/shared/Toast';
+import { useAuth } from '../context/AuthContext';
 import Skeleton from '../components/shared/Skeleton';
 import './Complaints.css';
 
@@ -20,13 +21,17 @@ const STATUS_CONFIG = {
 };
 
 export default function Complaints() {
+  const { user } = useAuth();
   const toast = useToast();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ type: 'ACCOMMODATION', subject: '', description: '' });
-  const [expanded, setExpanded] = useState(null);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+  const replyRef = useRef(null);
 
   const fetchComplaints = async () => {
     try {
@@ -41,6 +46,13 @@ export default function Complaints() {
   };
 
   useEffect(() => { fetchComplaints(); }, []);
+
+  // When ticket selected, scroll to reply
+  useEffect(() => {
+    if (selectedTicket && replyRef.current) {
+      replyRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [selectedTicket]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -62,24 +74,133 @@ export default function Complaints() {
     }
   };
 
+  const handleReply = async () => {
+    if (!replyText.trim() || !selectedTicket) return;
+    setSendingReply(true);
+    try {
+      await api.complaints.reply(selectedTicket.id, replyText);
+      setReplyText('');
+      // Refresh ticket
+      const data = await api.complaints.get(selectedTicket.id);
+      setSelectedTicket(data.complaint);
+      fetchComplaints();
+    } catch (err) {
+      toast.error(err.message || 'فشل إرسال الرد.');
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const openTicket = async (c) => {
+    try {
+      const data = await api.complaints.get(c.id);
+      setSelectedTicket(data.complaint);
+    } catch {
+      setSelectedTicket(c);
+    }
+  };
+
   function timeAgo(date) {
     const diff = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
     if (diff < 1) return 'الآن';
     if (diff < 60) return `منذ ${diff} د`;
-    if (diff < 1440) return `منذ ${Math.floor(diff / 60)} ساعة`;
+    if (diff < 1440) return `منذ ${Math.floor(diff / 60)} س`;
     return `منذ ${Math.floor(diff / 1440)} يوم`;
   }
 
+  // ── Ticket Detail View ──
+  if (selectedTicket) {
+    const sc = STATUS_CONFIG[selectedTicket.status] || STATUS_CONFIG.OPEN;
+    const tc = TYPE_CONFIG[selectedTicket.type] || TYPE_CONFIG.OTHER;
+    const replies = selectedTicket.replies || [];
+    const isClosed = selectedTicket.status === 'RESOLVED' || selectedTicket.status === 'REJECTED';
+
+    return (
+      <div className="page cmp-page">
+        <button className="tk-back" onClick={() => setSelectedTicket(null)}>
+          <FiArrowRight /> العودة للشكاوى
+        </button>
+
+        <div className="tk-header">
+          <div className="tk-header-top">
+            <span className="tk-number"><FiHash />TK-{String(selectedTicket.ticketNumber).padStart(4, '0')}</span>
+            <span className="tk-status" style={{ background: sc.bg, color: sc.color }}>{sc.icon} {sc.label}</span>
+          </div>
+          <h1 className="tk-subject">{selectedTicket.subject}</h1>
+          <div className="tk-meta">
+            <span className="tk-type-badge" style={{ color: tc.color, background: `${tc.color}10` }}>{tc.icon} {tc.label}</span>
+            <span>{timeAgo(selectedTicket.createdAt)}</span>
+          </div>
+        </div>
+
+        {/* Conversation Thread */}
+        <div className="tk-thread">
+          {/* Original message */}
+          <div className="tk-msg tk-msg-user">
+            <div className="tk-msg-avatar">{selectedTicket.userName?.charAt(0)}</div>
+            <div className="tk-msg-bubble">
+              <div className="tk-msg-sender">{selectedTicket.userName} <span className="tk-msg-time">{timeAgo(selectedTicket.createdAt)}</span></div>
+              <p>{selectedTicket.description}</p>
+              {selectedTicket.image && <img src={selectedTicket.image} alt="مرفق" className="tk-msg-image" />}
+            </div>
+          </div>
+
+          {/* Replies */}
+          {replies.map((r) => {
+            const isAdmin = r.userRole === 'ADMIN';
+            return (
+              <div key={r.id} className={`tk-msg ${isAdmin ? 'tk-msg-admin' : 'tk-msg-user'}`}>
+                <div className={`tk-msg-avatar ${isAdmin ? 'tk-msg-avatar-admin' : ''}`}>
+                  {r.userName?.charAt(0)}
+                </div>
+                <div className="tk-msg-bubble">
+                  <div className="tk-msg-sender">
+                    {r.userName}
+                    {isAdmin && <span className="tk-admin-badge">مدير</span>}
+                    <span className="tk-msg-time">{timeAgo(r.createdAt)}</span>
+                  </div>
+                  <p>{r.message}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Reply Input */}
+        {!isClosed ? (
+          <div className="tk-reply" ref={replyRef}>
+            <textarea
+              className="tk-reply-input"
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              placeholder="اكتب ردك..."
+              rows={3}
+            />
+            <button
+              className={`tk-reply-btn ${sendingReply ? 'btn-loading' : ''}`}
+              onClick={handleReply}
+              disabled={sendingReply || !replyText.trim()}
+            >
+              {!sendingReply && <><FiSend /> إرسال</>}
+            </button>
+          </div>
+        ) : (
+          <div className="tk-closed">هذه الشكوى مغلقة</div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Ticket List View ──
   return (
     <div className="page cmp-page">
-      {/* Header */}
       <div className="cmp-hero">
-        <div className="cmp-hero-content">
+        <div>
           <h1 className="cmp-hero-title"><FiAlertCircle /> الشكاوى</h1>
-          <p className="cmp-hero-sub">تقديم ومتابعة الشكاوى</p>
+          <p className="cmp-hero-sub">تقديم ومتابعة الشكاوى — نظام التذاكر</p>
         </div>
         <button className="cmp-hero-btn" onClick={() => setShowForm(true)}>
-          <FiPlus /> تقديم شكوى
+          <FiPlus /> تذكرة جديدة
         </button>
       </div>
 
@@ -102,10 +223,10 @@ export default function Complaints() {
       {showForm && (
         <div className="cmp-modal-overlay" onClick={() => setShowForm(false)}>
           <div className="cmp-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="cmp-modal-title"><FiAlertCircle /> تقديم شكوى جديدة</h2>
+            <h2 className="cmp-modal-title"><FiAlertCircle /> تذكرة جديدة</h2>
             <form onSubmit={handleSubmit}>
               <div className="cmp-form-group">
-                <label className="cmp-form-label">نوع الشكوى</label>
+                <label className="cmp-form-label">نوع المشكلة</label>
                 <div className="cmp-type-selector">
                   {Object.entries(TYPE_CONFIG).map(([val, cfg]) => (
                     <button
@@ -123,28 +244,16 @@ export default function Complaints() {
               </div>
               <div className="cmp-form-group">
                 <label className="cmp-form-label">الموضوع</label>
-                <input
-                  type="text"
-                  value={form.subject}
-                  onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                  placeholder="اكتب موضوع الشكوى..."
-                  className="cmp-input"
-                />
+                <input type="text" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="عنوان قصير للمشكلة..." className="cmp-input" />
               </div>
               <div className="cmp-form-group">
                 <label className="cmp-form-label">التفاصيل</label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="اشرح مشكلتك بالتفصيل..."
-                  rows={4}
-                  className="cmp-textarea"
-                />
+                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="اشرح مشكلتك بالتفصيل..." rows={4} className="cmp-textarea" />
               </div>
               <div className="cmp-form-actions">
                 <button type="button" className="cmp-cancel-btn" onClick={() => setShowForm(false)}>إلغاء</button>
                 <button type="submit" className={`cmp-submit-btn ${submitting ? 'btn-loading' : ''}`} disabled={submitting}>
-                  {submitting ? '' : 'إرسال الشكوى'}
+                  {submitting ? '' : 'إرسال التذكرة'}
                 </button>
               </div>
             </form>
@@ -152,55 +261,38 @@ export default function Complaints() {
         </div>
       )}
 
-      {/* List */}
+      {/* Ticket List */}
       {loading ? (
-        <div className="cmp-skeleton"><Skeleton height={80} count={4} /></div>
+        <Skeleton height={70} count={4} />
       ) : complaints.length === 0 ? (
         <div className="cmp-empty">
           <div className="cmp-empty-icon"><FiAlertCircle size={36} /></div>
-          <h3 className="cmp-empty-title">لا توجد شكاوى</h3>
+          <h3 className="cmp-empty-title">لا توجد تذاكر</h3>
           <p className="cmp-empty-sub">لم تقدم أي شكوى حتى الآن</p>
-          <button className="cmp-empty-cta" onClick={() => setShowForm(true)}>
-            <FiPlus /> تقديم شكوى
-          </button>
+          <button className="cmp-empty-cta" onClick={() => setShowForm(true)}><FiPlus /> تذكرة جديدة</button>
         </div>
       ) : (
-        <div className="cmp-list">
+        <div className="tk-list">
           {complaints.map((c) => {
             const sc = STATUS_CONFIG[c.status] || STATUS_CONFIG.OPEN;
             const tc = TYPE_CONFIG[c.type] || TYPE_CONFIG.OTHER;
-            const isOpen = expanded === c.id;
+            const replyCount = c.replies?.length || 0;
             return (
-              <div key={c.id} className={`cmp-card ${isOpen ? 'cmp-card-expanded' : ''}`} style={{ borderRight: `4px solid ${sc.color}` }}>
-                <div className="cmp-card-header" onClick={() => setExpanded(isOpen ? null : c.id)}>
-                  <div className="cmp-card-type-icon" style={{ background: `${tc.color}12`, color: tc.color }}>
-                    {tc.icon}
+              <div key={c.id} className="tk-item" onClick={() => openTicket(c)}>
+                <div className="tk-item-icon" style={{ background: `${tc.color}12`, color: tc.color }}>{tc.icon}</div>
+                <div className="tk-item-info">
+                  <div className="tk-item-top">
+                    <span className="tk-item-number">TK-{String(c.ticketNumber).padStart(4, '0')}</span>
+                    <span className="tk-item-subject">{c.subject}</span>
                   </div>
-                  <div className="cmp-card-info">
-                    <div className="cmp-card-subject">{c.subject}</div>
-                    <div className="cmp-card-meta">{tc.label} &middot; {timeAgo(c.createdAt)}</div>
+                  <div className="tk-item-bottom">
+                    <span>{tc.label}</span>
+                    <span>&middot;</span>
+                    <span>{timeAgo(c.createdAt)}</span>
+                    {replyCount > 0 && <><span>&middot;</span><span>{replyCount} رد</span></>}
                   </div>
-                  <span className="cmp-card-badge" style={{ background: sc.bg, color: sc.color }}>
-                    {sc.icon} {sc.label}
-                  </span>
-                  <span className="cmp-card-chevron">{isOpen ? '▲' : '▼'}</span>
                 </div>
-
-                {isOpen && (
-                  <div className="cmp-card-body">
-                    <div className="cmp-card-desc">
-                      <p>{c.description}</p>
-                    </div>
-                    {c.adminResponse && (
-                      <div className="cmp-card-response">
-                        <div className="cmp-card-response-header">
-                          <FiMessageCircle /> رد الإدارة
-                        </div>
-                        <p>{c.adminResponse}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <span className="tk-item-status" style={{ background: sc.bg, color: sc.color }}>{sc.label}</span>
               </div>
             );
           })}
