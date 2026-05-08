@@ -1,62 +1,115 @@
+/* ============================================
+   Favorites.css — Premium Student Favorites
+   ============================================ */
+
 .favorites-page {
-  padding: 36px 0 64px;
+  padding: 40px 0 72px;
+  min-height: calc(100vh - 160px);
 }
 
+/* ---- Page Header ---- */
 .favorites-header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 26px;
+  margin-bottom: 28px;
+  padding: 28px 32px;
+  background: linear-gradient(135deg, var(--primary-pale) 0%, var(--bg-secondary) 100%);
+  border-radius: var(--radius-xl, 20px);
+  border: 1px solid var(--border-light);
 }
 
 .favorites-header h1 {
   margin: 0 0 6px;
-  font-size: 1.8rem;
+  font-size: 1.85rem;
   font-weight: 800;
-  color: #17386a;
+  color: var(--primary-deep);
+  letter-spacing: -0.02em;
 }
 
 .favorites-header p {
   margin: 0;
   color: var(--text-secondary);
   font-size: 0.95rem;
+  line-height: 1.6;
 }
 
+/* ---- Favorites Count Badge ---- */
 .favorites-count {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: 8px;
+  padding: 10px 18px;
   background: #fff1f2;
   border: 1px solid #fecdd3;
   border-radius: 999px;
   color: #be123c;
   font-weight: 800;
   font-size: 0.95rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: var(--transition);
 }
 
+.favorites-count svg {
+  font-size: 1rem;
+}
+
+/* ---- Grid Layout ---- */
 .favorites-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
+  gap: 24px;
 }
 
+/* Card remove button override — subtle, red on hover */
+.favorites-grid .favorite-remove-btn,
+.favorites-grid .remove-favorite-btn {
+  position: absolute;
+  top: 12px;
+  inset-inline-end: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  z-index: 2;
+}
+
+.favorites-grid .favorite-remove-btn:hover,
+.favorites-grid .remove-favorite-btn:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+  transform: scale(1.1);
+}
+
+/* ---- Empty State ---- */
 .favorites-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 60px 20px;
-  background: white;
-  border: 1px dashed rgba(37, 99, 235, 0.2);
-  border-radius: 18px;
+  gap: 16px;
+  padding: 72px 24px;
+  background: var(--bg-primary, #ffffff);
+  border: 2px dashed var(--border-light);
+  border-radius: var(--radius-xl, 20px);
   text-align: center;
 }
 
 .favorites-empty svg {
-  font-size: 2.6rem;
+  font-size: 3rem;
   color: #be123c;
+  opacity: 0.6;
 }
 
 .favorites-empty.error svg {
@@ -65,28 +118,53 @@
 
 .favorites-empty h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 800;
-  color: #17386a;
+  color: var(--primary-deep);
 }
 
 .favorites-empty p {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  max-width: 400px;
+  line-height: 1.6;
 }
 
-@media (max-width: 900px) {
+.favorites-empty .btn {
+  margin-top: 8px;
+}
+
+/* ---- Responsive: 3 -> 2 -> 1 ---- */
+@media (max-width: 1024px) {
   .favorites-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
+  .favorites-page {
+    padding: 24px 0 48px;
+  }
+
   .favorites-grid {
     grid-template-columns: 1fr;
+    gap: 18px;
   }
+
   .favorites-header {
     flex-direction: column;
     align-items: flex-start;
+    padding: 22px 20px;
+    border-radius: var(--radius-lg, 14px);
+  }
+
+  .favorites-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .favorites-empty {
+    padding: 48px 20px;
   }
 }
