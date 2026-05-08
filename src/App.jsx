@@ -29,6 +29,7 @@ import ManageProfile from './pages/owner/ManageProfile';
 import StudentMessages from './pages/student/Messages';
 import OwnerMessages from './pages/owner/OwnerMessages';
 import Complaints from './pages/Complaints';
+import Notifications from './pages/Notifications';
 
 function GuestRoute({ children }) {
   const { user, loading } = useAuth();
@@ -102,6 +103,7 @@ function App() {
             <Route path="/favorites" element={<ProtectedRoute roles={['STUDENT']}><Favorites /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute roles={['STUDENT']}><StudentMessages /></ProtectedRoute>} />
             <Route path="/complaints" element={<ProtectedRoute roles={['STUDENT']}><Complaints /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute roles={['STUDENT', 'OWNER', 'ADMIN']}><Notifications /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
           </Route>
         </Routes>

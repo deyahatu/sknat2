@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { FiHome, FiSearch, FiLogIn, FiUserPlus, FiMenu, FiX, FiUser, FiLogOut, FiSettings, FiCalendar, FiHeart, FiMessageSquare, FiAlertCircle } from 'react-icons/fi';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from '../shared/NotificationBell';
 import './Navbar.css';
 
 function Navbar() {
@@ -61,6 +62,11 @@ function Navbar() {
               </Link>
             </li>
           ))}
+          {user && (
+            <li>
+              <NotificationBell />
+            </li>
+          )}
           {user && (
             <li>
               <button
