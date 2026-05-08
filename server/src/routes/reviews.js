@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { notify } from '../utils/notify.js';
 
 const router = Router();
 
@@ -80,9 +81,11 @@ router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
         comment: comment ? String(comment).trim() || null : null,
       },
       include: {
-        property: { select: { id: true, title: true } },
+        property: { select: { id: true, title: true, ownerId: true } },
       },
     });
+
+    notify(review.property.ownerId, 'تقييم جديد', `تقييم جديد على ${review.property.title}`, '/owner/ratings').catch(() => {});
 
     res.status(201).json({
       message: 'شكراً لتقييمك.',

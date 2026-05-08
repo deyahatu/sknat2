@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../utils/prisma.js';
 import { authenticate } from '../middleware/auth.js';
 import { emitToUser } from '../utils/socket.js';
+import { notify } from '../utils/notify.js';
 
 const router = Router();
 
@@ -103,6 +104,7 @@ router.post('/', authenticate, async (req, res, next) => {
     });
 
     emitToUser(receiverId, 'new_message', message);
+    notify(receiverId, 'رسالة جديدة', `رسالة من ${req.user.name}`, '/messages').catch(() => {});
     res.status(201).json({ message });
   } catch (err) {
     next(err);
