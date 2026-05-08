@@ -571,9 +571,12 @@ router.put('/:id', authenticate, authorize('OWNER'), async (req, res, next) => {
   }
 });
 
-router.patch('/:id/availability', authenticate, authorize('OWNER'), async (req, res, next) => {
+router.patch('/:id/availability', authenticate, async (req, res, next) => {
   try {
-    const existing = await findOwnerProperty(req.params.id, req.user.id);
+    const isAdmin = req.user.role === 'ADMIN';
+    const existing = isAdmin
+      ? await prisma.property.findUnique({ where: { id: req.params.id }, select: propertySelect })
+      : await findOwnerProperty(req.params.id, req.user.id);
 
     if (!existing) {
       return res.status(404).json({ error: 'السكن غير موجود.' });
@@ -597,9 +600,12 @@ router.patch('/:id/availability', authenticate, authorize('OWNER'), async (req, 
   }
 });
 
-router.delete('/:id', authenticate, authorize('OWNER'), async (req, res, next) => {
+router.delete('/:id', authenticate, async (req, res, next) => {
   try {
-    const existing = await findOwnerProperty(req.params.id, req.user.id);
+    const isAdmin = req.user.role === 'ADMIN';
+    const existing = isAdmin
+      ? await prisma.property.findUnique({ where: { id: req.params.id }, select: propertySelect })
+      : await findOwnerProperty(req.params.id, req.user.id);
 
     if (!existing) {
       return res.status(404).json({ error: 'السكن غير موجود.' });

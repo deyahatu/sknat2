@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ErrorBoundary from './components/shared/ErrorBoundary';
+import { ToastProvider } from './components/shared/Toast';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import HomePage from './pages/HomePage';
@@ -61,8 +62,9 @@ function PublicLayout() {
 function App() {
   return (
     <ErrorBoundary>
-      <Router>
-      <AuthProvider>
+      <ToastProvider>
+        <Router>
+          <AuthProvider>
         <Routes>
           {/* Owner section — uses its own layout (no global Navbar/Footer) */}
           <Route
@@ -107,8 +109,9 @@ function App() {
             <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
           </Route>
         </Routes>
-      </AuthProvider>
-      </Router>
+          </AuthProvider>
+        </Router>
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

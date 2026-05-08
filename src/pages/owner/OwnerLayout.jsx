@@ -12,26 +12,28 @@ export default function OwnerLayout() {
 
   return (
     <div className="owner-layout">
-      <header className="owner-header">
-        <div className="owner-header-right">
-          <Link to="/owner" className="owner-header-logo">
-            سكنات 🏠
-          </Link>
-        </div>
-        <button
-          className="owner-menu-btn"
-          onClick={() => setSidebarOpen(true)}
-          aria-label="فتح القائمة"
-        >
-          ☰
-        </button>
-      </header>
-
       <OwnerSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <main className="owner-content">
-        <Outlet />
-      </main>
+      <div className="owner-layout-body">
+        <header className="owner-header">
+          <div className="owner-header-right">
+            <Link to="/owner" className="owner-header-logo">
+              سكنات 🏠
+            </Link>
+          </div>
+          <button
+            className="owner-menu-btn"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="فتح القائمة"
+          >
+            ☰
+          </button>
+        </header>
+
+        <main className="owner-content">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

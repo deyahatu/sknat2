@@ -19,11 +19,17 @@
 
 .owner-layout {
   display: flex;
-  flex-direction: column;
   min-height: 100vh;
   background: var(--owner-bg);
   direction: rtl;
-  font-family: "Segoe UI", Tahoma, sans-serif;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.owner-layout-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
 .owner-header {
@@ -59,12 +65,16 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   color: white;
   font-size: 1.2rem;
   transition: background 0.2s;
+}
+
+@media (max-width: 900px) {
+  .owner-menu-btn { display: flex; }
 }
 
 .owner-menu-btn:hover {
@@ -93,40 +103,57 @@
   box-sizing: border-box;
 }
 
-/* ─── Sidebar Overlay ─── */
+/* ─── Sidebar Overlay (mobile only) ─── */
 .owner-sidebar-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 200;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s;
+  display: none;
 }
 
-.owner-sidebar-overlay.open {
-  opacity: 1;
-  pointer-events: all;
+@media (max-width: 900px) {
+  .owner-sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .owner-sidebar-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
 }
 
+/* Desktop: sidebar always visible, sticky right */
 .owner-sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: auto;
-  width: 280px;
+  width: 260px;
   height: 100vh;
   background: var(--owner-sidebar-bg);
   z-index: 300;
   display: flex;
   flex-direction: column;
-  transform: translateX(-100%);
-  transition: transform 0.28s ease;
   overflow-y: auto;
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
 }
 
-.owner-sidebar.open {
-  transform: translateX(0);
+/* Mobile: sidebar hidden by default, slides in */
+@media (max-width: 900px) {
+  .owner-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: auto;
+    width: 280px;
+    height: 100vh;
+    transform: translateX(100%);
+    transition: transform 0.28s ease;
+  }
+  .owner-sidebar.open {
+    transform: translateX(0);
+  }
 }
 
 .owner-sidebar-header {
@@ -151,6 +178,11 @@
   cursor: pointer;
   line-height: 1;
   padding: 4px;
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .owner-sidebar-close { display: block; }
 }
 
 .owner-sidebar-close:hover {
