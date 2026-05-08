@@ -1233,10 +1233,36 @@ function ComplaintsTab() {
     }
   };
 
+  const [expanded, setExpanded] = useState(null);
+
   if (loading) return <div className="loading-state">جاري التحميل...</div>;
+
+  const STATUS_COLORS = { OPEN: '#4f46e5', IN_REVIEW: '#d97706', RESOLVED: '#10b981', REJECTED: '#dc2626' };
+  const TYPE_ICONS = { ACCOMMODATION: <FiHome />, USER_ISSUE: <FiUsers />, TECHNICAL: <FiAlertTriangle />, OTHER: <FiFileText /> };
 
   return (
     <>
+      {/* Stats row */}
+      <div className="as-details-row" style={{ marginBottom: 20 }}>
+        <div className="as-detail-item">
+          <div className="as-detail-value" style={{ color: '#4f46e5' }}>{complaints.filter(c => c.status === 'OPEN').length}</div>
+          <div className="as-detail-label">مفتوحة</div>
+        </div>
+        <div className="as-detail-item">
+          <div className="as-detail-value" style={{ color: '#d97706' }}>{complaints.filter(c => c.status === 'IN_REVIEW').length}</div>
+          <div className="as-detail-label">قيد المراجعة</div>
+        </div>
+        <div className="as-detail-item">
+          <div className="as-detail-value" style={{ color: '#10b981' }}>{complaints.filter(c => c.status === 'RESOLVED').length}</div>
+          <div className="as-detail-label">محلولة</div>
+        </div>
+        <div className="as-detail-item">
+          <div className="as-detail-value" style={{ color: '#dc2626' }}>{complaints.filter(c => c.status === 'REJECTED').length}</div>
+          <div className="as-detail-label">مرفوضة</div>
+        </div>
+      </div>
+
+      {/* Filters */}
       <div className="admin-filters">
         <select className="admin-role-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">كل الحالات</option>
@@ -1254,70 +1280,87 @@ function ComplaintsTab() {
         </select>
       </div>
 
-      <div className="users-table-container">
-        <table className="users-table">
-          <thead>
-            <tr>
-              <th>المستخدم</th>
-              <th>النوع</th>
-              <th>الموضوع</th>
-              <th>الحالة</th>
-              <th>التاريخ</th>
-              <th>إجراءات</th>
-            </tr>
-          </thead>
-          <tbody>
-            {complaints.map((c) => (
-              <tr key={c.id}>
-                <td>
-                  <div className="at-complaint-user">
-                    <span className="at-complaint-user-name">{c.user?.name || c.userName || '—'}</span>
-                    <span className="at-complaint-user-email">{c.user?.email || ''}</span>
+      {/* Complaint Cards */}
+      <div className="ac-list">
+        {complaints.map((c) => {
+          const isOpen = expanded === c.id;
+          const color = STATUS_COLORS[c.status] || '#94a3b8';
+          return (
+            <div key={c.id} className={`ac-card ${isOpen ? 'ac-card-expanded' : ''}`} style={{ borderRight: `4px solid ${color}` }}>
+              <div className="ac-card-header" onClick={() => setExpanded(isOpen ? null : c.id)}>
+                <div className="ac-card-icon" style={{ background: `${color}12`, color }}>
+                  {TYPE_ICONS[c.type] || <FiFileText />}
+                </div>
+                <div className="ac-card-info">
+                  <div className="ac-card-subject">{c.subject}</div>
+                  <div className="ac-card-meta">
+                    {c.user?.name || c.userName || '—'} &middot; {TYPE_LABELS[c.type]} &middot; {new Date(c.createdAt).toLocaleDateString('ar-EG')}
                   </div>
-                </td>
-                <td><span className="role-badge">{TYPE_LABELS[c.type] || c.type}</span></td>
-                <td className="at-truncate-sm">{c.subject}</td>
-                <td>
-                  <span className={`status-badge ${STATUS_CLASS[c.status] || ''}`}>
-                    {STATUS_LABELS[c.status] || c.status}
-                  </span>
-                </td>
-                <td>{new Date(c.createdAt).toLocaleDateString('ar-EG')}</td>
-                <td>
-                  <div className="at-complaint-form">
-                    <select
-                      defaultValue={c.status}
-                      onChange={(e) => setStatusEdits((s) => ({ ...s, [c.id]: e.target.value }))}
-                      className="at-complaint-select"
-                    >
-                      <option value="OPEN">مفتوحة</option>
-                      <option value="IN_REVIEW">قيد المراجعة</option>
-                      <option value="RESOLVED">محلولة</option>
-                      <option value="REJECTED">مرفوضة</option>
-                    </select>
-                    <textarea
-                      placeholder="رد على الشكوى..."
-                      defaultValue={c.adminResponse || ''}
-                      rows={2}
-                      onChange={(e) => setReplies((r) => ({ ...r, [c.id]: e.target.value }))}
-                      className="at-complaint-textarea"
-                    />
+                </div>
+                <span className="ac-card-status" style={{ background: `${color}15`, color }}>{STATUS_LABELS[c.status]}</span>
+                <span className="ac-card-chevron">{isOpen ? '▲' : '▼'}</span>
+              </div>
+
+              {isOpen && (
+                <div className="ac-card-body">
+                  <div className="ac-card-desc">
+                    <strong>التفاصيل:</strong>
+                    <p>{c.description}</p>
+                  </div>
+
+                  {c.image && (
+                    <div className="ac-card-image">
+                      <img src={c.image} alt="مرفق" />
+                    </div>
+                  )}
+
+                  {c.adminResponse && (
+                    <div className="ac-card-prev-response">
+                      <strong>الرد السابق:</strong>
+                      <p>{c.adminResponse}</p>
+                    </div>
+                  )}
+
+                  <div className="ac-card-actions">
+                    <div className="ac-card-action-row">
+                      <label>تغيير الحالة:</label>
+                      <select
+                        defaultValue={c.status}
+                        onChange={(e) => setStatusEdits((s) => ({ ...s, [c.id]: e.target.value }))}
+                        className="ac-select"
+                      >
+                        <option value="OPEN">مفتوحة</option>
+                        <option value="IN_REVIEW">قيد المراجعة</option>
+                        <option value="RESOLVED">محلولة</option>
+                        <option value="REJECTED">مرفوضة</option>
+                      </select>
+                    </div>
+                    <div className="ac-card-action-row">
+                      <label>الرد:</label>
+                      <textarea
+                        placeholder="اكتب رد على الشكوى..."
+                        defaultValue={c.adminResponse || ''}
+                        rows={3}
+                        onChange={(e) => setReplies((r) => ({ ...r, [c.id]: e.target.value }))}
+                        className="ac-textarea"
+                      />
+                    </div>
                     <button
-                      className="action-btn at-complaint-save-btn"
+                      className="ac-save-btn"
                       onClick={() => handleSave(c.id)}
                       disabled={saving[c.id]}
                     >
-                      {saving[c.id] ? 'جاري...' : 'حفظ'}
+                      {saving[c.id] ? 'جاري الحفظ...' : 'حفظ التغييرات'}
                     </button>
                   </div>
-                </td>
-              </tr>
-            ))}
-            {complaints.length === 0 && (
-              <tr><td colSpan="6" className="at-td-center">لا يوجد شكاوى</td></tr>
-            )}
-          </tbody>
-        </table>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {complaints.length === 0 && (
+          <div className="as-activity-empty">لا يوجد شكاوى</div>
+        )}
       </div>
     </>
   );

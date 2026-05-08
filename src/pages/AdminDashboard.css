@@ -746,6 +746,192 @@
   }
 }
 
+/* ── Complaint Cards ── */
+.ac-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ac-card {
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border-light, #e8ecf4);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+.ac-card:hover { box-shadow: var(--shadow-md); }
+.ac-card-expanded { box-shadow: var(--shadow-lg); }
+
+.ac-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ac-card-header:hover { background: var(--bg-secondary, #f8fafc); }
+
+.ac-card-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.ac-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ac-card-subject {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 2px;
+}
+
+.ac-card-meta {
+  font-size: 12px;
+  color: var(--text-muted, #94a3b8);
+}
+
+.ac-card-status {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.ac-card-chevron {
+  font-size: 11px;
+  color: var(--text-muted, #94a3b8);
+  flex-shrink: 0;
+}
+
+.ac-card-body {
+  padding: 0 20px 20px;
+  border-top: 1px solid var(--border-light, #f1f5f9);
+  animation: fadeIn 0.2s ease;
+}
+
+.ac-card-desc {
+  padding: 16px 0 12px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text-secondary, #475569);
+}
+.ac-card-desc strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 6px;
+}
+
+.ac-card-image {
+  margin-bottom: 12px;
+}
+.ac-card-image img {
+  max-width: 300px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+}
+
+.ac-card-prev-response {
+  background: var(--bg-tertiary, #f1f5f9);
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+.ac-card-prev-response strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.ac-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border-light, #e8ecf4);
+}
+
+.ac-card-action-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ac-card-action-row label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ac-select {
+  padding: 10px 14px;
+  border: 1.5px solid var(--border, #e2e8f0);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ac-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.ac-textarea {
+  padding: 10px 14px;
+  border: 1.5px solid var(--border, #e2e8f0);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  resize: vertical;
+  min-height: 70px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ac-textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.ac-save-btn {
+  align-self: flex-start;
+  padding: 10px 28px;
+  background: var(--primary, #4f46e5);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+.ac-save-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+}
+.ac-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* ── Admin Tab utility classes ── */
 .at-user-opacity {
   opacity: 0.6;
