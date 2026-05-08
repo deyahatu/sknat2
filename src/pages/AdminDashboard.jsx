@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
+import { useToast } from '../components/shared/Toast';
+import ConfirmModal from '../components/shared/ConfirmModal';
 import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText, FiFlag, FiAlertTriangle } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import './AdminDashboard.css';
@@ -95,11 +97,13 @@ export default function AdminDashboard() {
 
 // ── Users Tab (UC-27, UC-28, UC-29, UC-30) ──
 function UsersTab({ currentUser }) {
+  const toast = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
 
   const fetchUsers = async () => {
     try {
@@ -122,15 +126,21 @@ function UsersTab({ currentUser }) {
     return () => clearTimeout(handle);
   }, [search, roleFilter]);
 
-  const handleDelete = async (id, name) => {
+  const handleDelete = (id, name) => {
     if (id === currentUser.id) return;
-    if (!window.confirm(`هل أنت متأكد من حذف "${name}"؟`)) return;
-    try {
-      await api.users.delete(id);
-      setUsers(users.filter((u) => u.id !== id));
-    } catch (err) {
-      alert('خطأ: ' + (err.message || 'فشل الحذف'));
-    }
+    setConfirmState({
+      open: true,
+      title: 'تأكيد الحذف',
+      message: `هل أنت متأكد من حذف "${name}"؟`,
+      action: async () => {
+        try {
+          await api.users.delete(id);
+          setUsers(users.filter((u) => u.id !== id));
+        } catch (err) {
+          toast.error(err.message || 'فشل الحذف');
+        }
+      },
+    });
   };
 
   const handleToggleActive = async (id) => {
@@ -138,7 +148,7 @@ function UsersTab({ currentUser }) {
       const res = await api.users.toggleActive(id);
       setUsers(users.map((u) => (u.id === id ? { ...u, isActive: res.user.isActive } : u)));
     } catch (err) {
-      alert('خطأ: ' + (err.message || 'فشل التغيير'));
+      toast.error(err.message || 'فشل التغيير');
     }
   };
 
@@ -266,15 +276,26 @@ function UsersTab({ currentUser }) {
           </table>
         </div>
       )}
+      <ConfirmModal
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="تأكيد"
+        variant="danger"
+        onConfirm={async () => { await confirmState.action?.(); setConfirmState(s => ({ ...s, open: false })); }}
+        onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
+      />
     </>
   );
 }
 
 // ── Properties Tab (UC-31, UC-32, UC-33) ──
 function PropertiesTab() {
+  const toast = useToast();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
 
   useEffect(() => {
     api.properties.list({ q: search })
@@ -283,14 +304,20 @@ function PropertiesTab() {
       .finally(() => setLoading(false));
   }, [search]);
 
-  const handleDelete = async (id, title) => {
-    if (!window.confirm(`حذف العقار "${title}"؟ هذا الإجراء لا يمكن التراجع عنه.`)) return;
-    try {
-      await api.properties.delete(id);
-      setProperties(properties.filter((p) => p.id !== id));
-    } catch (err) {
-      alert('خطأ: ' + (err.message || 'فشل الحذف'));
-    }
+  const handleDelete = (id, title) => {
+    setConfirmState({
+      open: true,
+      title: 'تأكيد الحذف',
+      message: `حذف العقار "${title}"؟ هذا الإجراء لا يمكن التراجع عنه.`,
+      action: async () => {
+        try {
+          await api.properties.delete(id);
+          setProperties(properties.filter((p) => p.id !== id));
+        } catch (err) {
+          toast.error(err.message || 'فشل الحذف');
+        }
+      },
+    });
   };
 
   const handleToggleAvailability = async (id, available) => {
@@ -298,7 +325,7 @@ function PropertiesTab() {
       await api.properties.toggleAvailability(id, !available);
       setProperties(properties.map((p) => (p.id === id ? { ...p, available: !available } : p)));
     } catch (err) {
-      alert('خطأ: ' + (err.message || 'فشل التغيير'));
+      toast.error(err.message || 'فشل التغيير');
     }
   };
 
@@ -392,14 +419,25 @@ function PropertiesTab() {
           </tbody>
         </table>
       </div>
+      <ConfirmModal
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="تأكيد"
+        variant="danger"
+        onConfirm={async () => { await confirmState.action?.(); setConfirmState(s => ({ ...s, open: false })); }}
+        onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
+      />
     </>
   );
 }
 
 // ── Ratings Tab (UC-35) ──
 function RatingsTab() {
+  const toast = useToast();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
 
   useEffect(() => {
     api.reviews.adminList()
@@ -408,14 +446,20 @@ function RatingsTab() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('حذف هذا التقييم؟')) return;
-    try {
-      await api.reviews.adminDelete(id);
-      setReviews(reviews.filter((r) => r.id !== id));
-    } catch (err) {
-      alert('خطأ: ' + (err.message || 'فشل الحذف'));
-    }
+  const handleDelete = (id) => {
+    setConfirmState({
+      open: true,
+      title: 'تأكيد الحذف',
+      message: 'حذف هذا التقييم؟',
+      action: async () => {
+        try {
+          await api.reviews.adminDelete(id);
+          setReviews(reviews.filter((r) => r.id !== id));
+        } catch (err) {
+          toast.error(err.message || 'فشل الحذف');
+        }
+      },
+    });
   };
 
   if (loading) return <div className="loading-state">جاري التحميل...</div>;
@@ -467,6 +511,15 @@ function RatingsTab() {
           </tbody>
         </table>
       </div>
+      <ConfirmModal
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="تأكيد"
+        variant="danger"
+        onConfirm={async () => { await confirmState.action?.(); setConfirmState(s => ({ ...s, open: false })); }}
+        onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
+      />
     </>
   );
 }
@@ -474,9 +527,12 @@ function RatingsTab() {
 // ── Stats Tab (UC-36) ──
 // ── Refunds Tab (UC-37) ──
 function RefundsTab() {
+  const toast = useToast();
   const [refunds, setRefunds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
+  const [promptState, setPromptState] = useState({ open: false, action: null });
 
   const fetchRefunds = () => {
     setLoading(true);
@@ -488,25 +544,34 @@ function RefundsTab() {
 
   useEffect(() => { fetchRefunds(); }, [filter]);
 
-  const handleApprove = async (id) => {
-    if (!window.confirm('الموافقة على طلب الاسترداد؟')) return;
-    try {
-      await api.refunds.approve(id);
-      fetchRefunds();
-    } catch (err) {
-      alert('خطأ: ' + (err.message || 'فشل'));
-    }
+  const handleApprove = (id) => {
+    setConfirmState({
+      open: true,
+      title: 'تأكيد الموافقة',
+      message: 'الموافقة على طلب الاسترداد؟',
+      action: async () => {
+        try {
+          await api.refunds.approve(id);
+          fetchRefunds();
+        } catch (err) {
+          toast.error(err.message || 'فشل');
+        }
+      },
+    });
   };
 
-  const handleReject = async (id) => {
-    const reason = prompt('سبب الرفض:');
-    if (!reason) return;
-    try {
-      await api.refunds.reject(id, reason);
-      fetchRefunds();
-    } catch (err) {
-      alert('خطأ: ' + (err.message || 'فشل'));
-    }
+  const handleReject = (id) => {
+    setPromptState({
+      open: true,
+      action: async (reason) => {
+        try {
+          await api.refunds.reject(id, reason);
+          fetchRefunds();
+        } catch (err) {
+          toast.error(err.message || 'فشل');
+        }
+      },
+    });
   };
 
   const statusLabels = { PENDING: 'معلق', APPROVED: 'مقبول', REJECTED: 'مرفوض', COMPLETED: 'مكتمل' };
@@ -567,15 +632,37 @@ function RefundsTab() {
           </tbody>
         </table>
       </div>
+      <ConfirmModal
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="تأكيد"
+        variant="danger"
+        onConfirm={async () => { await confirmState.action?.(); setConfirmState(s => ({ ...s, open: false })); }}
+        onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
+      />
+      <ConfirmModal
+        open={promptState.open}
+        title="سبب الرفض"
+        inputMode
+        inputPlaceholder="اكتب سبب الرفض..."
+        confirmText="رفض"
+        variant="warning"
+        onConfirm={async (reason) => { await promptState.action?.(reason); setPromptState({ open: false }); }}
+        onCancel={() => setPromptState({ open: false })}
+      />
     </>
   );
 }
 
 // ── Withdrawals Tab (UC-38) ──
 function WithdrawalsTab() {
+  const toast = useToast();
   const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
+  const [promptState, setPromptState] = useState({ open: false, action: null });
 
   const fetchWithdrawals = () => {
     setLoading(true);
@@ -587,25 +674,34 @@ function WithdrawalsTab() {
 
   useEffect(() => { fetchWithdrawals(); }, [filter]);
 
-  const handleApprove = async (id) => {
-    if (!window.confirm('الموافقة على طلب السحب؟')) return;
-    try {
-      await api.admin.approveWithdrawal(id);
-      fetchWithdrawals();
-    } catch (err) {
-      alert('خطأ: ' + (err.message || 'فشل'));
-    }
+  const handleApprove = (id) => {
+    setConfirmState({
+      open: true,
+      title: 'تأكيد الموافقة',
+      message: 'الموافقة على طلب السحب؟',
+      action: async () => {
+        try {
+          await api.admin.approveWithdrawal(id);
+          fetchWithdrawals();
+        } catch (err) {
+          toast.error(err.message || 'فشل');
+        }
+      },
+    });
   };
 
-  const handleReject = async (id) => {
-    const reason = prompt('سبب الرفض:');
-    if (!reason) return;
-    try {
-      await api.admin.rejectWithdrawal(id, reason);
-      fetchWithdrawals();
-    } catch (err) {
-      alert('خطأ: ' + (err.message || 'فشل'));
-    }
+  const handleReject = (id) => {
+    setPromptState({
+      open: true,
+      action: async (reason) => {
+        try {
+          await api.admin.rejectWithdrawal(id, reason);
+          fetchWithdrawals();
+        } catch (err) {
+          toast.error(err.message || 'فشل');
+        }
+      },
+    });
   };
 
   const statusLabels = { PENDING: 'معلق', APPROVED: 'مقبول', REJECTED: 'مرفوض', COMPLETED: 'مكتمل' };
@@ -666,6 +762,25 @@ function WithdrawalsTab() {
           </tbody>
         </table>
       </div>
+      <ConfirmModal
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="تأكيد"
+        variant="danger"
+        onConfirm={async () => { await confirmState.action?.(); setConfirmState(s => ({ ...s, open: false })); }}
+        onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
+      />
+      <ConfirmModal
+        open={promptState.open}
+        title="سبب الرفض"
+        inputMode
+        inputPlaceholder="اكتب سبب الرفض..."
+        confirmText="رفض"
+        variant="warning"
+        onConfirm={async (reason) => { await promptState.action?.(reason); setPromptState({ open: false }); }}
+        onCancel={() => setPromptState({ open: false })}
+      />
     </>
   );
 }
@@ -751,6 +866,7 @@ function AuditTab() {
 }
 
 function StatsTab() {
+  const toast = useToast();
   const [stats, setStats] = useState(null);
   const [monthly, setMonthly] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -774,7 +890,7 @@ function StatsTab() {
       const labels = { users: 'المستخدمين', bookings: 'الحجوزات', payments: 'المدفوعات' };
       exportCSV(res.data, labels[type] || type);
     } catch (err) {
-      alert('خطأ: ' + (err.message || 'فشل التصدير'));
+      toast.error(err.message || 'فشل التصدير');
     } finally {
       setExporting(null);
     }
@@ -862,9 +978,11 @@ function StatsTab() {
 
 // ── Reports Tab (UC-41) ──
 function ReportsTab() {
+  const toast = useToast();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
 
   const reasonLabels = { OFFENSIVE: 'مسيء', INCORRECT: 'خاطئ', SPAM: 'سبام' };
   const statusLabels = { PENDING: 'معلق', REVIEWED: 'تمت المراجعة', DISMISSED: 'مرفوض' };
@@ -880,24 +998,36 @@ function ReportsTab() {
 
   useEffect(() => { fetchReports(); }, [filter]);
 
-  const handleDeleteReview = async (id) => {
-    if (!window.confirm('حذف التقييم وإغلاق البلاغ؟')) return;
-    try {
-      await api.reports.review(id, { action: 'delete_review' });
-      fetchReports();
-    } catch (err) {
-      alert('خطأ: ' + (err.message || 'فشل'));
-    }
+  const handleDeleteReview = (id) => {
+    setConfirmState({
+      open: true,
+      title: 'تأكيد الحذف',
+      message: 'حذف التقييم وإغلاق البلاغ؟',
+      action: async () => {
+        try {
+          await api.reports.review(id, { action: 'delete_review' });
+          fetchReports();
+        } catch (err) {
+          toast.error(err.message || 'فشل');
+        }
+      },
+    });
   };
 
-  const handleDismiss = async (id) => {
-    if (!window.confirm('رفض البلاغ؟')) return;
-    try {
-      await api.reports.review(id, { action: 'dismiss' });
-      fetchReports();
-    } catch (err) {
-      alert('خطأ: ' + (err.message || 'فشل'));
-    }
+  const handleDismiss = (id) => {
+    setConfirmState({
+      open: true,
+      title: 'رفض البلاغ',
+      message: 'رفض البلاغ؟',
+      action: async () => {
+        try {
+          await api.reports.review(id, { action: 'dismiss' });
+          fetchReports();
+        } catch (err) {
+          toast.error(err.message || 'فشل');
+        }
+      },
+    });
   };
 
   if (loading) return <div className="loading-state">جاري التحميل...</div>;
@@ -955,12 +1085,22 @@ function ReportsTab() {
           </tbody>
         </table>
       </div>
+      <ConfirmModal
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="تأكيد"
+        variant="danger"
+        onConfirm={async () => { await confirmState.action?.(); setConfirmState(s => ({ ...s, open: false })); }}
+        onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
+      />
     </>
   );
 }
 
 // ── Complaints Tab (UC-34) ──
 function ComplaintsTab() {
+  const toast = useToast();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
@@ -995,7 +1135,7 @@ function ComplaintsTab() {
       });
       fetchComplaints();
     } catch (err) {
-      alert('خطأ: ' + (err.message || 'فشل'));
+      toast.error(err.message || 'فشل');
     } finally {
       setSaving((s) => ({ ...s, [id]: false }));
     }
