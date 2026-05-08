@@ -126,6 +126,12 @@ export const api = {
     subscribe: (body) => request('/push/subscribe', { method: 'POST', body: JSON.stringify(body) }),
     unsubscribe: (body) => request('/push/unsubscribe', { method: 'POST', body: JSON.stringify(body) }),
   },
+  notifications: {
+    list: () => request('/notifications'),
+    unreadCount: () => request('/notifications/unread-count'),
+    readAll: () => request('/notifications/read-all', { method: 'PATCH' }),
+    read: (id) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
+  },
   admin: {
     stats: () => request('/admin/stats'),
     monthlyStats: () => request('/admin/stats/monthly'),
