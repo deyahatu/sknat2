@@ -138,7 +138,7 @@ function PropertyDetailsPage() {
   if (loading) {
     return (
       <div className="page property-details-page">
-        <div className="container" style={{ padding: '60px 20px', textAlign: 'center' }}>
+        <div className="container pd-loading-container">
           جاري تحميل تفاصيل السكن...
         </div>
       </div>
@@ -148,10 +148,10 @@ function PropertyDetailsPage() {
   if (error || !property) {
     return (
       <div className="page not-found-page">
-        <div className="container" style={{ textAlign: 'center', padding: '80px 20px' }}>
+        <div className="container pd-error-container">
           <h2>{error || 'العقار غير موجود'}</h2>
           <p>لم نتمكن من العثور على العقار المطلوب</p>
-          <Link to="/search" className="btn btn-primary" style={{ marginTop: '20px' }}>
+          <Link to="/search" className="btn btn-primary pd-error-back-btn">
             العودة للبحث
           </Link>
         </div>
@@ -231,7 +231,7 @@ function PropertyDetailsPage() {
         <div className="property-gallery">
           <div className="gallery-main">
             {property.images?.length > 0 ? (
-              <img src={property.images[currentImage]} alt={property.title} onClick={() => setLightboxOpen(true)} style={{ cursor: 'pointer' }} />
+              <img src={property.images[currentImage]} alt={property.title} onClick={() => setLightboxOpen(true)} className="pd-gallery-img-clickable" />
             ) : (
               <div className="gallery-placeholder">
                 <FiHome />
@@ -280,7 +280,7 @@ function PropertyDetailsPage() {
                 <span>
                   {[property.address, property.city].filter(Boolean).join('، ')}
                   {property.campus && (
-                    <span style={{ marginRight: 8, color: '#888' }}>
+                    <span className="pd-campus-info">
                       • {property.campus === 'OLD' ? 'الحرم القديم' : 'الحرم الجديد'}
                       {property.distance ? ` (${property.distance} د. سيراً)` : ''}
                     </span>
@@ -343,10 +343,10 @@ function PropertyDetailsPage() {
             {patternList.length > 0 && property.kind !== 'STUDIO' && (
               <div className="property-description-section property-patterns-section">
                 <h3>الغرف المتاحة للحجز</h3>
-                <p style={{ color: '#666', fontSize: 13, marginBottom: 14 }}>
+                <p className="pd-pattern-subtitle">
                   اختر الغرفة التي تناسبك. الغرف المحجوزة لا يمكن حجزها.
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="pd-pattern-list">
                   {patternList.map((pat) => {
                     const isDouble = pat.kind === 'DOUBLE';
                     const cap = isDouble ? 2 : 1;
@@ -363,49 +363,44 @@ function PropertyDetailsPage() {
                     return (
                       <div
                         key={pat.key}
-                        style={{
-                          padding: 16,
-                          border: '1px solid #e0e0e0',
-                          borderRight: `4px solid ${pat.color}`,
-                          borderRadius: 10,
-                          background: '#fff',
-                        }}
+                        className="pd-pattern-card"
+                        style={{ borderRight: `4px solid ${pat.color}` }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, gap: 12, flexWrap: 'wrap' }}>
+                        <div className="pd-pattern-header">
                           <div>
-                            <div style={{ fontSize: 17, fontWeight: 700 }}>
+                            <div className="pd-pattern-name">
                               {isDouble ? '🛏️🛏️' : '🛏️'} {pat.name}
                             </div>
-                            <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                            <div className="pd-pattern-info">
                               {isDouble ? 'غرفة مزدوجة' : 'غرفة مفردة'} •{' '}
                               {freeBeds === 0
-                                ? <span style={{ color: '#dc2626', fontWeight: 600 }}>لا يوجد متاح</span>
+                                ? <span className="pd-pattern-info-unavailable">لا يوجد متاح</span>
                                 : isDouble
-                                  ? <span style={{ color: '#059669', fontWeight: 600 }}>{freeBeds} سرير متاح من {totalBeds}</span>
-                                  : <span style={{ color: '#059669', fontWeight: 600 }}>{freeBeds} غرفة متاحة من {pat.rooms.length}</span>
+                                  ? <span className="pd-pattern-info-available">{freeBeds} سرير متاح من {totalBeds}</span>
+                                  : <span className="pd-pattern-info-available">{freeBeds} غرفة متاحة من {pat.rooms.length}</span>
                               }
                             </div>
                           </div>
-                          <div style={{ textAlign: 'left' }}>
-                            <div style={{ fontSize: 22, fontWeight: 700, color: '#059669' }}>
+                          <div className="pd-pattern-price">
+                            <div className="pd-pattern-price-value">
                               {pricePerPerson.toLocaleString('en-US')} ₪
                             </div>
-                            <div style={{ fontSize: 11, color: '#888' }}>
+                            <div className="pd-pattern-price-label">
                               /شهر للشخص{isDouble ? ` (${pat.fullPrice} للغرفة)` : ''}
                             </div>
                           </div>
                         </div>
 
                         {pat.services?.length > 0 && (
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                          <div className="pd-pattern-services">
                             {pat.services.map((s) => (
-                              <span key={s} style={{ padding: '3px 10px', background: '#f3f4f6', borderRadius: 12, fontSize: 12, color: '#374151' }}>{s}</span>
+                              <span key={s} className="pd-pattern-service-tag">{s}</span>
                             ))}
                           </div>
                         )}
 
-                        <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>
+                        <div className="pd-pattern-rooms-bar">
+                          <span className="pd-pattern-rooms-label">
                             الغرف:
                           </span>
                           {pat.rooms.map((r) => {
@@ -422,28 +417,15 @@ function PropertyDetailsPage() {
                                 disabled={!canBook}
                                 onClick={() => openBookingForRoom(r.id)}
                                 title={tooltip}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 4,
-                                  padding: '6px 12px',
-                                  borderRadius: 16,
-                                  border: `1.5px solid ${isAvail ? pat.color : isPartial ? '#d97706' : '#e5e7eb'}`,
-                                  background: isBooked ? '#f9fafb' : '#fff',
-                                  color: isAvail ? pat.color : isPartial ? '#d97706' : '#9ca3af',
-                                  cursor: canBook ? 'pointer' : 'not-allowed',
-                                  fontSize: 13,
-                                  fontWeight: 600,
-                                  fontFamily: 'inherit',
-                                  textDecoration: isBooked ? 'line-through' : 'none',
-                                }}
+                                className={`pd-room-btn ${isBooked ? 'pd-room-btn-booked' : isPartial ? 'pd-room-btn-partial' : 'pd-room-btn-available'}`}
+                                style={isAvail ? { borderColor: pat.color, color: pat.color } : undefined}
                               >
                                 {isBooked && '🔒 '}
                                 {isAvail && '✓ '}
                                 {isPartial && '½ '}
                                 {r.name}
                                 {isPartial && (
-                                  <span style={{ background: '#fef3c7', color: '#92400e', fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 8, marginRight: 4 }}>
+                                  <span className="pd-room-btn-partial-badge">
                                     سرير متاح
                                   </span>
                                 )}
@@ -462,14 +444,14 @@ function PropertyDetailsPage() {
             {property.kind === 'STUDIO' && variants.length > 0 && (
               <div className="property-description-section">
                 <h3>الاستوديو</h3>
-                <div style={{ padding: 16, border: '1px solid #e0e0e0', borderRadius: 10, background: '#fafbfc' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <strong style={{ fontSize: 17 }}>🏠 وحدة استوديو مستقلة</strong>
-                    <span style={{ color: '#059669', fontWeight: 700, fontSize: 18 }}>
+                <div className="pd-studio-card">
+                  <div className="pd-studio-header">
+                    <strong className="pd-studio-title">🏠 وحدة استوديو مستقلة</strong>
+                    <span className="pd-studio-price">
                       {Number(property.studioPrice || variants[0].fullPrice).toLocaleString('en-US')} ₪/شهر
                     </span>
                   </div>
-                  <div style={{ fontSize: 13, color: '#666' }}>
+                  <div className="pd-studio-status">
                     {variants[0].isOccupied ? '🔴 محجوز حالياً' : '🟢 متاح للحجز'}
                   </div>
                 </div>
@@ -539,7 +521,7 @@ function PropertyDetailsPage() {
                       {review.comment && <p className="review-comment">{review.comment}</p>}
                       {user && review.student?.id !== user?.id && (
                         <button
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#9ca3af', padding: '4px 8px' }}
+                          className="pd-report-btn"
                           onClick={async () => {
                             try {
                               await api.reports.create({ type: 'REVIEW', targetId: review.id, reason: 'OFFENSIVE' });
@@ -560,7 +542,7 @@ function PropertyDetailsPage() {
             <div className="price-card">
               {variants.length > 0 && (
                 <div className="price-amount">
-                  <span style={{ fontSize: 13, color: '#888' }}>ابتداءً من</span>
+                  <span className="pd-price-label">ابتداءً من</span>
                   <div>
                     <span className="price-value">
                       {minPrice.toLocaleString('en-US')}
@@ -688,7 +670,7 @@ function PropertyDetailsPage() {
                           value={selectedVariantId}
                           onChange={(e) => setSelectedVariantId(e.target.value)}
                           required
-                          style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }}
+                          className="pd-booking-select"
                         >
                           <option value="">اختر غرفة</option>
                           {variants.filter((v) => !v.isOccupied).map((v) => {
@@ -710,23 +692,23 @@ function PropertyDetailsPage() {
                     ? (sel.halfPrice ? Number(sel.halfPrice) : Number(sel.fullPrice) / 2)
                     : Number(sel.fullPrice);
                   return (
-                    <div style={{ padding: 12, background: '#f8f9fb', borderRadius: 10, marginBottom: 14, borderRight: `4px solid ${sel.patternColor || '#4f46e5'}` }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+                    <div className="pd-booking-selected-room" style={{ borderRight: `4px solid ${sel.patternColor || 'var(--primary)'}` }}>
+                      <div className="pd-booking-selected-name">
                         {isDouble ? '🛏️🛏️' : '🛏️'} {sel.name}
                       </div>
-                      <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+                      <div className="pd-booking-selected-type">
                         {sel.patternName || (isDouble ? 'غرفة مزدوجة' : 'غرفة مفردة')}
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#059669' }}>
+                      <div className="pd-booking-selected-price">
                         {pp.toLocaleString('en-US')} ₪/شهر للشخص
                         {isDouble && (
-                          <span style={{ color: '#888', fontWeight: 400, fontSize: 12, marginRight: 6 }}>
+                          <span className="pd-booking-full-price-note">
                             ({Number(sel.fullPrice)} للغرفة كاملة)
                           </span>
                         )}
                       </div>
                       {sel.partiallyOccupied && (
-                        <div style={{ marginTop: 6, fontSize: 12, background: '#fef3c7', color: '#92400e', padding: '4px 10px', borderRadius: 6, display: 'inline-block' }}>
+                        <div className="pd-booking-shared-warning">
                           ⚠️ ستتشارك هذه الغرفة مع طالب آخر
                         </div>
                       )}
