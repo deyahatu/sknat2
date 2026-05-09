@@ -297,6 +297,17 @@ async function findOwnerProperty(propertyId, ownerId) {
 // Public: list available properties with filters
 // ───────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
+  // Optional auth — try to get user gender for sorting
+  let userGender = null;
+  try {
+    const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '');
+    if (token) {
+      const { verifyToken } = await import('../utils/jwt.js');
+      const decoded = verifyToken(token);
+      const u = await prisma.user.findUnique({ where: { id: decoded.userId }, select: { gender: true } });
+      if (u?.gender) userGender = u.gender;
+    }
+  } catch { /* not logged in — fine */ }
   try {
     const {
       q,
@@ -395,6 +406,16 @@ router.get('/', async (req, res, next) => {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    // Sort: matching gender first, then by date
+    if (userGender && !targetGender) {
+      properties.sort((a, b) => {
+        const aMatch = a.targetGender === userGender ? 0 : 1;
+        const bMatch = b.targetGender === userGender ? 0 : 1;
+        if (aMatch !== bMatch) return aMatch - bMatch;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+    }
 
     res.json({ properties });
   } catch (err) {
