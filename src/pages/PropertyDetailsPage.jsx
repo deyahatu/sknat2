@@ -33,6 +33,7 @@ function PropertyDetailsPage() {
   const toast = useToast();
 
   const [property, setProperty] = useState(null);
+  const [tenantMajors, setTenantMajors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImage, setCurrentImage] = useState(0);
@@ -55,7 +56,7 @@ function PropertyDetailsPage() {
   useEffect(() => {
     setLoading(true);
     api.properties.get(id)
-      .then((res) => setProperty(res.property))
+      .then((res) => { setProperty(res.property); setTenantMajors(res.tenantMajors || []); })
       .catch((err) => setError(err.message || 'تعذر تحميل تفاصيل السكن'))
       .finally(() => setLoading(false));
   }, [id]);
@@ -496,6 +497,17 @@ function PropertyDetailsPage() {
               <div className="property-description-section">
                 <h3>سياسة السكن</h3>
                 <p>{property.policy}</p>
+              </div>
+            )}
+
+            {tenantMajors.length > 0 && (
+              <div className="property-description-section">
+                <h3><FiUsers style={{ marginLeft: 6, verticalAlign: 'middle' }} /> تخصصات الطلاب الحاليين</h3>
+                <div className="pd-pattern-services" style={{ marginTop: 10 }}>
+                  {tenantMajors.map((m) => (
+                    <span key={m} className="pd-pattern-service-tag">{m}</span>
+                  ))}
+                </div>
               </div>
             )}
 

@@ -533,7 +533,22 @@ router.get('/:id', async (req, res, next) => {
       return res.status(404).json({ error: 'السكن غير موجود.' });
     }
 
-    res.json({ property });
+    // Get majors of current tenants (active bookings)
+    const activeBookings = await prisma.booking.findMany({
+      where: {
+        propertyId: req.params.id,
+        status: { in: ['APPROVED', 'PAID'] },
+      },
+      select: {
+        student: { select: { major: true } },
+      },
+    });
+
+    const tenantMajors = [...new Set(
+      activeBookings.map(b => b.student?.major).filter(Boolean)
+    )];
+
+    res.json({ property, tenantMajors });
   } catch (err) {
     next(err);
   }
