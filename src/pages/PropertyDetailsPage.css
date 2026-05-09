@@ -2,6 +2,93 @@
    PropertyDetailsPage — Premium RTL Design
    ============================================================ */
 
+/* ---------- Tenant majors heading + info hint tooltip ---------- */
+.pd-pattern-services--gap {
+  margin-top: 10px;
+}
+
+.tenant-majors-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.info-hint {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-inline-start: 6px;
+  color: var(--primary);
+  background: var(--primary-light);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  cursor: help;
+  outline: none;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.info-hint:hover,
+.info-hint:focus-visible {
+  background: var(--primary);
+  color: #fff;
+  transform: scale(1.06);
+}
+
+.info-hint__bubble {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  inset-inline-end: -8px;
+  width: max-content;
+  max-width: 280px;
+  padding: 10px 14px;
+  background: #1f2937;
+  color: #f9fafb;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.6;
+  text-align: start;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.info-hint__bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  inset-inline-end: 14px;
+  border: 6px solid transparent;
+  border-top-color: #1f2937;
+}
+
+.info-hint:hover .info-hint__bubble,
+.info-hint:focus-visible .info-hint__bubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+@media (max-width: 480px) {
+  .info-hint__bubble {
+    max-width: 220px;
+    inset-inline-end: auto;
+    inset-inline-start: 0;
+  }
+  .info-hint__bubble::after {
+    inset-inline-end: auto;
+    inset-inline-start: 14px;
+  }
+}
+
 /* ---------- Page Layout ---------- */
 .property-details-page {
   direction: rtl;
@@ -606,12 +693,34 @@
 
 /* ---------- Report Button ---------- */
 .pd-report-btn {
-  background: none;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
   cursor: pointer;
-  font-size: 14px;
-  color: var(--text-muted);
-  padding: 4px 8px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.12s;
+}
+
+.pd-report-btn:hover {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+  transform: translateY(-1px);
+}
+
+.pd-report-btn:active {
+  transform: translateY(0);
+}
+
+.pd-report-btn svg {
+  font-size: 0.9rem;
 }
 
 /* ---------- Sidebar Price Label ---------- */

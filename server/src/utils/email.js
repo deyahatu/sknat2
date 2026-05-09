@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { bookingAcceptedEmail, bookingRejectedEmail, paymentReceiptEmail, bookingCompletedEmail } from './email-templates.js';
+import { bookingAcceptedEmail, bookingRejectedEmail, paymentReceiptEmail, bookingCompletedEmail, renewalReminderEmail } from './email-templates.js';
 
 let transporter = null;
 
@@ -110,6 +110,21 @@ export async function sendBookingCompleted(to, studentName, propertyTitle) {
     to,
     subject: 'اكتمل حجزك - سكنات',
     html: bookingCompletedEmail(studentName, propertyTitle),
+  });
+}
+
+export async function sendRenewalReminder(to, studentName, propertyTitle, endDate) {
+  const t = getTransporter();
+  const renewUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/bookings`;
+  if (!t) {
+    console.log(`\n🔁 [DEV] Renewal reminder for ${to}: ${propertyTitle} ends ${endDate}\n`);
+    return;
+  }
+  await t.sendMail({
+    from: `"سكنات" <${process.env.SMTP_USER}>`,
+    to,
+    subject: 'تذكير: حجزك ينتهي قريباً - سكنات',
+    html: renewalReminderEmail(studentName, propertyTitle, endDate, renewUrl),
   });
 }
 

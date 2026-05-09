@@ -1,3 +1,25 @@
+import { FiWifi, FiShield } from "react-icons/fi";
+import {
+  MdElevator,
+  MdLocalParking,
+  MdLocalLaundryService,
+  MdKitchen,
+  MdElectricBolt,
+  MdVideocam,
+  MdWeekend,
+  MdCleaningServices,
+  MdAcUnit,
+  MdLocalFireDepartment,
+  MdBalcony,
+  MdBathtub,
+  MdChair,
+  MdCheckroom,
+  MdKitchen as MdFridge,
+  MdBed,
+  MdTv,
+  MdEdit,
+} from "react-icons/md";
+
 // نوع العقار (يطابق enum PropertyKind في schema.prisma)
 export const PROPERTY_KINDS = [
   {
@@ -32,11 +54,17 @@ export const CAMPUSES = [
 // هذه القائمة هي المصدر الموحد للخدمات في wizard + صفحة الفلترة
 export const PROPERTY_LEVEL_SERVICES = [
   "واي فاي",
+  "مولد كهرباء",
   "مصعد",
   "موقف سيارات",
   "حراسة",
-  "غسالة",
+  "كاميرات مراقبة",
   "مطبخ مشترك",
+  "غسالة",
+  "صالة مشتركة",
+  "تنظيف دوري",
+  "تكييف مركزي",
+  "تدفئة مركزية",
 ];
 
 // مميزات الغرفة (تخزن في roomVariant.services لكل نمط غرفة)
@@ -46,11 +74,43 @@ export const ROOM_LEVEL_FEATURES = [
   "تدفئة",
   "شرفة",
   "مكتب دراسة",
+  "كرسي مكتب",
   "ثلاجة صغيرة",
   "خزانة ملابس",
+  "سرير وفرشة",
+  "تلفزيون",
 ];
 
 export const TARGET_GENDERS = [
   { value: "MALE", label: "ذكور" },
   { value: "FEMALE", label: "إناث" },
 ];
+
+// خريطة الأيقونات لكل خدمة/ميزة (لاستخدامها في الواجهات)
+export const SERVICE_ICONS = {
+  // خدمات السكن المشتركة
+  "واي فاي": FiWifi,
+  "مولد كهرباء": MdElectricBolt,
+  "مصعد": MdElevator,
+  "موقف سيارات": MdLocalParking,
+  "حراسة": FiShield,
+  "كاميرات مراقبة": MdVideocam,
+  "مطبخ مشترك": MdKitchen,
+  "غسالة": MdLocalLaundryService,
+  "صالة مشتركة": MdWeekend,
+  "تنظيف دوري": MdCleaningServices,
+  "تكييف مركزي": MdAcUnit,
+  "تدفئة مركزية": MdLocalFireDepartment,
+
+  // مميزات الغرفة
+  "حمام خاص": MdBathtub,
+  "تكييف": MdAcUnit,
+  "تدفئة": MdLocalFireDepartment,
+  "شرفة": MdBalcony,
+  "مكتب دراسة": MdEdit,
+  "كرسي مكتب": MdChair,
+  "ثلاجة صغيرة": MdFridge,
+  "خزانة ملابس": MdCheckroom,
+  "سرير وفرشة": MdBed,
+  "تلفزيون": MdTv,
+};

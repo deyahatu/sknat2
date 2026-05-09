@@ -163,6 +163,130 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
   }
 });
 
+// UC: Renew a booking (student requests to extend the same room/property after current end)
+router.post('/:id/renew', authenticate, authorize('STUDENT'), async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.body;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'يرجى تحديد تاريخي بداية ونهاية للتجديد.' });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ error: 'يرجى إدخال تواريخ صحيحة.' });
+    }
+    if (start >= end) {
+      return res.status(400).json({ error: 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية.' });
+    }
+
+    const parent = await prisma.booking.findUnique({
+      where: { id: req.params.id },
+      include: {
+        property: { select: { id: true, title: true, ownerId: true, available: true } },
+        roomVariant: { select: { id: true, kind: true, fullPrice: true, halfPrice: true } },
+        renewals: { select: { id: true, status: true } },
+      },
+    });
+
+    if (!parent) {
+      return res.status(404).json({ error: 'الحجز غير موجود.' });
+    }
+    if (parent.studentId !== req.user.id) {
+      return res.status(403).json({ error: 'لا يمكنك تجديد حجز ليس لك.' });
+    }
+    if (!['APPROVED', 'PAID'].includes(parent.status)) {
+      return res.status(400).json({ error: 'يمكن تجديد الحجوزات النشطة فقط (المقبولة أو المدفوعة).' });
+    }
+
+    // Only one open renewal at a time
+    const openRenewal = parent.renewals.find((r) =>
+      ['PENDING', 'APPROVED', 'PAID'].includes(r.status),
+    );
+    if (openRenewal) {
+      return res.status(400).json({ error: 'يوجد طلب تجديد سابق على هذا الحجز.' });
+    }
+
+    // Renewal window: parent.endDate must be within the next RENEWAL_WINDOW_DAYS
+    const RENEWAL_WINDOW_DAYS = 5;
+    const now = new Date();
+    const windowEnd = new Date(now.getTime() + RENEWAL_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    if (parent.endDate < now) {
+      return res.status(400).json({ error: 'لا يمكن تجديد حجز انتهت مدته.' });
+    }
+    if (parent.endDate > windowEnd) {
+      return res.status(400).json({
+        error: `يمكن طلب التجديد فقط خلال آخر ${RENEWAL_WINDOW_DAYS} أيام قبل انتهاء الحجز.`,
+      });
+    }
+
+    // Renewal must start on/after parent's end date
+    if (start < parent.endDate) {
+      return res.status(400).json({
+        error: 'تاريخ بداية التجديد يجب أن يكون في أو بعد تاريخ انتهاء الحجز الحالي.',
+      });
+    }
+
+    // No overlap with another student's active booking on the same room
+    const otherConflict = await prisma.booking.findFirst({
+      where: {
+        roomVariantId: parent.roomVariantId,
+        studentId: { not: req.user.id },
+        status: { in: ['APPROVED', 'PAID'] },
+        startDate: { lt: end },
+        endDate: { gt: start },
+      },
+    });
+    if (otherConflict) {
+      return res.status(400).json({ error: 'الغرفة محجوزة من قِبل طالب آخر في الفترة المطلوبة.' });
+    }
+
+    // Calculate price (same rules as a normal booking)
+    const isDouble = parent.roomVariant.kind === 'DOUBLE';
+    const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const months = Math.max(1, diffDays / 30);
+    const monthlyPrice = isDouble
+      ? (parent.roomVariant.halfPrice
+          ? Number(parent.roomVariant.halfPrice)
+          : Number(parent.roomVariant.fullPrice) / 2)
+      : Number(parent.roomVariant.fullPrice);
+    const totalPrice = Math.round(monthlyPrice * months * 100) / 100;
+
+    const renewal = await prisma.booking.create({
+      data: {
+        startDate: start,
+        endDate: end,
+        status: 'PENDING',
+        propertyId: parent.propertyId,
+        roomVariantId: parent.roomVariantId,
+        studentId: req.user.id,
+        parentBookingId: parent.id,
+      },
+      include: {
+        property: { select: { id: true, title: true, city: true, images: true } },
+        roomVariant: { select: { id: true, name: true, fullPrice: true, halfPrice: true } },
+      },
+    });
+
+    notify(
+      parent.property.ownerId,
+      'طلب تجديد حجز',
+      `الطالب يرغب بتجديد حجزه على ${parent.property.title}`,
+      '/owner/bookings',
+    ).catch(() => {});
+
+    logAudit({ action: 'RENEW_REQUEST', entity: 'BOOKING', entityId: renewal.id, user: req.user, details: `طلب تجديد للحجز ${parent.id}` });
+
+    res.status(201).json({
+      message: 'تم إرسال طلب التجديد بنجاح. بانتظار موافقة المالك.',
+      booking: { ...renewal, totalPrice },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get(
   "/student",
   authenticate,
@@ -196,6 +320,9 @@ router.get(
             select: { id: true, name: true, fullPrice: true, halfPrice: true },
           },
           payment: true,
+          renewals: {
+            select: { id: true, status: true, startDate: true, endDate: true },
+          },
         },
         orderBy: { createdAt: "desc" },
       });
@@ -240,6 +367,9 @@ router.get(
             select: { id: true, name: true, email: true, phone: true },
           },
           payment: true,
+          parentBooking: {
+            select: { id: true, startDate: true, endDate: true, status: true },
+          },
         },
         orderBy: { createdAt: "desc" },
       });
@@ -331,13 +461,17 @@ router.patch(
           .json({ error: "يمكن قبول الحجوزات قيد الانتظار فقط." });
       }
 
-      if (booking.roomVariant.isOccupied) {
+      const isRenewal = !!booking.parentBookingId;
+
+      // For renewals: the room is already occupied by the same student via the
+      // parent booking, so skip the "is occupied" guard and don't touch room state.
+      if (!isRenewal && booking.roomVariant.isOccupied) {
         return res
           .status(400)
           .json({ error: "هذه الغرفة محجوزة بالكامل. لا يمكن قبول هذا الطلب." });
       }
 
-      // Determine the new room state on approval:
+      // Determine the new room state on approval (regular booking only):
       // - SINGLE → fully occupied
       // - DOUBLE empty → partially occupied
       // - DOUBLE partially occupied → fully occupied
@@ -365,10 +499,12 @@ router.patch(
           },
         });
 
-        await tx.roomVariant.update({
-          where: { id: booking.roomVariantId },
-          data: newRoomData,
-        });
+        if (!isRenewal) {
+          await tx.roomVariant.update({
+            where: { id: booking.roomVariantId },
+            data: newRoomData,
+          });
+        }
 
         return updatedBooking;
       });
@@ -383,7 +519,12 @@ router.patch(
         `${booking.startDate.toLocaleDateString('ar-EG')} - ${booking.endDate.toLocaleDateString('ar-EG')}`
       ).catch(() => {});
 
-      notify(updated.student.id, 'تم قبول حجزك', 'تم قبول طلب حجزك ✅', '/bookings').catch(() => {});
+      notify(
+        updated.student.id,
+        isRenewal ? 'تم قبول طلب التجديد' : 'تم قبول حجزك',
+        isRenewal ? 'وافق المالك على طلب تجديد حجزك ✅' : 'تم قبول طلب حجزك ✅',
+        '/bookings',
+      ).catch(() => {});
 
       res.json({
         message: "تم قبول طلب الحجز بنجاح.",
@@ -442,6 +583,8 @@ router.patch(
 
       logAudit({ action: 'REJECT', entity: 'BOOKING', entityId: updated.id, user: req.user, details: `رفض حجز` });
 
+      const isRenewal = !!booking.parentBookingId;
+
       sendBookingRejected(
         updated.student.email,
         updated.student.name,
@@ -449,7 +592,12 @@ router.patch(
         updated.roomVariant.name
       ).catch(() => {});
 
-      notify(updated.student.id, 'تم رفض حجزك', 'تم رفض طلب حجزك ❌', '/bookings').catch(() => {});
+      notify(
+        updated.student.id,
+        isRenewal ? 'تم رفض طلب التجديد' : 'تم رفض حجزك',
+        isRenewal ? 'رفض المالك طلب تجديد حجزك ❌' : 'تم رفض طلب حجزك ❌',
+        '/bookings',
+      ).catch(() => {});
 
       res.json({
         message: "تم رفض طلب الحجز.",
@@ -548,7 +696,7 @@ router.patch(
         });
 
         if (wasBedOccupied) {
-          // Recompute room state from remaining active bookings
+          // Recompute room state from remaining active bookings (incl. renewals)
           const otherActive = await tx.booking.count({
             where: {
               roomVariantId: booking.roomVariantId,
@@ -558,8 +706,8 @@ router.patch(
           });
           const isDouble = updatedBooking.roomVariant.kind === "DOUBLE";
           const newState = isDouble
-            ? { isOccupied: false, partiallyOccupied: otherActive >= 1 }
-            : { isOccupied: false, partiallyOccupied: false };
+            ? { isOccupied: otherActive >= 2, partiallyOccupied: otherActive === 1 }
+            : { isOccupied: otherActive >= 1, partiallyOccupied: false };
           await tx.roomVariant.update({
             where: { id: booking.roomVariantId },
             data: newState,
@@ -584,6 +732,13 @@ router.patch(
       });
 
       logAudit({ action: 'CANCEL', entity: 'BOOKING', entityId: updated.id, user: req.user, details: `إلغاء حجز` });
+
+      notify(
+        booking.property.ownerId,
+        'تم إلغاء حجز',
+        `قام ${req.user.name} بإلغاء حجز ${booking.property.title}.`,
+        '/owner/bookings',
+      ).catch(() => {});
 
       res.json({
         message: "تم إلغاء الحجز بنجاح.",
@@ -654,9 +809,11 @@ router.patch(
           },
         });
         const isDouble = updatedBooking.roomVariant.kind === "DOUBLE";
+        // SINGLE: occupied iff exactly one active (renewal continuing)
+        // DOUBLE: full only if both beds active, partial if at least one
         const newState = isDouble
-          ? { isOccupied: false, partiallyOccupied: otherActive >= 1 }
-          : { isOccupied: false, partiallyOccupied: false };
+          ? { isOccupied: otherActive >= 2, partiallyOccupied: otherActive === 1 }
+          : { isOccupied: otherActive >= 1, partiallyOccupied: false };
         await tx.roomVariant.update({
           where: { id: booking.roomVariantId },
           data: newState,
@@ -729,7 +886,6 @@ router.get("/:id/cancellation-policy", authenticate, async (req, res, next) => {
           { condition: "تم الدفع خلال 3 أيام", refund: "100%" },
           { condition: "تم الدفع خلال 4-7 أيام", refund: "50%" },
           { condition: "تم الدفع بعد 7 أيام", refund: "0%" },
-          { condition: "تم تسجيل الدخول للسكن مسبقاً", refund: "0%" },
         ],
         currentBooking: {
           status: booking.status,

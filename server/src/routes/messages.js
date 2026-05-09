@@ -87,9 +87,33 @@ router.post('/', authenticate, async (req, res, next) => {
     if (!receiverId || !content?.trim()) {
       return res.status(400).json({ error: 'يرجى كتابة الرسالة.' });
     }
+    if (receiverId === req.user.id) {
+      return res.status(400).json({ error: 'لا يمكنك مراسلة نفسك.' });
+    }
 
     const receiver = await prisma.user.findUnique({ where: { id: receiverId } });
     if (!receiver) return res.status(404).json({ error: 'المستلم غير موجود.' });
+
+    // UC-42: only allow chat between student and owner who share an active booking
+    // (APPROVED or PAID). Admins can message anyone for support purposes.
+    if (req.user.role !== 'ADMIN' && receiver.role !== 'ADMIN') {
+      const senderId = req.user.id;
+      const booking = await prisma.booking.findFirst({
+        where: {
+          status: { in: ['APPROVED', 'PAID'] },
+          OR: [
+            { studentId: senderId, property: { ownerId: receiverId } },
+            { studentId: receiverId, property: { ownerId: senderId } },
+          ],
+        },
+        select: { id: true },
+      });
+      if (!booking) {
+        return res.status(403).json({
+          error: 'لا يمكنك إرسال رسالة بدون حجز نشط مع هذا المستخدم.',
+        });
+      }
+    }
 
     const message = await prisma.message.create({
       data: {

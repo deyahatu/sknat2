@@ -2,6 +2,23 @@
    MessagesChat.css — Messaging Component
    ============================================ */
 
+/* ---- Page wrapper (used by Messages.jsx / OwnerMessages.jsx) ---- */
+.mc-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.mc-page__title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  direction: rtl;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* ---- Layout ---- */
 .mc-container {
   display: flex;
@@ -172,8 +189,40 @@
 
 .mc-message-time {
   font-size: 10px;
-  margin-top: 4px;
   opacity: 0.7;
+}
+
+.mc-message-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.mc-message-report {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.mc-message-other:hover .mc-message-report {
+  opacity: 1;
+}
+
+.mc-message-report:hover {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
 }
 
 /* ---- Input Bar ---- */

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   FiMapPin, FiStar, FiChevronLeft,
-  FiChevronRight, FiCheck, FiArrowRight, FiHeart, FiUser, FiUsers, FiHome,
+  FiChevronRight, FiCheck, FiArrowRight, FiHeart, FiUser, FiUsers, FiHome, FiInfo, FiFlag,
 } from 'react-icons/fi';
 import { IoBedOutline } from 'react-icons/io5';
 import { LuBath } from 'react-icons/lu';
@@ -10,6 +10,7 @@ import { BiArea } from 'react-icons/bi';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import Lightbox from '../components/shared/Lightbox';
+import ReportModal from '../components/shared/ReportModal';
 import { useToast } from '../components/shared/Toast';
 import './PropertyDetailsPage.css';
 
@@ -23,7 +24,6 @@ const CANCELLATION_RULES = [
   { condition: 'تم الدفع خلال 3 أيام', refund: '100%' },
   { condition: 'تم الدفع خلال 4-7 أيام', refund: '50%' },
   { condition: 'تم الدفع بعد 7 أيام', refund: '0%' },
-  { condition: 'تم تسجيل الدخول للسكن', refund: '0%' },
 ];
 
 function PropertyDetailsPage() {
@@ -38,6 +38,7 @@ function PropertyDetailsPage() {
   const [error, setError] = useState(null);
   const [currentImage, setCurrentImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [reportingReviewId, setReportingReviewId] = useState(null);
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
@@ -502,8 +503,23 @@ function PropertyDetailsPage() {
 
             {tenantMajors.length > 0 && (
               <div className="property-description-section">
-                <h3><FiUsers style={{ marginLeft: 6, verticalAlign: 'middle' }} /> تخصصات الطلاب الحاليين</h3>
-                <div className="pd-pattern-services" style={{ marginTop: 10 }}>
+                <h3 className="tenant-majors-heading">
+                  <FiUsers />
+                  تخصصات الطلاب الحاليين
+                  <span
+                    className="info-hint"
+                    tabIndex={0}
+                    role="button"
+                    aria-label="معلومة عن تخصصات الساكنين"
+                  >
+                    <FiInfo />
+                    <span className="info-hint__bubble">
+                      هذه القائمة تعرض فقط تخصصات الطلاب الذين حجزوا عبر منصة سكنات.
+                      قد يوجد ساكنون آخرون استأجروا مباشرة من المالك ولا تظهر بياناتهم هنا.
+                    </span>
+                  </span>
+                </h3>
+                <div className="pd-pattern-services pd-pattern-services--gap">
                   {tenantMajors.map((m) => (
                     <span key={m} className="pd-pattern-service-tag">{m}</span>
                   ))}
@@ -533,15 +549,14 @@ function PropertyDetailsPage() {
                       {review.comment && <p className="review-comment">{review.comment}</p>}
                       {user && review.student?.id !== user?.id && (
                         <button
+                          type="button"
                           className="pd-report-btn"
-                          onClick={async () => {
-                            try {
-                              await api.reports.create({ type: 'REVIEW', targetId: review.id, reason: 'OFFENSIVE' });
-                              toast.success('تم إرسال البلاغ بنجاح.');
-                            } catch (err) { toast.error(err.message); }
-                          }}
-                          title="الإبلاغ عن هذا التقييم"
-                        >🚩</button>
+                          onClick={() => setReportingReviewId(review.id)}
+                          aria-label="الإبلاغ عن هذا التقييم"
+                        >
+                          <FiFlag />
+                          <span>إبلاغ</span>
+                        </button>
                       )}
                     </div>
                   ))}
@@ -783,6 +798,13 @@ function PropertyDetailsPage() {
           onPrev={() => setCurrentImage((prev) => (prev - 1 + property.images.length) % property.images.length)}
         />
       )}
+
+      <ReportModal
+        open={!!reportingReviewId}
+        targetType="REVIEW"
+        targetId={reportingReviewId}
+        onClose={() => setReportingReviewId(null)}
+      />
     </div>
   );
 }

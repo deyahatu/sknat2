@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { FiStar } from 'react-icons/fi';
+import { FiStar, FiFlag } from 'react-icons/fi';
 import { api } from '../../utils/api';
 import Skeleton from '../../components/shared/Skeleton';
+import ReportModal from '../../components/shared/ReportModal';
 
 function Stars({ rating }) {
   return (
@@ -17,6 +18,7 @@ export default function OwnerRatings() {
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reportingReviewId, setReportingReviewId] = useState(null);
 
   useEffect(() => {
     api.properties.myRatings()
@@ -55,6 +57,7 @@ export default function OwnerRatings() {
                   <th>التقييم</th>
                   <th>التعليق</th>
                   <th>التاريخ</th>
+                  <th>إجراء</th>
                 </tr>
               </thead>
               <tbody>
@@ -63,10 +66,21 @@ export default function OwnerRatings() {
                     <td>{r.property?.title || '—'}</td>
                     <td>{r.student?.name || '—'}</td>
                     <td><Stars rating={r.rating} /></td>
-                    <td style={{ maxWidth: 200, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    <td className="owner-comment-cell">
                       {r.comment || '—'}
                     </td>
                     <td dir="ltr">{new Date(r.createdAt).toLocaleDateString('ar-SA')}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="owner-report-btn"
+                        onClick={() => setReportingReviewId(r.id)}
+                        aria-label="الإبلاغ عن هذا التقييم"
+                      >
+                        <FiFlag />
+                        <span>إبلاغ</span>
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -74,6 +88,13 @@ export default function OwnerRatings() {
           )}
         </div>
       </div>
+
+      <ReportModal
+        open={!!reportingReviewId}
+        targetType="REVIEW"
+        targetId={reportingReviewId}
+        onClose={() => setReportingReviewId(null)}
+      />
     </>
   );
 }

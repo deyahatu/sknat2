@@ -477,7 +477,7 @@ export default function ProfilePage() {
           <div className="student-profile-col">
             <div className="student-card">
               <div className="student-card-header">
-                <h2 className="student-card-title"><FiShield className="pp-icon-lg" /> بيانات التحقق</h2>
+                <h2 className="student-card-title"><FiBook className="pp-icon-lg" /> البيانات الأكاديمية</h2>
               </div>
               <div className="student-profile-card-body">
                 <div className="student-profile-info-row">
@@ -509,53 +509,9 @@ export default function ProfilePage() {
 
                 <div className="student-profile-info-row">
                   <span className="student-profile-info-label">
-                    <FiMail className="pp-icon" /> البريد الإلكتروني
-                  </span>
-                  <span className="student-profile-info-value" dir="ltr">
-                    {profile.email}
-                  </span>
-                </div>
-
-                <div className="student-profile-info-row">
-                  <span className="student-profile-info-label">
                     <FiCalendar className="pp-icon" /> تاريخ الانضمام
                   </span>
                   <span className="student-profile-info-value">{joined}</span>
-                </div>
-
-                <div className="student-profile-info-row">
-                  <span className="student-profile-info-label"><FiShield className="pp-icon" /> الصلاحيات</span>
-                  <span className="student-badge approved">طالب</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="student-card student-profile-card-gap">
-              <div className="student-card-header">
-                <h2 className="student-card-title">حالة الحساب</h2>
-              </div>
-              <div className="student-profile-card-body">
-                <div className="student-profile-info-row">
-                  <span className="student-profile-info-label"><FiUser className="pp-icon" /> الحساب</span>
-                  <span className="student-badge approved">مفعّل</span>
-                </div>
-
-                <div className="student-profile-info-row">
-                  <span className="student-profile-info-label">
-                    <FiPhone className="pp-icon" /> رقم الجوال
-                  </span>
-                  <span className="student-profile-info-value" dir="ltr">
-                    {profile.phone || "—"}
-                  </span>
-                </div>
-
-                <div className="student-profile-info-row">
-                  <span className="student-profile-info-label">
-                    <FiCalendar className="pp-icon" /> آخر تحديث
-                  </span>
-                  <span className="student-profile-info-value">
-                    {formatDate(profile.updatedAt)}
-                  </span>
                 </div>
               </div>
             </div>

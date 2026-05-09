@@ -1,3 +1,5 @@
+import './StatusTimeline.css';
+
 const STEPS = [
   { key: 'PENDING', label: 'معلق' },
   { key: 'APPROVED', label: 'مقبول' },
@@ -12,25 +14,34 @@ export default function StatusTimeline({ status }) {
   const currentIdx = STATUS_INDEX[status] ?? -1;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', margin: '12px 0' }}>
+    <div className="st-row">
       {STEPS.map((step, i) => {
         const isDone = currentIdx > i;
         const isCurrent = currentIdx === i;
         const isError = (isCancelled && i === currentIdx) || (isRejected && i === 1);
-        let bg = '#e5e7eb', color = '#9ca3af', label = step.label;
-        if (isDone) { bg = '#10b981'; color = '#fff'; }
-        if (isCurrent && !isError) { bg = '#4f46e5'; color = '#fff'; }
-        if (isError) { bg = '#dc2626'; color = '#fff'; label = isCancelled ? 'ملغى' : 'مرفوض'; }
+        let circleClass = 'st-circle';
+        let label = step.label;
+        if (isDone) circleClass += ' st-circle--done';
+        else if (isCurrent && !isError) circleClass += ' st-circle--current';
+        else if (isError) {
+          circleClass += ' st-circle--error';
+          label = isCancelled ? 'ملغى' : 'مرفوض';
+        }
+
+        let labelClass = 'st-label';
+        if (isDone || isCurrent) labelClass += ' st-label--active';
+        if (isCurrent) labelClass += ' st-label--current';
+
         return (
-          <div key={step.key} style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: bg, color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
+          <div key={step.key} className="st-step">
+            <div className="st-step-col">
+              <div className={circleClass}>
                 {isDone ? '✓' : isError ? '✕' : i + 1}
               </div>
-              <span style={{ fontSize: 11, color: isDone || isCurrent ? '#1a1a1a' : '#9ca3af', fontWeight: isCurrent ? 700 : 400 }}>{label}</span>
+              <span className={labelClass}>{label}</span>
             </div>
             {i < STEPS.length - 1 && (
-              <div style={{ width: 40, height: 2, background: isDone ? '#10b981' : '#e5e7eb', margin: '0 4px', marginBottom: 20 }} />
+              <div className={`st-bar${isDone ? ' st-bar--done' : ''}`} />
             )}
           </div>
         );

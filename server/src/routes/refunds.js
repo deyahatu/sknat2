@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { notify } from '../utils/notify.js';
 
 const router = Router();
 
@@ -146,6 +147,13 @@ router.patch(
         },
       });
 
+      notify(
+        updated.studentId,
+        'تمت الموافقة على طلب الاسترداد',
+        `تم استرداد مبلغ ${refundAmount} ₪ بنجاح.`,
+        '/bookings',
+      ).catch(() => {});
+
       res.json({
         message: 'تمت الموافقة على الاسترداد ومعالجته بنجاح.',
         refund: updated,
@@ -186,6 +194,13 @@ router.patch(
           rejectionReason: reason || null,
         },
       });
+
+      notify(
+        updated.studentId,
+        'تم رفض طلب الاسترداد',
+        reason ? `السبب: ${reason}` : 'تم رفض طلب الاسترداد من قبل الإدارة.',
+        '/bookings',
+      ).catch(() => {});
 
       res.json({
         message: 'تم رفض طلب الاسترداد.',

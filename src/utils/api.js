@@ -79,6 +79,7 @@ export const api = {
     cancel: (id) => request(`/bookings/${id}/cancel`, { method: 'PATCH' }),
     complete: (id) => request(`/bookings/${id}/complete`, { method: 'PATCH' }),
     cancellationPolicy: (id) => request(`/bookings/${id}/cancellation-policy`),
+    renew: (id, body) => request(`/bookings/${id}/renew`, { method: 'POST', body: JSON.stringify(body) }),
   },
   payments: {
     pay: (bookingId) => request('/payments', { method: 'POST', body: JSON.stringify({ bookingId }) }),
@@ -106,6 +107,7 @@ export const api = {
   studentRatings: {
     rate: (body) => request('/student-ratings', { method: 'POST', body: JSON.stringify(body) }),
     given: () => request('/student-ratings/given'),
+    received: () => request('/student-ratings/received'),
   },
   withdrawals: {
     getBankAccount: () => request('/withdrawals/bank-account'),
@@ -137,14 +139,6 @@ export const api = {
     create: (body) => request('/reports', { method: 'POST', body: JSON.stringify(body) }),
     list: (status) => request(`/reports${status ? `?status=${status}` : ''}`),
     review: (id, body) => request(`/reports/${id}/review`, { method: 'PATCH', body: JSON.stringify(body) }),
-  },
-  complaints: {
-    create: (body) => request('/complaints', { method: 'POST', body: JSON.stringify(body) }),
-    mine: () => request('/complaints/mine'),
-    get: (id) => request(`/complaints/${id}`),
-    list: (params) => request(`/complaints${buildQuery(params)}`),
-    update: (id, body) => request(`/complaints/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-    reply: (id, message) => request(`/complaints/${id}/replies`, { method: 'POST', body: JSON.stringify({ message }) }),
   },
   admin: {
     stats: () => request('/admin/stats'),

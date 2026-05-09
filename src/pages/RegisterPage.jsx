@@ -394,7 +394,7 @@ function RegisterPage() {
                   </div>
                 </div>
 
-                <div className="form-group" style={{ position: 'relative' }}>
+                <div className="form-group form-group-major">
                   <label htmlFor="major">التخصص</label>
                   <div className="input-wrapper">
                     <FiBookOpen className="input-icon" />

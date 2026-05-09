@@ -65,3 +65,20 @@ export function bookingCompletedEmail(studentName, propertyTitle) {
   `;
   return baseTemplate(content);
 }
+
+export function renewalReminderEmail(studentName, propertyTitle, endDate, renewUrl) {
+  const formattedDate = new Date(endDate).toLocaleDateString('ar-EG');
+  const content = `
+    <h2 style="color:#d97706;margin:0 0 16px;">حجزك ينتهي قريباً</h2>
+    <p style="color:#374151;margin:0 0 14px;">مرحباً ${studentName}، حجزك على <strong>${propertyTitle}</strong> ينتهي بتاريخ <strong>${formattedDate}</strong>.</p>
+    <p style="color:#374151;margin:0 0 20px;">إذا كنت ترغب بالاستمرار في السكن، يمكنك تقديم طلب تجديد الآن قبل انتهاء حجزك.</p>
+    <div style="text-align:center;margin:0 0 16px;">
+      <a href="${renewUrl}" style="display:inline-block;background:#d97706;color:#fff;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:700;">طلب تجديد الحجز</a>
+    </div>
+    <div>
+      <div class="info-row"><span class="info-label">السكن</span><span class="info-value">${propertyTitle}</span></div>
+      <div class="info-row"><span class="info-label">تاريخ انتهاء الحجز</span><span class="info-value">${formattedDate}</span></div>
+    </div>
+  `;
+  return baseTemplate(content);
+}

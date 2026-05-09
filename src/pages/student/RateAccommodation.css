@@ -85,6 +85,12 @@
   letter-spacing: -0.2px;
 }
 
+.rate-header h1 svg {
+  margin-left: 8px;
+  vertical-align: middle;
+  color: #f59e0b;
+}
+
 .rate-header p {
   margin: 0;
   color: var(--text-secondary);

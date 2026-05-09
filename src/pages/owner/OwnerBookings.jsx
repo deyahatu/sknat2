@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { FiCalendar } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiCalendar, FiRefreshCw, FiMessageSquare } from 'react-icons/fi';
 import { api } from '../../utils/api';
 import Skeleton, { SkeletonCard } from '../../components/shared/Skeleton';
 
@@ -27,6 +28,7 @@ function formatDate(d) {
 }
 
 export default function OwnerBookings() {
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
@@ -120,11 +122,27 @@ export default function OwnerBookings() {
               <tbody>
                 {bookings.map((b) => {
                   const st = STATUS_MAP[b.status] || { label: b.status, cls: 'pending' };
+                  const isRenewal = !!b.parentBookingId;
                   return (
-                    <tr key={b.id}>
-                      <td>{b.property?.title || '—'}</td>
+                    <tr key={b.id} className={isRenewal ? 'owner-row-renewal' : ''}>
+                      <td>
+                        {b.property?.title || '—'}
+                        {isRenewal && (
+                          <span className="owner-renewal-badge" title="طلب تجديد لحجز سابق">
+                            <FiRefreshCw /> تجديد
+                          </span>
+                        )}
+                      </td>
                       <td>{b.student?.name || '—'}</td>
-                      <td dir="ltr">{formatDate(b.startDate)}</td>
+                      <td dir="ltr">
+                        {formatDate(b.startDate)}
+                        {isRenewal && b.parentBooking && (
+                          <div className="owner-renewal-meta">
+                            بعد الحجز السابق:<br />
+                            <span dir="ltr">{formatDate(b.parentBooking.startDate)} → {formatDate(b.parentBooking.endDate)}</span>
+                          </div>
+                        )}
+                      </td>
                       <td dir="ltr">{formatDate(b.endDate)}</td>
                       <td><span className={`owner-badge ${st.cls}`}>{st.label}</span></td>
                       <td>
@@ -145,6 +163,14 @@ export default function OwnerBookings() {
                               {actionLoading === b.id + '_reject' ? '...' : 'رفض'}
                             </button>
                           </div>
+                        )}
+                        {(b.status === 'APPROVED' || b.status === 'PAID') && b.student?.id && (
+                          <button
+                            className="owner-btn owner-btn-outline owner-btn-sm"
+                            onClick={() => navigate(`/owner/messages?with=${b.student.id}`)}
+                          >
+                            <FiMessageSquare /> تواصل
+                          </button>
                         )}
                       </td>
                     </tr>

@@ -1,15 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FiMessageSquare } from 'react-icons/fi';
+import { useSearchParams } from 'react-router-dom';
+import { FiMessageSquare, FiFlag } from 'react-icons/fi';
 import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { connectSocket, getSocket } from '../../utils/socket';
 import { useToast } from '../../components/shared/Toast';
+import ReportModal from './ReportModal';
 import Skeleton from './Skeleton';
 import './MessagesChat.css';
 
 export default function MessagesChat() {
   const { user } = useAuth();
   const toast = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [reportTarget, setReportTarget] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -80,6 +84,18 @@ export default function MessagesChat() {
     }
   };
 
+  // Open a specific chat when navigated with ?with=userId — used by the
+  // "تواصل" buttons on bookings. Runs only after the initial conversation
+  // load so we don't race with the sidebar fetch.
+  useEffect(() => {
+    if (loading) return;
+    const withId = searchParams.get('with');
+    if (!withId) return;
+    if (selectedUser === withId) return;
+    selectConversation(withId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, searchParams]);
+
   const selectConversation = async (userId) => {
     setSelectedUser(userId);
     setChatLoading(true);
@@ -87,8 +103,28 @@ export default function MessagesChat() {
       const data = await api.messages.getChat(userId);
       setMessages(data.messages || []);
       setOtherUser(data.otherUser);
-      // Update unread count locally
-      setConversations(prev => prev.map(c => c.userId === userId ? { ...c, unreadCount: 0 } : c));
+      // Update unread count locally; if this user isn't in the sidebar yet
+      // (e.g. opened via ?with=...), prepend a placeholder so the empty state
+      // doesn't fight with the active chat on the right.
+      setConversations(prev => {
+        const exists = prev.some(c => c.userId === userId);
+        if (exists) {
+          return prev.map(c => c.userId === userId ? { ...c, unreadCount: 0 } : c);
+        }
+        if (!data.otherUser) return prev;
+        return [
+          {
+            userId,
+            userName: data.otherUser.name,
+            userAvatar: data.otherUser.avatar,
+            userRole: data.otherUser.role,
+            lastMessage: '',
+            lastMessageAt: new Date().toISOString(),
+            unreadCount: 0,
+          },
+          ...prev,
+        ];
+      });
     } catch (err) {
       console.error(err);
     } finally {
@@ -132,6 +168,13 @@ export default function MessagesChat() {
   );
 
   return (
+    <>
+    <ReportModal
+      open={!!reportTarget}
+      targetType="MESSAGE"
+      targetId={reportTarget}
+      onClose={() => setReportTarget(null)}
+    />
     <div className="mc-container">
       {/* Conversations sidebar */}
       <div className="mc-sidebar">
@@ -184,15 +227,31 @@ export default function MessagesChat() {
               {messages.length === 0 && (
                 <div className="mc-msgs-empty">لا توجد رسائل بعد. ابدأ المحادثة!</div>
               )}
-              {messages.map(msg => (
-                <div
-                  key={msg.id}
-                  className={`mc-message${msg.senderId === user.id ? ' mc-message-mine' : ' mc-message-other'}`}
-                >
-                  <div>{msg.content}</div>
-                  <div className="mc-message-time">{formatTime(msg.createdAt)}</div>
-                </div>
-              ))}
+              {messages.map(msg => {
+                const isMine = msg.senderId === user.id;
+                return (
+                  <div
+                    key={msg.id}
+                    className={`mc-message${isMine ? ' mc-message-mine' : ' mc-message-other'}`}
+                  >
+                    <div>{msg.content}</div>
+                    <div className="mc-message-footer">
+                      <span className="mc-message-time">{formatTime(msg.createdAt)}</span>
+                      {!isMine && (
+                        <button
+                          type="button"
+                          className="mc-message-report"
+                          title="بلاغ عن هذه الرسالة"
+                          aria-label="بلاغ عن هذه الرسالة"
+                          onClick={() => setReportTarget(msg.id)}
+                        >
+                          <FiFlag />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
               {isTyping && <div className="mc-typing">يكتب...</div>}
               <div ref={messagesEndRef} />
             </div>
@@ -226,5 +285,6 @@ export default function MessagesChat() {
         )}
       </div>
     </div>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { FiSearch, FiFilter, FiX, FiGrid, FiList } from "react-icons/fi";
+import { FiSearch, FiFilter, FiX, FiGrid, FiList, FiCheck } from "react-icons/fi";
 import PropertyCard from "../components/property/PropertyCard";
 import {
   PROPERTY_LEVEL_SERVICES,
@@ -8,8 +8,10 @@ import {
   PROPERTY_KINDS,
   ROOM_KINDS,
   CAMPUSES,
+  SERVICE_ICONS,
 } from "../constants/property";
 import { api } from "../utils/api";
+import { useAuth } from "../context/AuthContext";
 import "./SearchPage.css";
 
 const EMPTY_FILTERS = {
@@ -28,13 +30,26 @@ const EMPTY_FILTERS = {
 function SearchPage() {
   const [searchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
+  const { user } = useAuth();
+  const isStudent = user?.role === "STUDENT";
+  const lockedGender = isStudent && user?.gender ? user.gender : null;
 
   const [filters, setFilters] = useState({
     ...EMPTY_FILTERS,
     searchQuery: initialQuery,
+    targetGender: lockedGender || "",
   });
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('searchView') || 'grid');
+
+  // Sync gender lock when auth resolves after first render
+  useEffect(() => {
+    if (lockedGender) {
+      setFilters((prev) =>
+        prev.targetGender === lockedGender ? prev : { ...prev, targetGender: lockedGender }
+      );
+    }
+  }, [lockedGender]);
 
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -78,7 +93,7 @@ function SearchPage() {
   };
 
   const clearFilters = () => {
-    setFilters(EMPTY_FILTERS);
+    setFilters({ ...EMPTY_FILTERS, targetGender: lockedGender || "" });
   };
 
   const hasActiveFilters =
@@ -86,7 +101,7 @@ function SearchPage() {
     filters.city ||
     filters.minPrice ||
     filters.maxPrice ||
-    filters.targetGender ||
+    (!lockedGender && filters.targetGender) ||
     filters.kind ||
     filters.campus ||
     filters.roomKind ||
@@ -208,20 +223,22 @@ function SearchPage() {
               />
             </div>
 
-            <div className="filter-group">
-              <label>الجنس المستهدف</label>
-              <select
-                value={filters.targetGender}
-                onChange={(e) => setField("targetGender", e.target.value)}
-              >
-                <option value="">الكل</option>
-                {TARGET_GENDERS.map((g) => (
-                  <option key={g.value} value={g.value}>
-                    {g.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!lockedGender && (
+              <div className="filter-group">
+                <label>الجنس المستهدف</label>
+                <select
+                  value={filters.targetGender}
+                  onChange={(e) => setField("targetGender", e.target.value)}
+                >
+                  <option value="">الكل</option>
+                  {TARGET_GENDERS.map((g) => (
+                    <option key={g.value} value={g.value}>
+                      {g.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="filter-group">
               <label>نوع الغرفة</label>
@@ -242,16 +259,25 @@ function SearchPage() {
             <div className="filter-group filter-group-services">
               <label>الخدمات</label>
               <div className="filter-services-grid">
-                {PROPERTY_LEVEL_SERVICES.map((s) => (
-                  <label key={s} className="filter-service-check">
-                    <input
-                      type="checkbox"
-                      checked={filters.services.includes(s)}
-                      onChange={() => toggleService(s)}
-                    />
-                    <span>{s}</span>
-                  </label>
-                ))}
+                {PROPERTY_LEVEL_SERVICES.map((s) => {
+                  const Icon = SERVICE_ICONS[s];
+                  const checked = filters.services.includes(s);
+                  return (
+                    <label
+                      key={s}
+                      className={`filter-service-pill ${checked ? "is-checked" : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleService(s)}
+                      />
+                      {Icon && <Icon className="filter-service-pill__icon" />}
+                      <span className="filter-service-pill__label">{s}</span>
+                      {checked && <FiCheck className="filter-service-pill__check" />}
+                    </label>
+                  );
+                })}
               </div>
             </div>
 

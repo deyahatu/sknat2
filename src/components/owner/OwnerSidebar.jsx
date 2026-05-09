@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
   FiGrid, FiHome, FiPlus, FiCalendar, FiStar, FiUser,
-  FiCreditCard, FiDollarSign, FiMessageSquare, FiAlertCircle,
+  FiCreditCard, FiDollarSign, FiMessageSquare,
   FiSettings, FiLogOut, FiX,
 } from "react-icons/fi";
 
@@ -21,7 +21,6 @@ const NAV_ITEMS = [
   { to: "/owner/withdrawals", label: "طلبات السحب", icon: <FiDollarSign /> },
   { section: "التواصل" },
   { to: "/owner/messages", label: "الرسائل", icon: <FiMessageSquare /> },
-  { to: "/owner/complaints", label: "الشكاوى", icon: <FiAlertCircle /> },
   { section: "الحساب" },
   { to: "/owner/manage-profile", label: "الملف الشخصي", icon: <FiSettings /> },
 ];

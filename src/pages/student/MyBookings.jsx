@@ -1,10 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiCalendar, FiHome, FiMapPin, FiAlertCircle, FiFileText } from 'react-icons/fi';
+import { FiCalendar, FiHome, FiMapPin, FiAlertCircle, FiFileText, FiRefreshCw, FiClock, FiMessageSquare } from 'react-icons/fi';
 import { useToast } from '../../components/shared/Toast';
 import { api } from '../../utils/api';
 import StatusTimeline from '../../components/shared/StatusTimeline';
 import './MyBookings.css';
+
+const RENEWAL_WINDOW_DAYS = 5;
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+function daysUntil(date) {
+  if (!date) return Infinity;
+  return Math.ceil((new Date(date).getTime() - Date.now()) / MS_PER_DAY);
+}
+
+function toInputDate(date) {
+  const d = new Date(date);
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+}
 
 const STATUS_LABELS = {
   PENDING: 'قيد الانتظار',
@@ -65,6 +78,7 @@ function MyBookings() {
   const [cancelPolicy, setCancelPolicy] = useState(null);
   const [policyLoading, setPolicyLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState(null);
+  const [renewTarget, setRenewTarget] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -184,11 +198,25 @@ function MyBookings() {
                 onCancel={() => setCancelTarget(booking)}
                 onPay={() => navigate(`/payment/${booking.id}`)}
                 onRate={() => navigate(`/rate/${booking.id}`)}
+                onRenew={() => setRenewTarget(booking)}
+                onChat={() => navigate(`/messages?with=${booking.property.owner.id}`)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {renewTarget && (
+        <RenewModal
+          booking={renewTarget}
+          onClose={() => setRenewTarget(null)}
+          onSubmitted={() => {
+            setRenewTarget(null);
+            setActionMessage('تم إرسال طلب التجديد. بانتظار موافقة المالك.');
+            load();
+          }}
+        />
+      )}
 
       {cancelTarget && (
         <div className="cancel-modal-overlay" onClick={() => !cancelLoading && setCancelTarget(null)}>
@@ -370,17 +398,29 @@ async function handleDownloadInvoice(paymentId, toast) {
   }
 }
 
-function BookingCard({ booking, onCancel, onPay, onRate }) {
+function BookingCard({ booking, onCancel, onPay, onRate, onRenew, onChat }) {
   const toast = useToast();
   const property = booking.property;
   const cover = property?.images?.[0];
 
+  const isRenewalRequest = !!booking.parentBookingId;
+  const activeRenewal = (booking.renewals || []).find((r) =>
+    ['PENDING', 'APPROVED', 'PAID'].includes(r.status),
+  );
+  const days = daysUntil(booking.endDate);
+  const canRenew =
+    !activeRenewal &&
+    ['APPROVED', 'PAID'].includes(booking.status) &&
+    days >= 0 &&
+    days <= RENEWAL_WINDOW_DAYS;
+
   const canCancel = ['PENDING', 'APPROVED', 'PAID'].includes(booking.status);
   const canPay = booking.status === 'APPROVED';
   const canRate = booking.status === 'COMPLETED';
+  const canChat = ['APPROVED', 'PAID'].includes(booking.status) && property?.owner?.id;
 
   return (
-    <div className="booking-card">
+    <div className={`booking-card ${isRenewalRequest ? 'is-renewal' : ''}`}>
       <div className="booking-card-image">
         {cover ? (
           <img src={cover} alt={property.title} />
@@ -394,12 +434,44 @@ function BookingCard({ booking, onCancel, onPay, onRate }) {
       <div className="booking-card-body">
         <div className="booking-card-top">
           <Link to={`/property/${property.id}`} className="booking-card-title">
+            {isRenewalRequest && <FiRefreshCw className="mb-icon-ml-sm" />}
             {property.title}
           </Link>
           <span className={`booking-status status-${booking.status}`}>
-            {STATUS_LABELS[booking.status]}
+            {isRenewalRequest && booking.status === 'PENDING'
+              ? 'طلب تجديد قيد المراجعة'
+              : STATUS_LABELS[booking.status]}
           </span>
         </div>
+
+        {isRenewalRequest && (
+          <div className="booking-renewal-banner">
+            <FiRefreshCw />
+            <span>هذا الحجز هو طلب تجديد لحجز سابق. بانتظار رد المالك.</span>
+          </div>
+        )}
+
+        {!isRenewalRequest && activeRenewal && (
+          <div className="booking-renewal-banner active">
+            <FiClock />
+            <span>
+              لديك طلب تجديد قيد المراجعة (
+              {formatDate(activeRenewal.startDate)} → {formatDate(activeRenewal.endDate)})
+            </span>
+          </div>
+        )}
+
+        {!isRenewalRequest && !activeRenewal && canRenew && (
+          <div className="booking-renewal-banner soon">
+            <FiClock />
+            <span>
+              {days <= 0
+                ? 'حجزك ينتهي اليوم'
+                : `حجزك ينتهي خلال ${days} ${days === 1 ? 'يوم' : 'أيام'}`}
+              {' '}— يمكنك طلب التجديد الآن.
+            </span>
+          </div>
+        )}
 
         <div className="booking-card-meta">
           <span className="booking-meta-item">
@@ -431,6 +503,18 @@ function BookingCard({ booking, onCancel, onPay, onRate }) {
               قيّم السكن
             </button>
           )}
+          {canRenew && (
+            <button type="button" className="btn btn-primary" onClick={onRenew}>
+              <FiRefreshCw className="mb-icon-ml-sm" />
+              طلب تجديد
+            </button>
+          )}
+          {canChat && (
+            <button type="button" className="btn btn-outline" onClick={onChat}>
+              <FiMessageSquare className="mb-icon-ml-sm" />
+              تواصل مع المالك
+            </button>
+          )}
           {(booking.status === 'PAID' || booking.status === 'COMPLETED') && booking.payment && (
             <button onClick={() => handleDownloadInvoice(booking.payment.id, toast)} className="btn btn-secondary mb-invoice-btn">
               <FiFileText className="mb-icon-ml-sm" /> تحميل الفاتورة
@@ -442,6 +526,104 @@ function BookingCard({ booking, onCancel, onPay, onRate }) {
             </button>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RenewModal({ booking, onClose, onSubmitted }) {
+  const toast = useToast();
+  const parentEnd = new Date(booking.endDate);
+  const defaultEnd = new Date(parentEnd.getTime() + 30 * MS_PER_DAY);
+  const [startDate, setStartDate] = useState(toInputDate(parentEnd));
+  const [endDate, setEndDate] = useState(toInputDate(defaultEnd));
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!startDate || !endDate) {
+      toast.error('يرجى إدخال التاريخين');
+      return;
+    }
+    if (new Date(startDate) >= new Date(endDate)) {
+      toast.error('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.bookings.renew(booking.id, { startDate, endDate });
+      toast.success('تم إرسال طلب التجديد بنجاح');
+      onSubmitted?.();
+    } catch (err) {
+      toast.error(err.message || 'تعذر إرسال طلب التجديد');
+      setSubmitting(false);
+    }
+  };
+
+  const minStart = toInputDate(parentEnd);
+
+  return (
+    <div className="cancel-modal-overlay" onClick={() => !submitting && onClose?.()}>
+      <div className="cancel-modal" onClick={(e) => e.stopPropagation()}>
+        <h2>
+          <FiRefreshCw className="mb-icon-ml-sm" />
+          طلب تجديد الحجز
+        </h2>
+        <p>اختر تواريخ التجديد. سيبدأ التجديد بعد انتهاء حجزك الحالي.</p>
+
+        <div className="cancel-modal-summary">
+          <div className="cancel-modal-summary-row">
+            <span>السكن</span>
+            <strong>{booking.property.title}</strong>
+          </div>
+          <div className="cancel-modal-summary-row">
+            <span>تاريخ انتهاء الحجز الحالي</span>
+            <strong>{formatDate(booking.endDate)}</strong>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="renew-form">
+          <label className="renew-field">
+            <span>تاريخ بداية التجديد</span>
+            <input
+              type="date"
+              value={startDate}
+              min={minStart}
+              onChange={(e) => setStartDate(e.target.value)}
+              required
+              disabled={submitting}
+            />
+          </label>
+          <label className="renew-field">
+            <span>تاريخ نهاية التجديد</span>
+            <input
+              type="date"
+              value={endDate}
+              min={startDate || minStart}
+              onChange={(e) => setEndDate(e.target.value)}
+              required
+              disabled={submitting}
+            />
+          </label>
+
+          <div className="cancel-modal-actions">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onClose}
+              disabled={submitting}
+            >
+              رجوع
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={submitting}
+            >
+              {submitting ? 'جاري الإرسال...' : 'إرسال طلب التجديد'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

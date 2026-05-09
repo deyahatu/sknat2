@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FiSearch, FiHome, FiCreditCard, FiStar, FiArrowLeft, FiCheckCircle, FiFileText, FiShield } from "react-icons/fi";
+import { FiSearch, FiHome, FiCreditCard, FiStar, FiArrowLeft, FiCheckCircle, FiFileText, FiShield, FiHeart, FiCalendar } from "react-icons/fi";
 import AnimatedCounter from "../components/shared/AnimatedCounter";
+import { useAuth } from "../context/AuthContext";
 import "./HomePage.css";
 
 function HomePage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const { user } = useAuth();
+  const isStudent = user?.role === "STUDENT";
+  const firstName = user?.name?.split(" ")[0] || "";
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -26,18 +30,27 @@ function HomePage() {
         <div className="hero__inner">
           <div className="hero__badge">
             <FiHome className="hero__badge-icon" />
-            <span>منصة السكن الطلابي في فلسطين</span>
+            <span>{isStudent ? "أهلاً بعودتك" : "منصة السكن الطلابي في فلسطين"}</span>
           </div>
 
-          <h1 className="hero__title">
-            اعثر على
-            <span className="hero__title-accent"> سكنك المثالي </span>
-            بخطوات بسيطة
-          </h1>
+          {isStudent ? (
+            <h1 className="hero__title">
+              أهلاً <span className="hero__title-accent">{firstName}</span>،
+              <br />
+              لاقي سكنك التالي
+            </h1>
+          ) : (
+            <h1 className="hero__title">
+              اعثر على
+              <span className="hero__title-accent"> سكنك المثالي </span>
+              بخطوات بسيطة
+            </h1>
+          )}
 
           <p className="hero__sub">
-            نربط الطلاب بأصحاب العقارات لتوفير خيارات سكن موثوقة وبأسعار مناسبة —
-            غرف مفردة، مزدوجة، استوديوهات، وشقق كاملة.
+            {isStudent
+              ? "تصفّح العقارات المتاحة، تابع حجوزاتك، وارجع لمفضلاتك من مكان واحد."
+              : "نربط الطلاب بأصحاب العقارات لتوفير خيارات سكن موثوقة وبأسعار مناسبة — غرف مفردة، مزدوجة، استوديوهات، وشقق كاملة."}
           </p>
 
           <form className="hero__search" onSubmit={handleSearch}>
@@ -59,9 +72,22 @@ function HomePage() {
             <Link to="/search" className="hero__cta hero__cta--solid">
               تصفّح العقارات
             </Link>
-            <Link to="/register" className="hero__cta hero__cta--ghost">
-              سجّل كمالك عقار
-            </Link>
+            {isStudent ? (
+              <>
+                <Link to="/bookings" className="hero__cta hero__cta--ghost">
+                  <FiCalendar />
+                  حجوزاتي
+                </Link>
+                <Link to="/favorites" className="hero__cta hero__cta--ghost">
+                  <FiHeart />
+                  مفضلاتي
+                </Link>
+              </>
+            ) : (
+              <Link to="/register" className="hero__cta hero__cta--ghost">
+                سجّل كمالك عقار
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -110,44 +136,63 @@ function HomePage() {
         </div>
       </section>
 
-      {/* ═══ How It Works ═══ */}
-      <section className="steps">
-        <div className="steps__inner">
-          <span className="section-eyebrow">كيف تعمل؟</span>
-          <h2 className="section-title">ثلاث خطوات فقط</h2>
+      {/* ═══ How It Works (guests only) ═══ */}
+      {!isStudent && (
+        <section className="steps">
+          <div className="steps__inner">
+            <span className="section-eyebrow">كيف تعمل؟</span>
+            <h2 className="section-title">ثلاث خطوات فقط</h2>
 
-          <div className="steps__grid">
-            {[
-              { num: "01", icon: <FiSearch />, title: "ابحث", desc: "تصفّح العقارات المتاحة واستخدم الفلاتر لتضييق النتائج حسب احتياجاتك" },
-              { num: "02", icon: <FiFileText />, title: "احجز", desc: "اختر الغرفة المناسبة وأرسل طلب حجز — المالك يقبل أو يرفض خلال ساعات" },
-              { num: "03", icon: <FiCheckCircle />, title: "اسكن", desc: "أكمل الدفع واستلم غرفتك — فاتورة إلكترونية فورية" },
-            ].map((s, i) => (
-              <div className="steps__card" key={i}>
-                <div className="steps__num">{s.num}</div>
-                <div className="steps__card-icon">{s.icon}</div>
-                <h3>{s.title}</h3>
-                <p>{s.desc}</p>
-                {i < 2 && <div className="steps__connector" />}
-              </div>
-            ))}
+            <div className="steps__grid">
+              {[
+                { num: "01", icon: <FiSearch />, title: "ابحث", desc: "تصفّح العقارات المتاحة واستخدم الفلاتر لتضييق النتائج حسب احتياجاتك" },
+                { num: "02", icon: <FiFileText />, title: "احجز", desc: "اختر الغرفة المناسبة وأرسل طلب حجز — المالك يقبل أو يرفض خلال ساعات" },
+                { num: "03", icon: <FiCheckCircle />, title: "اسكن", desc: "أكمل الدفع واستلم غرفتك — فاتورة إلكترونية فورية" },
+              ].map((s, i) => (
+                <div className="steps__card" key={i}>
+                  <div className="steps__num">{s.num}</div>
+                  <div className="steps__card-icon">{s.icon}</div>
+                  <h3>{s.title}</h3>
+                  <p>{s.desc}</p>
+                  {i < 2 && <div className="steps__connector" />}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ═══ CTA ═══ */}
       <section className="cta">
         <div className="cta__noise" />
         <div className="cta__inner">
-          <h2>جاهز تلاقي سكنك؟</h2>
-          <p>انضم لمئات الطلاب الذين وجدوا سكنهم المثالي عبر سكنات</p>
-          <div className="cta__buttons">
-            <Link to="/register" className="cta__btn cta__btn--primary">
-              أنشئ حساب مجاناً
-            </Link>
-            <Link to="/search" className="cta__btn cta__btn--outline">
-              تصفّح بدون تسجيل
-            </Link>
-          </div>
+          {isStudent ? (
+            <>
+              <h2>جاهز تلاقي سكنك التالي؟</h2>
+              <p>تصفّح العقارات المتاحة الآن، أو ارجع لحجوزاتك ومفضلاتك</p>
+              <div className="cta__buttons">
+                <Link to="/search" className="cta__btn cta__btn--primary">
+                  تصفّح العقارات
+                </Link>
+                <Link to="/bookings" className="cta__btn cta__btn--outline">
+                  حجوزاتي
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2>جاهز تلاقي سكنك؟</h2>
+              <p>انضم لمئات الطلاب الذين وجدوا سكنهم المثالي عبر سكنات</p>
+              <div className="cta__buttons">
+                <Link to="/register" className="cta__btn cta__btn--primary">
+                  أنشئ حساب مجاناً
+                </Link>
+                <Link to="/search" className="cta__btn cta__btn--outline">
+                  تصفّح بدون تسجيل
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </section>
     </div>

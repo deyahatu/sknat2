@@ -4,7 +4,7 @@ import { api } from '../utils/api';
 import { useToast } from '../components/shared/Toast';
 import ConfirmModal from '../components/shared/ConfirmModal';
 import Skeleton from '../components/shared/Skeleton';
-import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText, FiFlag, FiAlertTriangle } from 'react-icons/fi';
+import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText, FiFlag } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import './AdminDashboard.css';
 
@@ -17,7 +17,6 @@ const TABS = [
   { id: 'stats', label: 'الإحصائيات', icon: <FiBarChart2 /> },
   { id: 'audit', label: 'سجل النشاط', icon: <FiFileText /> },
   { id: 'reports', label: 'بلاغات التقييمات', icon: <FiFlag /> },
-  { id: 'complaints', label: 'الشكاوى', icon: <FiAlertTriangle /> },
 ];
 
 function exportCSV(data, filename) {
@@ -89,7 +88,6 @@ export default function AdminDashboard() {
           {activeTab === 'stats' && <StatsTab />}
           {activeTab === 'audit' && <AuditTab />}
           {activeTab === 'reports' && <ReportsTab />}
-          {activeTab === 'complaints' && <ComplaintsTab />}
         </main>
       </div>
     </div>
@@ -170,17 +168,17 @@ function UsersTab({ currentUser }) {
             <div className="stat-label">إجمالي المستخدمين</div>
           </div>
         </div>
-        <div className="stat-card" style={{ borderColor: '#34a853' }}>
+        <div className="stat-card ad-border-owner">
           <FiHome className="stat-icon-bg" />
           <div className="stat-content">
-            <div className="stat-number" style={{ color: '#34a853' }}>{ownersCount}</div>
+            <div className="stat-number ad-text-owner">{ownersCount}</div>
             <div className="stat-label">ملاك العقارات</div>
           </div>
         </div>
-        <div className="stat-card" style={{ borderColor: '#0284c7' }}>
+        <div className="stat-card ad-border-student">
           <FiShield className="stat-icon-bg" />
           <div className="stat-content">
-            <div className="stat-number" style={{ color: '#0284c7' }}>{studentsCount}</div>
+            <div className="stat-number ad-text-student">{studentsCount}</div>
             <div className="stat-label">الطلاب</div>
           </div>
         </div>
@@ -228,7 +226,7 @@ function UsersTab({ currentUser }) {
               {users.map((user) => (
                 <tr key={user.id} className={user.isActive === false ? 'at-user-opacity' : ''}>
                   <td>
-                    <div className="user-cell-info" style={{ cursor: 'pointer' }} onClick={() => viewUser(user.id)}>
+                    <div className="user-cell-info" onClick={() => viewUser(user.id)}>
                       <div className="user-cell-avatar">{user.name.charAt(0).toUpperCase()}</div>
                       <div className="user-cell-details">
                         <span className="user-cell-name">{user.name}</span>
@@ -291,22 +289,22 @@ function UsersTab({ currentUser }) {
 
       {/* User Detail Modal */}
       {selectedUser && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setSelectedUser(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 500, boxShadow: '0 24px 60px rgba(0,0,0,0.2)', direction: 'rtl', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div className="ad-modal-overlay" onClick={() => setSelectedUser(null)}>
+          <div onClick={(e) => e.stopPropagation()} className="ad-modal-box">
             {loadingUser ? (
-              <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>جاري التحميل...</div>
+              <div className="ad-modal-loading">جاري التحميل...</div>
             ) : selectedUser.id ? (
               <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>بيانات المستخدم</h2>
-                  <button onClick={() => setSelectedUser(null)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#94a3b8' }}>✕</button>
+                <div className="ad-modal-head">
+                  <h2 className="ad-modal-title">بيانات المستخدم</h2>
+                  <button onClick={() => setSelectedUser(null)} className="ad-modal-close">✕</button>
                 </div>
-                <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#eef2ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, margin: '0 auto 10px' }}>{selectedUser.name?.charAt(0)}</div>
-                  <div style={{ fontSize: 18, fontWeight: 700 }}>{selectedUser.name}</div>
-                  <div style={{ fontSize: 13, color: '#94a3b8' }}>{roleLabels[selectedUser.role] || selectedUser.role}</div>
+                <div className="ad-modal-user">
+                  <div className="ad-modal-avatar">{selectedUser.name?.charAt(0)}</div>
+                  <div className="ad-modal-username">{selectedUser.name}</div>
+                  <div className="ad-modal-userrole">{roleLabels[selectedUser.role] || selectedUser.role}</div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="ad-modal-rows">
                   {[
                     { label: 'البريد', value: selectedUser.email },
                     { label: 'الهاتف', value: selectedUser.phone || '—' },
@@ -316,16 +314,16 @@ function UsersTab({ currentUser }) {
                     { label: 'الحالة', value: selectedUser.isActive ? 'مفعّل' : 'معطّل' },
                     { label: 'تاريخ التسجيل', value: new Date(selectedUser.createdAt).toLocaleDateString('ar-EG') },
                   ].map((row, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: i % 2 === 0 ? '#f8fafc' : '#fff', borderRadius: 10, fontSize: 14 }}>
-                      <span style={{ color: '#64748b', fontWeight: 600 }}>{row.label}</span>
-                      <span style={{ fontWeight: 700, color: '#0f172a' }}>{row.value}</span>
+                    <div key={i} className={`ad-modal-row${i % 2 === 0 ? ' ad-modal-row--alt' : ''}`}>
+                      <span className="ad-modal-row-label">{row.label}</span>
+                      <span className="ad-modal-row-value">{row.value}</span>
                     </div>
                   ))}
                 </div>
                 {selectedUser.idPhoto && (
-                  <div style={{ marginTop: 20 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>صورة بطاقة الهوية:</div>
-                    <img src={selectedUser.idPhoto} alt="بطاقة الهوية" style={{ width: '100%', borderRadius: 12, border: '1px solid #e2e8f0', maxHeight: 300, objectFit: 'contain', background: '#f8fafc' }} />
+                  <div className="ad-modal-id">
+                    <div className="ad-modal-id-label">صورة بطاقة الهوية:</div>
+                    <img src={selectedUser.idPhoto} alt="بطاقة الهوية" className="ad-modal-id-img" />
                   </div>
                 )}
               </>
@@ -399,17 +397,17 @@ function PropertiesTab() {
             <div className="stat-label">إجمالي العقارات</div>
           </div>
         </div>
-        <div className="stat-card" style={{ borderColor: '#10b981' }}>
+        <div className="stat-card ad-border-success">
           <div className="stat-content">
-            <div className="stat-number" style={{ color: '#10b981' }}>
+            <div className="stat-number ad-text-success">
               {properties.filter((p) => p.available).length}
             </div>
             <div className="stat-label">متاح</div>
           </div>
         </div>
-        <div className="stat-card" style={{ borderColor: '#dc2626' }}>
+        <div className="stat-card ad-border-danger">
           <div className="stat-content">
-            <div className="stat-number" style={{ color: '#dc2626' }}>
+            <div className="stat-number ad-text-danger">
               {properties.filter((p) => !p.available).length}
             </div>
             <div className="stat-label">معطّل/مرفوض</div>
@@ -673,10 +671,10 @@ function RefundsTab() {
                 <td>
                   {r.status === 'PENDING' && (
                     <div className="action-buttons">
-                      <button className="action-btn" onClick={() => handleApprove(r.id)} title="موافقة" style={{ color: '#10b981' }}>
+                      <button className="action-btn ad-text-success" onClick={() => handleApprove(r.id)} title="موافقة">
                         <FiCheck />
                       </button>
-                      <button className="action-btn" onClick={() => handleReject(r.id)} title="رفض" style={{ color: '#dc2626' }}>
+                      <button className="action-btn ad-text-danger" onClick={() => handleReject(r.id)} title="رفض">
                         <FiX />
                       </button>
                     </div>
@@ -803,10 +801,10 @@ function WithdrawalsTab() {
                 <td>
                   {w.status === 'PENDING' && (
                     <div className="action-buttons">
-                      <button className="action-btn" onClick={() => handleApprove(w.id)} title="موافقة" style={{ color: '#10b981' }}>
+                      <button className="action-btn ad-text-success" onClick={() => handleApprove(w.id)} title="موافقة">
                         <FiCheck />
                       </button>
-                      <button className="action-btn" onClick={() => handleReject(w.id)} title="رفض" style={{ color: '#dc2626' }}>
+                      <button className="action-btn ad-text-danger" onClick={() => handleReject(w.id)} title="رفض">
                         <FiX />
                       </button>
                     </div>
@@ -956,7 +954,7 @@ function StatsTab() {
     }
   };
 
-  if (loading) return <div style={{ padding: 20 }}><Skeleton height={40} /><div style={{ height: 16 }} /><Skeleton height={20} count={5} /></div>;
+  if (loading) return <div className="ad-loading-wrap"><Skeleton height={40} /><div className="ad-loading-gap" /><Skeleton height={20} count={5} /></div>;
   if (!stats) return <div className="admin-error">تعذر تحميل الإحصائيات</div>;
 
   const highlights = [
@@ -1017,7 +1015,7 @@ function StatsTab() {
           <div className="as-occupancy-ring">
             <svg viewBox="0 0 36 36">
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f0f0f0" strokeWidth="3" />
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke={occupancyRate >= 70 ? '#10b981' : occupancyRate >= 40 ? '#d97706' : '#dc2626'} strokeWidth="3" strokeDasharray={`${occupancyRate} ${100 - occupancyRate}`} strokeLinecap="round" style={{ transition: 'stroke-dasharray 1s ease' }} />
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke={occupancyRate >= 70 ? '#10b981' : occupancyRate >= 40 ? '#d97706' : '#dc2626'} strokeWidth="3" strokeDasharray={`${occupancyRate} ${100 - occupancyRate}`} strokeLinecap="round" className="ad-ring-segment" />
             </svg>
             <div className="as-occupancy-number">{occupancyRate}%</div>
           </div>
@@ -1089,7 +1087,7 @@ function StatsTab() {
             </ResponsiveContainer>
           </div>
 
-          <div className="chart-section" style={{ gridColumn: '1 / -1' }}>
+          <div className="chart-section ad-chart-full">
             <h3>الإيرادات الشهرية (₪)</h3>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={monthly}>
@@ -1133,7 +1131,13 @@ function ReportsTab() {
   const [filter, setFilter] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
 
-  const reasonLabels = { OFFENSIVE: 'مسيء', INCORRECT: 'خاطئ', SPAM: 'سبام' };
+  const reasonLabels = {
+    OFFENSIVE: 'لغة مسيئة',
+    FALSE_INFO: 'معلومات خاطئة',
+    HARASSMENT: 'تحرّش',
+    POLICY_VIOLATION: 'انتهاك السياسات',
+  };
+  const typeLabels = { REVIEW: 'تقييم سكن', STUDENT_RATING: 'تقييم طالب', MESSAGE: 'رسالة' };
   const statusLabels = { PENDING: 'معلق', REVIEWED: 'تمت المراجعة', DISMISSED: 'مرفوض' };
   const statusClass = { PENDING: '', REVIEWED: 'active', DISMISSED: 'inactive' };
 
@@ -1147,14 +1151,14 @@ function ReportsTab() {
 
   useEffect(() => { fetchReports(); }, [filter]);
 
-  const handleDeleteReview = (id) => {
+  const handleDeleteTarget = (id) => {
     setConfirmState({
       open: true,
       title: 'تأكيد الحذف',
-      message: 'حذف التقييم وإغلاق البلاغ؟',
+      message: 'حذف المحتوى المُبلَّغ عنه وإغلاق البلاغ؟',
       action: async () => {
         try {
-          await api.reports.review(id, { action: 'delete_review' });
+          await api.reports.review(id, { action: 'delete_target' });
           fetchReports();
         } catch (err) {
           toast.error(err.message || 'فشل');
@@ -1197,39 +1201,52 @@ function ReportsTab() {
           <thead>
             <tr>
               <th>المُبلِّغ</th>
-              <th>تعليق التقييم</th>
+              <th>النوع</th>
+              <th>المحتوى</th>
               <th>السبب</th>
+              <th>التفاصيل</th>
               <th>الحالة</th>
               <th>التاريخ</th>
               <th>إجراءات</th>
             </tr>
           </thead>
           <tbody>
-            {reports.map((r) => (
-              <tr key={r.id}>
-                <td>{r.reporter?.name || '—'}</td>
-                <td className="at-truncate">
-                  {r.review?.comment || '—'}
-                </td>
-                <td>{reasonLabels[r.reason] || r.reason}</td>
-                <td><span className={`status-badge ${statusClass[r.status] || ''}`}>{statusLabels[r.status] || r.status}</span></td>
-                <td>{new Date(r.createdAt).toLocaleDateString('ar-EG')}</td>
-                <td>
-                  {r.status === 'PENDING' && (
-                    <div className="action-buttons">
-                      <button className="action-btn delete-btn" onClick={() => handleDeleteReview(r.id)} title="حذف التقييم">
-                        <FiTrash2 />
-                      </button>
-                      <button className="action-btn" onClick={() => handleDismiss(r.id)} title="رفض البلاغ" style={{ color: '#6b7280' }}>
-                        <FiX />
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {reports.map((r) => {
+              const targetText = r.type === 'MESSAGE'
+                ? (r.message
+                    ? `رسالة من ${r.message.sender?.name || 'مرسل'} → ${r.message.receiver?.name || 'مستلم'}: ${r.message.content || ''}`
+                    : '— (الرسالة محذوفة)')
+                : r.type === 'STUDENT_RATING'
+                ? (r.studentRating
+                    ? `تقييم ${r.studentRating.owner?.name || 'مالك'} للطالب ${r.studentRating.student?.name || ''} — ${r.studentRating.comment || 'بدون تعليق'}`
+                    : '—')
+                : (r.review?.comment || '—');
+              return (
+                <tr key={r.id}>
+                  <td>{r.reporter?.name || '—'}</td>
+                  <td>{typeLabels[r.type] || r.type}</td>
+                  <td className="at-truncate ad-cell--target">{targetText}</td>
+                  <td>{reasonLabels[r.reason] || r.reason}</td>
+                  <td className="at-truncate ad-cell--details">{r.details || '—'}</td>
+                  <td><span className={`status-badge ${statusClass[r.status] || ''}`}>{statusLabels[r.status] || r.status}</span></td>
+                  <td>{new Date(r.createdAt).toLocaleDateString('ar-EG')}</td>
+                  <td>
+                    {r.status === 'PENDING' && (
+                      <div className="action-buttons">
+                        <button className="action-btn delete-btn" onClick={() => handleDeleteTarget(r.id)} title="حذف المحتوى">
+                          <FiTrash2 />
+                        </button>
+                        <button className="action-btn ad-text-muted" onClick={() => handleDismiss(r.id)} title="رفض البلاغ">
+                          <FiX />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
             {reports.length === 0 && (
-              <tr><td colSpan="6" className="at-td-center">لا يوجد بلاغات</td></tr>
+              <tr><td colSpan="8" className="at-td-center">لا يوجد بلاغات</td></tr>
             )}
           </tbody>
         </table>
@@ -1247,234 +1264,3 @@ function ReportsTab() {
   );
 }
 
-// ── Complaints Tab (UC-34) ──
-function ComplaintsTab() {
-  const toast = useToast();
-  const [complaints, setComplaints] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [selectedTicket, setSelectedTicket] = useState(null);
-  const [replyText, setReplyText] = useState('');
-  const [sendingReply, setSendingReply] = useState(false);
-  const [changingStatus, setChangingStatus] = useState(false);
-
-  const TYPE_LABELS = { ACCOMMODATION: 'سكن', USER_ISSUE: 'مستخدم', TECHNICAL: 'تقني', OTHER: 'أخرى' };
-  const STATUS_LABELS = { OPEN: 'مفتوحة', IN_REVIEW: 'قيد المراجعة', RESOLVED: 'محلولة', REJECTED: 'مرفوضة' };
-  const STATUS_COLORS = { OPEN: '#4f46e5', IN_REVIEW: '#d97706', RESOLVED: '#10b981', REJECTED: '#dc2626' };
-  const TYPE_ICONS = { ACCOMMODATION: <FiHome />, USER_ISSUE: <FiUsers />, TECHNICAL: <FiAlertTriangle />, OTHER: <FiFileText /> };
-
-  const fetchComplaints = () => {
-    setLoading(true);
-    const params = {};
-    if (statusFilter) params.status = statusFilter;
-    if (typeFilter) params.type = typeFilter;
-    api.complaints.list(params)
-      .then((data) => setComplaints(data.complaints || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { fetchComplaints(); }, [statusFilter, typeFilter]);
-
-  const openTicket = async (c) => {
-    try {
-      const data = await api.complaints.get(c.id);
-      setSelectedTicket(data.complaint);
-    } catch { setSelectedTicket(c); }
-  };
-
-  const handleReply = async () => {
-    if (!replyText.trim() || !selectedTicket) return;
-    setSendingReply(true);
-    try {
-      await api.complaints.reply(selectedTicket.id, replyText);
-      setReplyText('');
-      const data = await api.complaints.get(selectedTicket.id);
-      setSelectedTicket(data.complaint);
-      fetchComplaints();
-      toast.success('تم إرسال الرد.');
-    } catch (err) { toast.error(err.message || 'فشل'); }
-    finally { setSendingReply(false); }
-  };
-
-  const handleStatusChange = async (status) => {
-    setChangingStatus(true);
-    try {
-      await api.complaints.update(selectedTicket.id, { status });
-      const data = await api.complaints.get(selectedTicket.id);
-      setSelectedTicket(data.complaint);
-      fetchComplaints();
-      toast.success('تم تحديث الحالة.');
-    } catch (err) { toast.error(err.message || 'فشل'); }
-    finally { setChangingStatus(false); }
-  };
-
-  function timeAgo(date) {
-    const diff = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
-    if (diff < 1) return 'الآن';
-    if (diff < 60) return `منذ ${diff} د`;
-    if (diff < 1440) return `منذ ${Math.floor(diff / 60)} س`;
-    return `منذ ${Math.floor(diff / 1440)} يوم`;
-  }
-
-  if (loading) return <div className="loading-state">جاري التحميل...</div>;
-
-  // ── Ticket Detail ──
-  if (selectedTicket) {
-    const sc = STATUS_COLORS[selectedTicket.status] || '#94a3b8';
-    const replies = selectedTicket.replies || [];
-    return (
-      <>
-        <button onClick={() => setSelectedTicket(null)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--primary)', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}>
-          → العودة للقائمة
-        </button>
-
-        <div style={{ background: 'var(--bg-primary)', borderRadius: 16, border: '1px solid var(--border-light)', padding: 24, marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-light)', padding: '4px 12px', borderRadius: 8 }}>
-              TK-{String(selectedTicket.ticketNumber).padStart(4, '0')}
-            </span>
-            <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 14px', borderRadius: 999, background: `${sc}15`, color: sc }}>
-              {STATUS_LABELS[selectedTicket.status]}
-            </span>
-            <select
-              value={selectedTicket.status}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              disabled={changingStatus}
-              className="ac-select"
-              style={{ marginRight: 'auto', fontSize: 12 }}
-            >
-              <option value="OPEN">مفتوحة</option>
-              <option value="IN_REVIEW">قيد المراجعة</option>
-              <option value="RESOLVED">محلولة</option>
-              <option value="REJECTED">مرفوضة</option>
-            </select>
-          </div>
-          <h2 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 6px' }}>{selectedTicket.subject}</h2>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            {selectedTicket.user?.name || selectedTicket.userName} &middot; {TYPE_LABELS[selectedTicket.type]} &middot; {timeAgo(selectedTicket.createdAt)}
-          </div>
-        </div>
-
-        {/* Thread */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
-          {/* Original */}
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
-              {selectedTicket.userName?.charAt(0)}
-            </div>
-            <div style={{ flex: 1, background: 'var(--bg-primary)', border: '1px solid var(--border-light)', borderRadius: 14, padding: '14px 18px', maxWidth: '75%' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-                {selectedTicket.userName}
-                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>{timeAgo(selectedTicket.createdAt)}</span>
-              </div>
-              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.8, color: 'var(--text-secondary)' }}>{selectedTicket.description}</p>
-              {selectedTicket.image && <img src={selectedTicket.image} alt="" style={{ maxWidth: 240, borderRadius: 8, marginTop: 10 }} />}
-            </div>
-          </div>
-
-          {replies.map((r) => {
-            const isAdmin = r.userRole === 'ADMIN';
-            return (
-              <div key={r.id} style={{ display: 'flex', gap: 12, flexDirection: isAdmin ? 'row-reverse' : 'row' }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: isAdmin ? '#059669' : 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
-                  {r.userName?.charAt(0)}
-                </div>
-                <div style={{ flex: 1, background: isAdmin ? '#ecfdf5' : 'var(--bg-primary)', border: `1px solid ${isAdmin ? '#a7f3d0' : 'var(--border-light)'}`, borderRadius: 14, padding: '14px 18px', maxWidth: '75%' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {r.userName}
-                    {isAdmin && <span style={{ fontSize: 10, background: '#059669', color: '#fff', padding: '1px 8px', borderRadius: 6, fontWeight: 700 }}>مدير</span>}
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>{timeAgo(r.createdAt)}</span>
-                  </div>
-                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.8, color: 'var(--text-secondary)' }}>{r.message}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Reply */}
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-          <textarea
-            value={replyText}
-            onChange={(e) => setReplyText(e.target.value)}
-            placeholder="اكتب رد..."
-            rows={3}
-            className="ac-textarea"
-            style={{ flex: 1, minHeight: 50 }}
-          />
-          <button
-            className={`ac-save-btn ${sendingReply ? 'btn-loading' : ''}`}
-            onClick={handleReply}
-            disabled={sendingReply || !replyText.trim()}
-            style={{ minHeight: 50 }}
-          >
-            {!sendingReply && 'إرسال'}
-          </button>
-        </div>
-      </>
-    );
-  }
-
-  // ── Ticket List ──
-  return (
-    <>
-      <div className="as-details-row" style={{ marginBottom: 20 }}>
-        {Object.entries(STATUS_COLORS).map(([key, color]) => (
-          <div key={key} className="as-detail-item">
-            <div className="as-detail-value" style={{ color }}>{complaints.filter(c => c.status === key).length}</div>
-            <div className="as-detail-label">{STATUS_LABELS[key]}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="admin-filters">
-        <select className="admin-role-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="">كل الحالات</option>
-          <option value="OPEN">مفتوحة</option>
-          <option value="IN_REVIEW">قيد المراجعة</option>
-          <option value="RESOLVED">محلولة</option>
-          <option value="REJECTED">مرفوضة</option>
-        </select>
-        <select className="admin-role-filter" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-          <option value="">كل الأنواع</option>
-          <option value="ACCOMMODATION">سكن</option>
-          <option value="USER_ISSUE">مستخدم</option>
-          <option value="TECHNICAL">تقني</option>
-          <option value="OTHER">أخرى</option>
-        </select>
-      </div>
-
-      <div className="ac-list">
-        {complaints.map((c) => {
-          const color = STATUS_COLORS[c.status] || '#94a3b8';
-          const replyCount = c._count?.replies || c.replies?.length || 0;
-          return (
-            <div key={c.id} className="ac-card" style={{ borderRight: `4px solid ${color}`, cursor: 'pointer' }} onClick={() => openTicket(c)}>
-              <div className="ac-card-header">
-                <div className="ac-card-icon" style={{ background: `${color}12`, color }}>
-                  {TYPE_ICONS[c.type] || <FiFileText />}
-                </div>
-                <div className="ac-card-info">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: 'var(--primary)' }}>TK-{String(c.ticketNumber).padStart(4, '0')}</span>
-                    <span className="ac-card-subject">{c.subject}</span>
-                  </div>
-                  <div className="ac-card-meta">
-                    {c.user?.name || c.userName || '—'} &middot; {TYPE_LABELS[c.type]} &middot; {new Date(c.createdAt).toLocaleDateString('ar-EG')}
-                    {replyCount > 0 && <> &middot; {replyCount} رد</>}
-                  </div>
-                </div>
-                <span className="ac-card-status" style={{ background: `${color}15`, color }}>{STATUS_LABELS[c.status]}</span>
-              </div>
-            </div>
-          );
-        })}
-        {complaints.length === 0 && (
-          <div className="as-activity-empty">لا يوجد شكاوى</div>
-        )}
-      </div>
-    </>
-  );
-}

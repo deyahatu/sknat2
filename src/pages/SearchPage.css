@@ -243,25 +243,26 @@
   border-radius: var(--radius-md);
 }
 
-.filter-service-check {
-  min-height: 38px;
+/* Pill button — icon + label, with checkmark when selected */
+.filter-service-pill {
+  position: relative;
+  min-height: 42px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  padding: 0 14px;
+  padding: 0 16px 0 14px;
   color: var(--text-secondary);
   background: var(--bg-secondary);
   border: 1.5px solid var(--border);
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   user-select: none;
   transition: var(--transition);
 }
 
-.filter-service-check:hover {
+.filter-service-pill:hover {
   border-color: var(--primary-pale);
   color: var(--primary);
   background: var(--primary-light);
@@ -269,26 +270,73 @@
   box-shadow: var(--shadow-sm);
 }
 
-.filter-service-check:has(input:checked) {
+.filter-service-pill.is-checked {
   color: white;
   background: var(--primary);
   border-color: var(--primary);
   box-shadow: var(--shadow-primary);
+  padding-inline-end: 32px; /* room for the check */
 }
 
-.filter-service-check:has(input:checked):hover {
+.filter-service-pill.is-checked:hover {
   background: var(--primary-dark);
   border-color: var(--primary-dark);
 }
 
-.filter-service-check input[type="checkbox"] {
-  width: 14px;
-  height: 14px;
-  cursor: pointer;
-  margin: 0;
+/* Hide native checkbox visually but keep it functional/accessible */
+.filter-service-pill input[type="checkbox"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   padding: 0;
+  margin: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  clip: rect(0 0 0 0);
+}
+
+.filter-service-pill__icon {
+  font-size: 1.05rem;
   flex-shrink: 0;
-  accent-color: var(--primary);
+  opacity: 0.85;
+}
+
+.filter-service-pill.is-checked .filter-service-pill__icon {
+  opacity: 1;
+}
+
+.filter-service-pill__label {
+  white-space: nowrap;
+}
+
+.filter-service-pill__check {
+  position: absolute;
+  inset-inline-end: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 2px;
+  animation: pillCheckIn 0.2s ease-out;
+}
+
+@keyframes pillCheckIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+/* Focus ring for keyboard accessibility */
+.filter-service-pill:focus-within {
+  outline: 3px solid rgba(79, 70, 229, 0.18);
+  outline-offset: 2px;
 }
 
 .filter-service-custom {

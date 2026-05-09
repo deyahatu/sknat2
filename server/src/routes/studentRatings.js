@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { notify } from '../utils/notify.js';
 
 const router = Router();
 
@@ -139,6 +140,13 @@ router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
       },
     });
 
+    notify(
+      booking.studentId,
+      'تقييم جديد عليك',
+      `قام ${req.user.name} بتقييمك بعد إقامتك في ${booking.property.title}.`,
+      '/my-ratings',
+    ).catch(() => {});
+
     res.status(201).json({
       message: 'تم حفظ تقييم الطالب بنجاح.',
       rating: savedRating,
@@ -150,6 +158,43 @@ router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
     if (err.message) {
       return res.status(400).json({ error: err.message });
     }
+    next(err);
+  }
+});
+
+// UC-41 support: student views ratings owners gave them so they can report unfair ones
+router.get('/received', authenticate, authorize('STUDENT'), async (req, res, next) => {
+  try {
+    const ratings = await prisma.studentRating.findMany({
+      where: { studentId: req.user.id },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          },
+        },
+        booking: {
+          select: {
+            id: true,
+            startDate: true,
+            endDate: true,
+            property: {
+              select: {
+                id: true,
+                title: true,
+                city: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ ratings });
+  } catch (err) {
     next(err);
   }
 });

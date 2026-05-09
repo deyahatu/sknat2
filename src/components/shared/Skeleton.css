@@ -1,0 +1,28 @@
+@keyframes sk-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.sk {
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.5s infinite;
+}
+
+.sk--rect { border-radius: 8px; }
+.sk--circle { border-radius: 50%; }
+.sk--gap { margin-bottom: 8px; }
+
+.sk-card {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.sk-card__body {
+  padding: 16px;
+}
+
+.sk-card__spacer-sm { height: 8px; }
+.sk-card__spacer-md { height: 12px; }

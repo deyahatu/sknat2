@@ -199,8 +199,8 @@ function PaymentPage() {
               </div>
 
               <p className="payment-secure-note">
-                <FiShield style={{ marginLeft: 6 }} />
-                <FiLock style={{ marginLeft: 4 }} />
+                <FiShield />
+                <FiLock />
                 جميع المعاملات مشفّرة ومؤمّنة
               </p>
             </form>

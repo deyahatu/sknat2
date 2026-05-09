@@ -1,0 +1,231 @@
+.my-ratings {
+  padding: 32px 0 64px;
+  background: #f8fafc;
+  min-height: 100vh;
+  direction: rtl;
+}
+
+/* Hero */
+.my-ratings__hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  color: #fff;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.18);
+}
+
+.my-ratings__hero h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.my-ratings__hero p {
+  margin: 0;
+  max-width: 600px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.my-ratings__hero-count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.my-ratings__hero-count strong {
+  font-size: 1.6rem;
+}
+
+.my-ratings__hero-count span {
+  font-size: 0.78rem;
+  opacity: 0.9;
+}
+
+/* List */
+.my-ratings__list {
+  display: grid;
+  gap: 16px;
+}
+
+.my-ratings__card {
+  padding: 22px 24px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.my-ratings__card:hover {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+  transform: translateY(-1px);
+}
+
+.my-ratings__card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.my-ratings__card-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.my-ratings__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  margin-inline-end: 14px;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.my-ratings__meta strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.my-ratings__report-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.12s;
+  flex-shrink: 0;
+}
+
+.my-ratings__report-btn:hover {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+  transform: translateY(-1px);
+}
+
+/* Dimensions grid */
+.my-ratings__dims {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 24px;
+  margin-bottom: 14px;
+}
+
+.my-ratings__dim {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.my-ratings__dim-label {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.my-ratings__stars {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.my-ratings__star-on {
+  color: #f59e0b;
+  fill: #f59e0b;
+}
+
+.my-ratings__star-off {
+  color: #cbd5e1;
+}
+
+.my-ratings__comment {
+  margin: 14px 0 8px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-inline-start: 3px solid #4f46e5;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: #334155;
+}
+
+.my-ratings__date {
+  margin: 0;
+  text-align: end;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+/* Empty */
+.my-ratings__empty {
+  text-align: center;
+  padding: 60px 20px;
+  background: #fff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  color: #64748b;
+}
+
+.my-ratings__empty svg {
+  color: #cbd5e1;
+  margin-bottom: 12px;
+}
+
+.my-ratings__empty h3 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.my-ratings__empty p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .my-ratings__hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 22px 20px;
+  }
+  .my-ratings__hero h1 { font-size: 1.3rem; }
+  .my-ratings__dims { grid-template-columns: 1fr; }
+  .my-ratings__card { padding: 18px; }
+  .my-ratings__card-head { flex-direction: column; align-items: flex-start; }
+}

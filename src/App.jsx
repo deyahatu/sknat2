@@ -14,6 +14,7 @@ import ProfilePage from './pages/student/ProfilePage';
 import MyBookings from './pages/student/MyBookings';
 import PaymentPage from './pages/student/PaymentPage';
 import RateAccommodation from './pages/student/RateAccommodation';
+import MyRatings from './pages/student/MyRatings';
 import Favorites from './pages/student/Favorites';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -29,7 +30,6 @@ import Withdrawals from './pages/owner/Withdrawals';
 import ManageProfile from './pages/owner/ManageProfile';
 import StudentMessages from './pages/student/Messages';
 import OwnerMessages from './pages/owner/OwnerMessages';
-import Complaints from './pages/Complaints';
 import Notifications from './pages/Notifications';
 import NotFound from './pages/NotFound';
 
@@ -88,7 +88,6 @@ function App() {
             <Route path="withdrawals" element={<Withdrawals />} />
             <Route path="manage-profile" element={<ManageProfile />} />
             <Route path="messages" element={<OwnerMessages />} />
-            <Route path="complaints" element={<Complaints />} />
           </Route>
 
           {/* Public + student/admin routes — global Navbar/Footer layout */}
@@ -104,9 +103,9 @@ function App() {
             <Route path="/bookings" element={<ProtectedRoute roles={['STUDENT']}><MyBookings /></ProtectedRoute>} />
             <Route path="/payment/:bookingId" element={<ProtectedRoute roles={['STUDENT']}><PaymentPage /></ProtectedRoute>} />
             <Route path="/rate/:bookingId" element={<ProtectedRoute roles={['STUDENT']}><RateAccommodation /></ProtectedRoute>} />
+            <Route path="/my-ratings" element={<ProtectedRoute roles={['STUDENT']}><MyRatings /></ProtectedRoute>} />
             <Route path="/favorites" element={<ProtectedRoute roles={['STUDENT']}><Favorites /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute roles={['STUDENT']}><StudentMessages /></ProtectedRoute>} />
-            <Route path="/complaints" element={<ProtectedRoute roles={['STUDENT']}><Complaints /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute roles={['STUDENT', 'OWNER', 'ADMIN']}><Notifications /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
           </Route>

@@ -304,6 +304,10 @@
 }
 
 /* ─── Major searchable dropdown ─── */
+.form-group-major {
+  position: relative;
+}
+
 .major-dropdown {
   position: absolute;
   top: 100%;

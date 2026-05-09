@@ -4,6 +4,8 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
+    "kill-port": "powershell -NoProfile -Command \"Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }\"",
+    "predev": "npm run kill-port",
     "dev": "nodemon --experimental-strip-types src/index.js",
     "start": "node --experimental-strip-types src/index.js",
     "db:migrate": "npx prisma migrate dev",
