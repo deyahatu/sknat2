@@ -48,6 +48,7 @@ export const api = {
     profile: () => request('/users/profile'),
     updateProfile: (body) => request('/users/profile', { method: 'PUT', body: JSON.stringify(body) }),
     list: (params) => request(`/users${buildQuery(params)}`),
+    get: (id) => request(`/users/${id}`),
     delete: (id) => request(`/users/${id}`, { method: 'DELETE' }),
     toggleActive: (id) => request(`/users/${id}/toggle-active`, { method: 'PATCH' }),
   },

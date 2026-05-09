@@ -104,6 +104,8 @@ function UsersTab({ currentUser }) {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(false);
   const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
 
   const fetchUsers = async () => {
@@ -226,7 +228,7 @@ function UsersTab({ currentUser }) {
               {users.map((user) => (
                 <tr key={user.id} className={user.isActive === false ? 'at-user-opacity' : ''}>
                   <td>
-                    <div className="user-cell-info">
+                    <div className="user-cell-info" style={{ cursor: 'pointer' }} onClick={() => viewUser(user.id)}>
                       <div className="user-cell-avatar">{user.name.charAt(0).toUpperCase()}</div>
                       <div className="user-cell-details">
                         <span className="user-cell-name">{user.name}</span>
@@ -286,8 +288,63 @@ function UsersTab({ currentUser }) {
         onConfirm={async () => { await confirmState.action?.(); setConfirmState(s => ({ ...s, open: false })); }}
         onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
       />
+
+      {/* User Detail Modal */}
+      {selectedUser && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setSelectedUser(null)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 500, boxShadow: '0 24px 60px rgba(0,0,0,0.2)', direction: 'rtl', maxHeight: '90vh', overflowY: 'auto' }}>
+            {loadingUser ? (
+              <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>جاري التحميل...</div>
+            ) : selectedUser.id ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>بيانات المستخدم</h2>
+                  <button onClick={() => setSelectedUser(null)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#94a3b8' }}>✕</button>
+                </div>
+                <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#eef2ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, margin: '0 auto 10px' }}>{selectedUser.name?.charAt(0)}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700 }}>{selectedUser.name}</div>
+                  <div style={{ fontSize: 13, color: '#94a3b8' }}>{roleLabels[selectedUser.role] || selectedUser.role}</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[
+                    { label: 'البريد', value: selectedUser.email },
+                    { label: 'الهاتف', value: selectedUser.phone || '—' },
+                    { label: 'رقم الهوية', value: selectedUser.idNumber || '—' },
+                    { label: 'الجنس', value: selectedUser.gender === 'MALE' ? 'ذكر' : selectedUser.gender === 'FEMALE' ? 'أنثى' : '—' },
+                    { label: 'التخصص', value: selectedUser.major || '—' },
+                    { label: 'الحالة', value: selectedUser.isActive ? 'مفعّل' : 'معطّل' },
+                    { label: 'تاريخ التسجيل', value: new Date(selectedUser.createdAt).toLocaleDateString('ar-EG') },
+                  ].map((row, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: i % 2 === 0 ? '#f8fafc' : '#fff', borderRadius: 10, fontSize: 14 }}>
+                      <span style={{ color: '#64748b', fontWeight: 600 }}>{row.label}</span>
+                      <span style={{ fontWeight: 700, color: '#0f172a' }}>{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+                {selectedUser.idPhoto && (
+                  <div style={{ marginTop: 20 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>صورة بطاقة الهوية:</div>
+                    <img src={selectedUser.idPhoto} alt="بطاقة الهوية" style={{ width: '100%', borderRadius: 12, border: '1px solid #e2e8f0', maxHeight: 300, objectFit: 'contain', background: '#f8fafc' }} />
+                  </div>
+                )}
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
     </>
   );
+
+  async function viewUser(id) {
+    setLoadingUser(true);
+    setSelectedUser({});
+    try {
+      const data = await api.users.get(id);
+      setSelectedUser(data.user);
+    } catch { toast.error('تعذر تحميل بيانات المستخدم'); setSelectedUser(null); }
+    finally { setLoadingUser(false); }
+  }
 }
 
 // ── Properties Tab (UC-31, UC-32, UC-33) ──

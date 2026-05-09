@@ -141,6 +141,22 @@ router.get('/', authenticate, authorize('ADMIN'), async (req, res, next) => {
   }
 });
 
+// Admin: get user detail
+router.get('/:id', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true, name: true, email: true, phone: true, role: true,
+        isActive: true, avatar: true, idNumber: true, idPhoto: true,
+        gender: true, major: true, createdAt: true, updatedAt: true,
+      },
+    });
+    if (!user) return res.status(404).json({ error: 'المستخدم غير موجود.' });
+    res.json({ user });
+  } catch (err) { next(err); }
+});
+
 // UC-28: Activate/Deactivate User
 router.patch('/:id/toggle-active', authenticate, authorize('ADMIN'), async (req, res, next) => {
   try {
