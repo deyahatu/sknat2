@@ -302,3 +302,34 @@
   color: var(--text-secondary);
   font-size: 0.9rem;
 }
+
+/* ─── Major searchable dropdown ─── */
+.major-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 100;
+  background: var(--bg-primary);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  margin-top: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+  animation: fadeIn 0.15s ease;
+}
+
+.major-option {
+  padding: 11px 16px;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.1s;
+  border-bottom: 1px solid var(--border-light);
+}
+.major-option:last-child { border-bottom: none; }
+.major-option:hover { background: var(--primary-light); }
+.major-option.active { background: var(--primary-light); color: var(--primary); font-weight: 700; }
+.major-option.major-empty { color: var(--text-muted); cursor: default; text-align: center; }
+.major-option.major-empty:hover { background: transparent; }

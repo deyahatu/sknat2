@@ -12,9 +12,11 @@ import {
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../utils/api";
+import { MAJORS } from "../constants/majors";
 import "./AuthPages.css";
 
 function RegisterPage() {
+  const [majorOpen, setMajorOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -392,7 +394,7 @@ function RegisterPage() {
                   </div>
                 </div>
 
-                <div className="form-group">
+                <div className="form-group" style={{ position: 'relative' }}>
                   <label htmlFor="major">التخصص</label>
                   <div className="input-wrapper">
                     <FiBookOpen className="input-icon" />
@@ -400,13 +402,29 @@ function RegisterPage() {
                       id="major"
                       type="text"
                       name="major"
-                      placeholder="مثلاً: علم حاسوب"
+                      placeholder="ابحث عن تخصصك..."
                       value={formData.major}
-                      onChange={handleChange}
-                      maxLength={100}
+                      onChange={(e) => { handleChange(e); setMajorOpen(true); }}
+                      onFocus={() => setMajorOpen(true)}
+                      onBlur={() => setTimeout(() => setMajorOpen(false), 200)}
+                      autoComplete="off"
                       required
                     />
                   </div>
+                  {majorOpen && (
+                    <div className="major-dropdown">
+                      {MAJORS.filter(m => !formData.major || m.includes(formData.major)).slice(0, 8).map(m => (
+                        <div
+                          key={m}
+                          className={`major-option ${formData.major === m ? 'active' : ''}`}
+                          onMouseDown={(e) => { e.preventDefault(); setFormData(f => ({ ...f, major: m })); setMajorOpen(false); }}
+                        >{m}</div>
+                      ))}
+                      {MAJORS.filter(m => !formData.major || m.includes(formData.major)).length === 0 && (
+                        <div className="major-option major-empty">لا يوجد تخصص مطابق</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </>
             )}
