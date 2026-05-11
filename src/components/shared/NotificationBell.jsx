@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiBell } from 'react-icons/fi';
 import { api } from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
 import './NotificationBell.css';
 
 export default function NotificationBell() {
@@ -10,6 +11,8 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const ref = useRef(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const allNotificationsPath = user?.role === 'OWNER' ? '/owner/notifications' : '/notifications';
 
   useEffect(() => {
     api.notifications.unreadCount().then((d) => setCount(d.count)).catch(() => {});
@@ -92,7 +95,7 @@ export default function NotificationBell() {
             ))}
           </div>
           <button
-            onClick={() => { setOpen(false); navigate('/notifications'); }}
+            onClick={() => { setOpen(false); navigate(allNotificationsPath); }}
             className="nb-view-all"
           >
             عرض الكل

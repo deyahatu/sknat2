@@ -1266,6 +1266,12 @@
   outline: none;
 }
 
+.booking-form-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted, #6b7280);
+  margin-top: 2px;
+}
+
 .booking-error {
   padding: 12px 16px;
   margin-bottom: 14px;

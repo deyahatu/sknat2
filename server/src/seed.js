@@ -183,14 +183,16 @@ async function seed() {
   // Prop1: 3 rooms
   const rooms1 = [];
   for (let i = 1; i <= 3; i++) {
+    const area1 = i <= 2 ? 12 : 18;
     const r = await prisma.roomVariant.upsert({
       where: { id: `seed-room-1-${i}` },
-      update: {},
+      update: { area: area1 },
       create: {
         id: `seed-room-1-${i}`,
         name: `الغرفة ${i}`,
         kind: i <= 2 ? "SINGLE" : "DOUBLE",
         capacity: i <= 2 ? 1 : 2,
+        area: area1,
         fullPrice: i <= 2 ? 500 : 800,
         halfPrice: i <= 2 ? null : 400,
         services: ["حمام خاص", "تكييف"],
@@ -206,12 +208,13 @@ async function seed() {
   // Prop2: studio variant
   await prisma.roomVariant.upsert({
     where: { id: "seed-room-2-1" },
-    update: {},
+    update: { area: 28 },
     create: {
       id: "seed-room-2-1",
       name: "الاستوديو",
       kind: "SINGLE",
       capacity: 1,
+      area: 28,
       fullPrice: 600,
       services: ["واي فاي", "موقف سيارات"],
       isOccupied: false,
@@ -223,12 +226,13 @@ async function seed() {
   for (let i = 1; i <= 4; i++) {
     await prisma.roomVariant.upsert({
       where: { id: `seed-room-3-${i}` },
-      update: {},
+      update: { area: 14 },
       create: {
         id: `seed-room-3-${i}`,
         name: `الغرفة ${i}`,
         kind: "SINGLE",
         capacity: 1,
+        area: 14,
         fullPrice: 450,
         services: ["تكييف", "مكتب دراسة"],
         isOccupied: i <= 2,
@@ -239,75 +243,117 @@ async function seed() {
     });
   }
 
-  // ── Bookings (different months for chart data) ──
-  const now = new Date();
+  // ── Bookings — clean slate, then create per-scenario ──
+  // Wipe any prior seed bookings so refund/payment ages are fresh on every run.
+  await prisma.refundRequest.deleteMany({
+    where: { booking: { id: { startsWith: "seed-booking-" } } },
+  });
+  await prisma.payment.deleteMany({
+    where: { booking: { id: { startsWith: "seed-booking-" } } },
+  });
+  await prisma.booking.deleteMany({
+    where: { id: { startsWith: "seed-booking-" } },
+  });
+
+  const MS_DAY = 1000 * 60 * 60 * 24;
+  const today = new Date();
+  const dayOffset = (n) => new Date(today.getTime() + n * MS_DAY);
+
+  // Per-student test scenarios. Each booking has its own date range and
+  // (for paid ones) a paymentDaysAgo controlling the cancel-refund tier:
+  //   payment age 0–3 days → 100% refund   (UC-12)
+  //   payment age 4–7 days → 50% refund
+  //   payment age >7 days  → 0% refund
   const bookingData = [
+    // Student 0 (محمد علي): renewal — PAID, ending in 4 days, within 5-day reminder window
     {
+      seedId: "seed-booking-renewal",
       studentIdx: 0,
       propertyId: prop1.id,
       roomVariantId: rooms1[0].id,
-      monthsAgo: 0,
+      startOffset: -56,
+      endOffset: 4,
       status: "PAID",
+      paymentDaysAgo: 50,
     },
+    // Student 0: completed long ago — owner can see history, ratings page populated
     {
-      studentIdx: 1,
-      propertyId: prop3.id,
-      roomVariantId: "seed-room-3-1",
-      monthsAgo: 0,
-      status: "APPROVED",
-    },
-    {
-      studentIdx: 2,
-      propertyId: prop3.id,
-      roomVariantId: "seed-room-3-2",
-      monthsAgo: 1,
-      status: "PAID",
-    },
-    {
-      studentIdx: 3,
-      propertyId: prop1.id,
-      roomVariantId: rooms1[1].id,
-      monthsAgo: 1,
-      status: "COMPLETED",
-    },
-    {
-      studentIdx: 4,
-      propertyId: prop1.id,
-      roomVariantId: rooms1[2].id,
-      monthsAgo: 2,
-      status: "PENDING",
-    },
-    {
+      seedId: "seed-booking-completed-old",
       studentIdx: 0,
       propertyId: prop3.id,
       roomVariantId: "seed-room-3-3",
-      monthsAgo: 3,
+      startOffset: -120,
+      endOffset: -30,
       status: "COMPLETED",
+      paymentDaysAgo: 100,
     },
+    // Student 1 (يوسف خالد): refund 100% — paid today
     {
+      seedId: "seed-booking-refund100",
+      studentIdx: 1,
+      propertyId: prop1.id,
+      roomVariantId: rooms1[1].id,
+      startOffset: 30,
+      endOffset: 90,
+      status: "PAID",
+      paymentDaysAgo: 0,
+    },
+    // Student 1: PENDING — owner uses this to test accept/reject
+    {
+      seedId: "seed-booking-pending",
       studentIdx: 1,
       propertyId: prop3.id,
       roomVariantId: "seed-room-3-4",
-      monthsAgo: 4,
-      status: "COMPLETED",
+      startOffset: 60,
+      endOffset: 120,
+      status: "PENDING",
+      paymentDaysAgo: null,
     },
+    // Student 2 (ريم حسن): refund 50% — paid 5 days ago
+    {
+      seedId: "seed-booking-refund50",
+      studentIdx: 2,
+      propertyId: prop3.id,
+      roomVariantId: "seed-room-3-1",
+      startOffset: 25,
+      endOffset: 85,
+      status: "PAID",
+      paymentDaysAgo: 5,
+    },
+    // Student 3 (نور أحمد): refund 0% — paid 10 days ago
+    {
+      seedId: "seed-booking-refund0",
+      studentIdx: 3,
+      propertyId: prop3.id,
+      roomVariantId: "seed-room-3-2",
+      startOffset: 20,
+      endOffset: 80,
+      status: "PAID",
+      paymentDaysAgo: 10,
+    },
+    // Student 0 (محمد علي): already-cancelled booking with a pending refund —
+    // gives the admin a refund to review without blocking student cancel-flow
+    // on any of the active refund-tier bookings above.
+    {
+      seedId: "seed-booking-cancelled-prior",
+      studentIdx: 0,
+      propertyId: prop1.id,
+      roomVariantId: rooms1[2].id,
+      startOffset: -45,
+      endOffset: 45,
+      status: "CANCELLED",
+      paymentDaysAgo: 30,
+    },
+    // Student 4 (عمر سعيد): NO booking — clean account
   ];
 
   for (let i = 0; i < bookingData.length; i++) {
     const b = bookingData[i];
-    const start = new Date(now.getFullYear(), now.getMonth() - b.monthsAgo, 1);
-    const end = new Date(
-      now.getFullYear(),
-      now.getMonth() - b.monthsAgo + 3,
-      1,
-    );
-    const booking = await prisma.booking.upsert({
-      where: { id: `seed-booking-${i}` },
-      update: {},
-      create: {
-        id: `seed-booking-${i}`,
-        startDate: start,
-        endDate: end,
+    const booking = await prisma.booking.create({
+      data: {
+        id: b.seedId,
+        startDate: dayOffset(b.startOffset),
+        endDate: dayOffset(b.endOffset),
         status: b.status,
         propertyId: b.propertyId,
         roomVariantId: b.roomVariantId,
@@ -315,16 +361,15 @@ async function seed() {
       },
     });
 
-    // Create payments for PAID/COMPLETED bookings
-    if (b.status === "PAID" || b.status === "COMPLETED") {
-      await prisma.payment.upsert({
-        where: { bookingId: booking.id },
-        update: {},
-        create: {
+    // Payment with custom createdAt so refund tier (UC-12) is testable
+    if (b.paymentDaysAgo !== null && b.paymentDaysAgo !== undefined) {
+      await prisma.payment.create({
+        data: {
           amount: 500 + i * 100,
           status: "COMPLETED",
           bookingId: booking.id,
           studentId: students[b.studentIdx].id,
+          createdAt: dayOffset(-b.paymentDaysAgo),
         },
       });
     }
@@ -390,16 +435,17 @@ async function seed() {
     })
     .catch(() => {}); // ignore if exists
 
-  // ── Refund request ──
+  // ── Refund request — attached to the prior cancelled booking so admin has
+  // something to review without blocking student cancel-flow tests above.
   await prisma.refundRequest
     .create({
       data: {
-        bookingId: "seed-booking-4",
-        studentId: students[4].id,
+        bookingId: "seed-booking-cancelled-prior",
+        studentId: students[0].id,
         originalAmount: 900,
         refundAmount: 450,
         refundPercentage: 50,
-        reason: "إلغاء الحجز",
+        reason: "إلغاء الحجز من قبل الطالب",
         status: "PENDING",
       },
     })
@@ -407,25 +453,17 @@ async function seed() {
 
   console.log("✅ Seeding complete!");
   console.log("");
-  console.log("📋 Accounts:");
-  console.log("  Admin:   admin@sknat.com / Test1234!");
-  console.log("  Owner1:  ahmad@owner.com / Test1234!");
-  console.log("  Owner2:  sara@owner.com / Test1234!");
-  console.log(
-    "  Student: s11111111@stu.najah.edu / Test1234!  (محمد علي - ذكر)",
-  );
-  console.log(
-    "  Student: s22222222@stu.najah.edu / Test1234!  (يوسف خالد - ذكر)",
-  );
-  console.log(
-    "  Student: s33333333@stu.najah.edu / Test1234!  (ريم حسن - أنثى)",
-  );
-  console.log(
-    "  Student: s44444444@stu.najah.edu / Test1234!  (نور أحمد - أنثى)",
-  );
-  console.log(
-    "  Student: s55555555@stu.najah.edu / Test1234!  (عمر سعيد - ذكر)",
-  );
+  console.log("📋 Accounts (password for all: Test1234!):");
+  console.log("  Admin:   admin@sknat.com");
+  console.log("  Owner1:  ahmad@owner.com         — owns 3 properties");
+  console.log("  Owner2:  sara@owner.com          — clean, no properties");
+  console.log("");
+  console.log("🎯 Per-student test scenarios:");
+  console.log("  s11111111@stu.najah.edu  محمد علي    → renewal (ends in 4 days) + completed (rate-able)");
+  console.log("  s22222222@stu.najah.edu  يوسف خالد   → refund 100% (paid today) + a PENDING booking for owner");
+  console.log("  s33333333@stu.najah.edu  ريم حسن     → refund 50%  (paid 5 days ago)");
+  console.log("  s44444444@stu.najah.edu  نور أحمد    → refund 0%   (paid 10 days ago)");
+  console.log("  s55555555@stu.najah.edu  عمر سعيد    → CLEAN — no bookings, no anything");
   console.log("");
   console.log("🏠 Properties: 3 (2 apartments, 1 studio)");
   console.log("🛏️ Rooms: 8 variants total");

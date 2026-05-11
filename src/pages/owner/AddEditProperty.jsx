@@ -48,6 +48,7 @@ function makePattern() {
     name: "",
     kind: "SINGLE",
     price: "",
+    area: "",
     features: [],
     color: pickColor(),
   };
@@ -161,13 +162,14 @@ export default function AddEditProperty() {
           const patternMap = new Map();
           const newRooms = [];
           variants.forEach((v) => {
-            const key = `${v.patternName || ""}|${v.kind}|${v.fullPrice}|${(v.services || []).join(",")}`;
+            const key = `${v.patternName || ""}|${v.kind}|${v.fullPrice}|${v.area || ""}|${(v.services || []).join(",")}`;
             if (!patternMap.has(key)) {
               patternMap.set(key, {
                 id: newPatternId(),
                 name: `الغرفة ${patternMap.size + 1}`,
                 kind: v.kind || "SINGLE",
                 price: String(v.fullPrice),
+                area: v.area ? String(v.area) : "",
                 features: v.services || [],
                 color: v.patternColor || pickColor(),
               });
@@ -794,6 +796,24 @@ export default function AddEditProperty() {
                         </div>
                       )}
                     </div>
+                    <div className="wiz-form-group">
+                      <label>مساحة الغرفة (م²)</label>
+                      <input
+                        className="wiz-input"
+                        type="number"
+                        min="1"
+                        value={p.area}
+                        onChange={(e) =>
+                          updatePattern(p.id, {
+                            area: toEnglishDigits(e.target.value),
+                          })
+                        }
+                        onKeyDown={blockNonEnglishDigits}
+                        onPaste={sanitizeNumberPaste}
+                        inputMode="numeric"
+                        placeholder="مثلاً 12"
+                      />
+                    </div>
                   </div>
 
                   <div className="wiz-form-group">
@@ -1033,6 +1053,9 @@ export default function AddEditProperty() {
                       <span className="wiz-review-price">
                         {p.price || "—"} ₪
                       </span>
+                      {p.area && (
+                        <span className="wiz-review-badge">{p.area} م²</span>
+                      )}
                     </div>
                     {p.features.length > 0 && (
                       <div className="wiz-review-features">
@@ -1096,10 +1119,12 @@ export default function AddEditProperty() {
     const isDouble = pat?.kind === "DOUBLE";
     const fullPrice = Number(pat?.price || 0);
     const halfPrice = isDouble ? Math.round(fullPrice / 2) : null;
+    const area = pat?.area && Number(pat.area) > 0 ? Number(pat.area) : null;
     return {
       name: r.label,
       kind: pat?.kind || "SINGLE",
       capacity: isDouble ? 2 : 1,
+      area,
       fullPrice,
       halfPrice,
       services: pat?.features || [],

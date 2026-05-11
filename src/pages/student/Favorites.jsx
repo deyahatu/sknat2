@@ -51,7 +51,16 @@ function Favorites() {
         ) : (
           <div className="favorites-grid">
             {favorites.map((fav) => (
-              <PropertyCard key={fav.id} property={fav.property} />
+              <PropertyCard
+                key={fav.id}
+                property={fav.property}
+                initialFavorited={true}
+                onFavoriteChange={(propertyId, nowFav) => {
+                  if (!nowFav) {
+                    setFavorites((prev) => prev.filter((f) => f.property?.id !== propertyId));
+                  }
+                }}
+              />
             ))}
           </div>
         )}

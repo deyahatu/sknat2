@@ -53,10 +53,18 @@
 
 /* ---- Badges ---- */
 
-.property-badge {
+.property-card-badges {
   position: absolute;
   top: 12px;
   right: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  z-index: 2;
+}
+
+.property-badge {
   background: linear-gradient(135deg, var(--accent, #f59e0b), #f97316);
   color: white;
   padding: 5px 14px;
@@ -66,7 +74,50 @@
   letter-spacing: 0.3px;
   text-transform: uppercase;
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
-  z-index: 2;
+}
+
+.property-card-campus {
+  color: var(--primary, #2563eb);
+  font-weight: 600;
+}
+
+.property-card-fav {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.92);
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.property-card-fav:hover {
+  transform: scale(1.08);
+  color: #ef4444;
+}
+
+.property-card-fav.active {
+  color: #ef4444;
+  background: #fff;
+}
+
+.property-card-fav.active svg {
+  fill: #ef4444;
+}
+
+.property-card-fav:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .property-price {

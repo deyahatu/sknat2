@@ -32,6 +32,7 @@ import StudentMessages from './pages/student/Messages';
 import OwnerMessages from './pages/owner/OwnerMessages';
 import Notifications from './pages/Notifications';
 import NotFound from './pages/NotFound';
+import ScrollToTop from './components/shared/ScrollToTop';
 
 function GuestRoute({ children }) {
   const { user, loading } = useAuth();
@@ -67,6 +68,7 @@ function App() {
       <ToastProvider>
         <Router>
           <AuthProvider>
+        <ScrollToTop />
         <Routes>
           {/* Owner section — uses its own layout (no global Navbar/Footer) */}
           <Route
@@ -88,6 +90,7 @@ function App() {
             <Route path="withdrawals" element={<Withdrawals />} />
             <Route path="manage-profile" element={<ManageProfile />} />
             <Route path="messages" element={<OwnerMessages />} />
+            <Route path="notifications" element={<Notifications />} />
           </Route>
 
           {/* Public + student/admin routes — global Navbar/Footer layout */}

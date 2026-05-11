@@ -80,6 +80,18 @@ router.get('/:userId', authenticate, async (req, res, next) => {
   }
 });
 
+// Detect phone numbers (incl. Arabic-Indic digits) and URLs in chat content.
+// Counts a "phone" as any run of 7+ digits — covers local & international forms,
+// dotted/spaced/dashed variants, and the Arabic-Indic digit range.
+const PHONE_RE = /(?:[\d٠-٩۰-۹][\s\-.()]?){7,}/;
+const URL_RE = /\b(?:https?:\/\/|www\.)\S+|[A-Za-z0-9-]+\.(?:com|net|org|io|me|co|info|app|dev|tk|sa|jo|ps|eg|ae|qa)(?:\/\S*)?/i;
+
+function chatContentViolation(text) {
+  if (PHONE_RE.test(text)) return 'لا يُسمح بإرسال أرقام الهواتف في المحادثة.';
+  if (URL_RE.test(text)) return 'لا يُسمح بإرسال الروابط في المحادثة.';
+  return null;
+}
+
 // Send message
 router.post('/', authenticate, async (req, res, next) => {
   try {
@@ -89,6 +101,14 @@ router.post('/', authenticate, async (req, res, next) => {
     }
     if (receiverId === req.user.id) {
       return res.status(400).json({ error: 'لا يمكنك مراسلة نفسك.' });
+    }
+
+    // Block phone numbers and URLs (only between student↔owner, not admin support)
+    if (req.user.role !== 'ADMIN') {
+      const violation = chatContentViolation(content);
+      if (violation) {
+        return res.status(400).json({ error: violation });
+      }
     }
 
     const receiver = await prisma.user.findUnique({ where: { id: receiverId } });

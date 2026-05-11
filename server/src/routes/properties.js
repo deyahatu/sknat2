@@ -17,6 +17,7 @@ const roomVariantSelect = {
   roomNumber: true,
   kind: true,
   capacity: true,
+  area: true,
   isOccupied: true,
   partiallyOccupied: true,
   fullPrice: true,
@@ -402,14 +403,25 @@ router.get('/', async (req, res, next) => {
       select: {
         ...propertySelect,
         owner: { select: { id: true, name: true, phone: true, email: true } },
+        reviews: { select: { rating: true } },
         _count: { select: { reviews: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
 
+    // Inject avgRating per property; strip raw reviews from payload
+    const decorated = properties.map((p) => {
+      const ratings = p.reviews || [];
+      const avgRating = ratings.length
+        ? Number((ratings.reduce((s, r) => s + r.rating, 0) / ratings.length).toFixed(1))
+        : 0;
+      const { reviews: _ignored, ...rest } = p;
+      return { ...rest, avgRating };
+    });
+
     // Sort: matching gender first, then by date
     if (userGender && !targetGender) {
-      properties.sort((a, b) => {
+      decorated.sort((a, b) => {
         const aMatch = a.targetGender === userGender ? 0 : 1;
         const bMatch = b.targetGender === userGender ? 0 : 1;
         if (aMatch !== bMatch) return aMatch - bMatch;
@@ -417,7 +429,7 @@ router.get('/', async (req, res, next) => {
       });
     }
 
-    res.json({ properties });
+    res.json({ properties: decorated });
   } catch (err) {
     next(err);
   }
@@ -683,6 +695,10 @@ function buildVariantData(body) {
     ? asPositiveInteger(body.capacity, 'القدرة الاستيعابية')
     : ROOM_KIND_CAPACITY[kind];
 
+  const area = body.area === undefined || body.area === null || body.area === ''
+    ? null
+    : asPositiveInteger(body.area, 'مساحة الغرفة');
+
   const fullPrice = asPositivePrice(body.fullPrice, 'سعر الغرفة');
   const halfPrice = body.halfPrice !== undefined && body.halfPrice !== null && body.halfPrice !== ''
     ? asPositivePrice(body.halfPrice, 'سعر نصف الغرفة')
@@ -702,6 +718,7 @@ function buildVariantData(body) {
     roomNumber: asOptionalString(body.roomNumber),
     kind,
     capacity,
+    area,
     isOccupied,
     partiallyOccupied: finalPartial,
     fullPrice,
@@ -826,6 +843,11 @@ router.put('/:id/variants/:variantId', authenticate, authorize('OWNER'), async (
 
     if (req.body.roomNumber !== undefined) data.roomNumber = asOptionalString(req.body.roomNumber);
     if (req.body.capacity !== undefined) data.capacity = asPositiveInteger(req.body.capacity, 'القدرة الاستيعابية');
+    if (req.body.area !== undefined) {
+      data.area = req.body.area === null || req.body.area === ''
+        ? null
+        : asPositiveInteger(req.body.area, 'مساحة الغرفة');
+    }
     if (req.body.fullPrice !== undefined) data.fullPrice = asPositivePrice(req.body.fullPrice, 'سعر الغرفة');
     if (req.body.halfPrice !== undefined) data.halfPrice = req.body.halfPrice === null ? null : asPositivePrice(req.body.halfPrice, 'سعر نصف الغرفة');
     if (req.body.images !== undefined) data.images = req.body.images?.length ? validateImages(req.body.images) : [];

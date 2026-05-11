@@ -13,6 +13,7 @@ router.get('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
         property: {
           include: {
             owner: { select: { id: true, name: true } },
+            reviews: { select: { rating: true } },
             _count: { select: { reviews: true } },
           },
         },
@@ -20,7 +21,16 @@ router.get('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ favorites });
+    const decorated = favorites.map((f) => {
+      const ratings = f.property?.reviews || [];
+      const avgRating = ratings.length
+        ? Number((ratings.reduce((s, r) => s + r.rating, 0) / ratings.length).toFixed(1))
+        : 0;
+      const { reviews: _ignored, ...propRest } = f.property || {};
+      return { ...f, property: { ...propRest, avgRating } };
+    });
+
+    res.json({ favorites: decorated });
   } catch (err) {
     next(err);
   }

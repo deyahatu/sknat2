@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FiSearch, FiHome, FiCreditCard, FiStar, FiArrowLeft, FiCheckCircle, FiFileText, FiShield, FiHeart, FiCalendar } from "react-icons/fi";
+import {
+  FiSearch,
+  FiHome,
+  FiCreditCard,
+  FiStar,
+  FiArrowLeft,
+  FiCheckCircle,
+  FiFileText,
+  FiShield,
+  FiHeart,
+  FiCalendar,
+} from "react-icons/fi";
 import AnimatedCounter from "../components/shared/AnimatedCounter";
 import { useAuth } from "../context/AuthContext";
 import "./HomePage.css";
@@ -28,11 +39,6 @@ function HomePage() {
         <div className="hero__noise" />
 
         <div className="hero__inner">
-          <div className="hero__badge">
-            <FiHome className="hero__badge-icon" />
-            <span>{isStudent ? "أهلاً بعودتك" : "منصة السكن الطلابي في فلسطين"}</span>
-          </div>
-
           {isStudent ? (
             <h1 className="hero__title">
               أهلاً <span className="hero__title-accent">{firstName}</span>،
@@ -50,7 +56,7 @@ function HomePage() {
           <p className="hero__sub">
             {isStudent
               ? "تصفّح العقارات المتاحة، تابع حجوزاتك، وارجع لمفضلاتك من مكان واحد."
-              : "نربط الطلاب بأصحاب العقارات لتوفير خيارات سكن موثوقة وبأسعار مناسبة — غرف مفردة، مزدوجة، استوديوهات، وشقق كاملة."}
+              : "نربط الطلاب بأصحاب العقارات لتوفير خيارات سكن موثوقة وبأسعار مناسبة (غرف مفردة، مزدوجة، استوديوهات)"}
           </p>
 
           <form className="hero__search" onSubmit={handleSearch}>
@@ -97,11 +103,20 @@ function HomePage() {
         <div className="stats__grid">
           {[
             { end: 100, suffix: "+", label: "عقار متاح", icon: <FiHome /> },
-            { end: 500, suffix: "+", label: "طالب مسجّل", icon: <FiCheckCircle /> },
+            {
+              end: 500,
+              suffix: "+",
+              label: "طالب مسجّل",
+              icon: <FiCheckCircle />,
+            },
             { end: 3, suffix: "", label: "مدن فلسطينية", icon: <FiShield /> },
             { end: 1000, suffix: "+", label: "حجز ناجح", icon: <FiFileText /> },
           ].map((s, i) => (
-            <div className="stats__card" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
+            <div
+              className="stats__card"
+              key={i}
+              style={{ animationDelay: `${i * 0.1}s` }}
+            >
               <div className="stats__icon">{s.icon}</div>
               <span className="stats__number">
                 <AnimatedCounter end={s.end} suffix={s.suffix} />
@@ -120,12 +135,32 @@ function HomePage() {
 
           <div className="features__grid">
             {[
-              { icon: <FiSearch />, title: "بحث ذكي", desc: "فلتر حسب الحي، السعر، نوع الغرفة، الحرم الجامعي، والجنس" },
-              { icon: <FiHome />, title: "خيارات متنوعة", desc: "غرف مفردة ومزدوجة، استوديوهات مستقلة، وشقق كاملة بأسعار تنافسية" },
-              { icon: <FiCreditCard />, title: "دفع آمن", desc: "نظام دفع إلكتروني مع إيصالات وفواتير قابلة للطباعة" },
-              { icon: <FiStar />, title: "تقييمات موثوقة", desc: "آراء حقيقية من طلاب سابقين تساعدك باتخاذ القرار الصحيح" },
+              {
+                icon: <FiSearch />,
+                title: "بحث ذكي",
+                desc: "فلتر حسب الحي، السعر، نوع الغرفة، الحرم الجامعي، والجنس",
+              },
+              {
+                icon: <FiHome />,
+                title: "خيارات متنوعة",
+                desc: "غرف مفردة ومزدوجة، استوديوهات مستقلة، وشقق كاملة بأسعار تنافسية",
+              },
+              {
+                icon: <FiCreditCard />,
+                title: "دفع آمن",
+                desc: "نظام دفع إلكتروني مع إيصالات وفواتير قابلة للطباعة",
+              },
+              {
+                icon: <FiStar />,
+                title: "تقييمات موثوقة",
+                desc: "آراء حقيقية من طلاب سابقين تساعدك باتخاذ القرار الصحيح",
+              },
             ].map((f, i) => (
-              <div className="features__card" key={i} style={{ animationDelay: `${i * 0.08}s` }}>
+              <div
+                className="features__card"
+                key={i}
+                style={{ animationDelay: `${i * 0.08}s` }}
+              >
                 <div className="features__card-icon">{f.icon}</div>
                 <h3>{f.title}</h3>
                 <p>{f.desc}</p>
@@ -145,9 +180,24 @@ function HomePage() {
 
             <div className="steps__grid">
               {[
-                { num: "01", icon: <FiSearch />, title: "ابحث", desc: "تصفّح العقارات المتاحة واستخدم الفلاتر لتضييق النتائج حسب احتياجاتك" },
-                { num: "02", icon: <FiFileText />, title: "احجز", desc: "اختر الغرفة المناسبة وأرسل طلب حجز — المالك يقبل أو يرفض خلال ساعات" },
-                { num: "03", icon: <FiCheckCircle />, title: "اسكن", desc: "أكمل الدفع واستلم غرفتك — فاتورة إلكترونية فورية" },
+                {
+                  num: "01",
+                  icon: <FiSearch />,
+                  title: "ابحث",
+                  desc: "تصفّح العقارات المتاحة واستخدم الفلاتر لتضييق النتائج حسب احتياجاتك",
+                },
+                {
+                  num: "02",
+                  icon: <FiFileText />,
+                  title: "احجز",
+                  desc: "اختر الغرفة المناسبة وأرسل طلب حجز — المالك يقبل أو يرفض خلال ساعات",
+                },
+                {
+                  num: "03",
+                  icon: <FiCheckCircle />,
+                  title: "اسكن",
+                  desc: "أكمل الدفع واستلم غرفتك — فاتورة إلكترونية فورية",
+                },
               ].map((s, i) => (
                 <div className="steps__card" key={i}>
                   <div className="steps__num">{s.num}</div>

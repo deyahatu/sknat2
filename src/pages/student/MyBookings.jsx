@@ -25,7 +25,7 @@ const STATUS_LABELS = {
   REJECTED: 'مرفوض',
   CANCELLED: 'ملغى',
   PAID: 'مدفوع',
-  COMPLETED: 'مكتمل',
+  COMPLETED: 'انتهاء الحجز',
 };
 
 const STATUS_FILTERS = [

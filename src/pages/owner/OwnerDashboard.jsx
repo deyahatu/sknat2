@@ -183,12 +183,6 @@ export default function OwnerDashboard() {
         <div className="owner-top-property">
           <div className="owner-top-property-header">
             <h2 className="owner-top-property-heading">العقار الأكثر حجزاً</h2>
-            <Link
-              to={`/owner/properties/${topProperty.id}/edit`}
-              className="owner-card-link"
-            >
-              عرض التفاصيل ←
-            </Link>
           </div>
           <div className="owner-top-property-body">
             <div className="owner-top-property-img">

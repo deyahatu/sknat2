@@ -36,6 +36,15 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
         .json({ error: "تاريخ البداية لا يمكن أن يكون في الماضي." });
     }
 
+    // Minimum booking duration: 30 days (one month)
+    const durationMs = end.getTime() - start.getTime();
+    const durationDays = Math.round(durationMs / (1000 * 60 * 60 * 24));
+    if (durationDays < 30) {
+      return res
+        .status(400)
+        .json({ error: "يجب أن تكون فترة الحجز 30 يوم على الأقل (شهر)." });
+    }
+
     // Check property exists and is available
     const property = await prisma.property.findUnique({
       where: { id: propertyId },
@@ -179,6 +188,11 @@ router.post('/:id/renew', authenticate, authorize('STUDENT'), async (req, res, n
     }
     if (start >= end) {
       return res.status(400).json({ error: 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية.' });
+    }
+
+    const renewDurationDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (renewDurationDays < 30) {
+      return res.status(400).json({ error: 'يجب أن تكون فترة التجديد 30 يوم على الأقل (شهر).' });
     }
 
     const parent = await prisma.booking.findUnique({

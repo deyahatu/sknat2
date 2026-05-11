@@ -161,6 +161,7 @@ enum ReportStatus {
     roomNumber         String?
     kind               RoomKind @default(SINGLE)
     capacity           Int      @default(1)
+    area               Int?
     isOccupied         Boolean  @default(false)
     partiallyOccupied  Boolean  @default(false)
     fullPrice          Decimal  @db.Decimal(10, 2)

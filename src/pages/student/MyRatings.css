@@ -5,6 +5,38 @@
   direction: rtl;
 }
 
+.my-ratings__tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  background: #fff;
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+}
+
+.my-ratings__tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.18s, color 0.18s;
+}
+
+.my-ratings__tab:hover {
+  background: #f1f5f9;
+}
+
+.my-ratings__tab.active {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: #fff;
+}
+
 /* Hero */
 .my-ratings__hero {
   display: flex;

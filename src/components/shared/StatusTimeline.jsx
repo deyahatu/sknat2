@@ -4,7 +4,7 @@ const STEPS = [
   { key: 'PENDING', label: 'معلق' },
   { key: 'APPROVED', label: 'مقبول' },
   { key: 'PAID', label: 'مدفوع' },
-  { key: 'COMPLETED', label: 'مكتمل' },
+  { key: 'COMPLETED', label: 'انتهى الحجز' },
 ];
 const STATUS_INDEX = { PENDING: 0, APPROVED: 1, PAID: 2, COMPLETED: 3 };
 

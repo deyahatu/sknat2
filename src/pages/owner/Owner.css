@@ -50,12 +50,26 @@
   font-weight: 700;
   color: var(--owner-primary);
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.owner-header-logo-icon {
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 .owner-header-right {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.owner-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .owner-menu-btn {

@@ -115,6 +115,14 @@ function PropertyDetailsPage() {
       return;
     }
 
+    const durationDays = Math.round(
+      (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (durationDays < 30) {
+      setBookingError('يجب أن تكون فترة الحجز 30 يوم على الأقل (شهر).');
+      return;
+    }
+
     setBookingSubmitting(true);
     try {
       if (!selectedVariantId) {
@@ -178,13 +186,14 @@ function PropertyDetailsPage() {
   // Group variants by pattern (patternName + kind + price + services)
   const patternMap = new Map();
   variants.forEach((v) => {
-    const key = `${v.patternName || v.name}|${v.kind}|${v.fullPrice}|${(v.services || []).join(',')}`;
+    const key = `${v.patternName || v.name}|${v.kind}|${v.fullPrice}|${v.area || ''}|${(v.services || []).join(',')}`;
     if (!patternMap.has(key)) {
       patternMap.set(key, {
         key,
         name: v.patternName || v.name,
         color: v.patternColor || '#4f46e5',
         kind: v.kind,
+        area: v.area ?? null,
         fullPrice: Number(v.fullPrice),
         halfPrice: v.halfPrice != null ? Number(v.halfPrice) : null,
         services: v.services || [],
@@ -374,7 +383,8 @@ function PropertyDetailsPage() {
                               {isDouble ? '🛏️🛏️' : '🛏️'} {pat.name}
                             </div>
                             <div className="pd-pattern-info">
-                              {isDouble ? 'غرفة مزدوجة' : 'غرفة مفردة'} •{' '}
+                              {isDouble ? 'غرفة مزدوجة' : 'غرفة مفردة'}
+                              {pat.area ? ` • ${pat.area} م²` : ''} •{' '}
                               {freeBeds === 0
                                 ? <span className="pd-pattern-info-unavailable">لا يوجد متاح</span>
                                 : isDouble
@@ -755,14 +765,20 @@ function PropertyDetailsPage() {
                 </div>
 
                 <div className="booking-form-group">
-                  <label>تاريخ النهاية</label>
+                  <label>تاريخ النهاية (الحد الأدنى شهر)</label>
                   <input
                     type="date"
                     value={bookingDates.endDate}
-                    min={bookingDates.startDate || new Date().toISOString().split('T')[0]}
+                    min={(() => {
+                      const base = bookingDates.startDate || new Date().toISOString().split('T')[0];
+                      const d = new Date(base);
+                      d.setDate(d.getDate() + 30);
+                      return d.toISOString().split('T')[0];
+                    })()}
                     onChange={(e) => setBookingDates((prev) => ({ ...prev, endDate: e.target.value }))}
                     required
                   />
+                  <small className="booking-form-hint">يجب أن تكون فترة الحجز 30 يوم على الأقل.</small>
                 </div>
 
                 {bookingError && <div className="booking-error">{bookingError}</div>}
