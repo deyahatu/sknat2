@@ -79,7 +79,7 @@ enum ReportStatus {
 
                                                                                                                                                                                                
    
-  model User {                                                                                                                                                                                                                                      
+  model User {
     id               String    @id @default(uuid())
     name             String
     email            String    @unique
@@ -87,6 +87,8 @@ enum ReportStatus {
     password         String
     role             Role      @default(STUDENT)
     isActive         Boolean   @default(true)
+    blockReason      String?   @db.VarChar(200)
+    blockedAt        DateTime?
     avatar           String?
     idNumber         String?   @unique
     idPhoto          String?   @db.Text
@@ -115,6 +117,7 @@ enum ReportStatus {
     pushSubscriptions PushSubscription[]
     notifications Notification[]
     reports       Report[]
+    blockAppeals  BlockAppeal[]
 
     @@map("users")
   }
@@ -191,6 +194,11 @@ enum ReportStatus {
     propertyId    String
     roomVariantId String
     studentId     String
+    // Snapshot of the per-bed monthly price at the moment the booking was
+    // created. Locked here so an owner can't bait-and-switch by editing the
+    // room price between approval and payment. Nullable for rows created
+    // before this column existed.
+    monthlyPrice          Decimal?  @db.Decimal(10, 2)
     parentBookingId       String?
     renewalReminderSentAt DateTime?
     createdAt     DateTime      @default(now())
@@ -452,4 +460,26 @@ model Report {
   @@index([status])
   @@index([reporterId])
   @@map("reports")
+}
+
+model BlockAppeal {
+  id         String       @id @default(uuid())
+  userId     String
+  message    String       @db.VarChar(500)
+  status     AppealStatus @default(PENDING)
+  adminNote  String?      @db.VarChar(500)
+  createdAt  DateTime     @default(now())
+  resolvedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("block_appeals")
+}
+
+enum AppealStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }

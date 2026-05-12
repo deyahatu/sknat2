@@ -40,7 +40,8 @@ function LoginPage() {
     setSuccessMessage(null);
     try {
       const data = await login(email, password);
-      navigate(data.user?.role === 'OWNER' ? '/owner' : '/');
+      const role = data.user?.role;
+      navigate(role === 'OWNER' ? '/owner' : role === 'ADMIN' ? '/admin' : '/');
     } catch (err) {
       toast.error(err.message || 'حدث خطأ أثناء تسجيل الدخول');
     } finally {

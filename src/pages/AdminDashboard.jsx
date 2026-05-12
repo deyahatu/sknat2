@@ -4,7 +4,7 @@ import { api } from '../utils/api';
 import { useToast } from '../components/shared/Toast';
 import ConfirmModal from '../components/shared/ConfirmModal';
 import Skeleton from '../components/shared/Skeleton';
-import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText, FiFlag } from 'react-icons/fi';
+import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText, FiFlag, FiLogOut } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import './AdminDashboard.css';
 
@@ -13,10 +13,11 @@ const TABS = [
   { id: 'properties', label: 'العقارات', icon: <FiHome /> },
   { id: 'refunds', label: 'طلبات الاسترداد', icon: <FiCreditCard /> },
   { id: 'withdrawals', label: 'طلبات السحب', icon: <FiDollarSign /> },
+  { id: 'appeals', label: 'اعتراضات الحظر', icon: <FiAlertCircle /> },
   { id: 'ratings', label: 'التقييمات', icon: <FiStar /> },
   { id: 'stats', label: 'الإحصائيات', icon: <FiBarChart2 /> },
   { id: 'audit', label: 'سجل النشاط', icon: <FiFileText /> },
-  { id: 'reports', label: 'بلاغات التقييمات', icon: <FiFlag /> },
+  { id: 'reports', label: 'البلاغات والشكاوى', icon: <FiFlag /> },
 ];
 
 function exportCSV(data, filename) {
@@ -34,7 +35,7 @@ function exportCSV(data, filename) {
 }
 
 export default function AdminDashboard() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('users');
   const [pendingCounts, setPendingCounts] = useState({ refunds: 0, withdrawals: 0 });
 
@@ -74,6 +75,14 @@ export default function AdminDashboard() {
               );
             })}
           </nav>
+          <button
+            type="button"
+            className="admin-sidebar-logout"
+            onClick={() => logout()}
+          >
+            <FiLogOut />
+            <span>تسجيل الخروج</span>
+          </button>
           <div className="admin-sidebar-footer">
             <span>مدير النظام</span>
           </div>
@@ -88,6 +97,7 @@ export default function AdminDashboard() {
           {activeTab === 'stats' && <StatsTab />}
           {activeTab === 'audit' && <AuditTab />}
           {activeTab === 'reports' && <ReportsTab />}
+          {activeTab === 'appeals' && <AppealsTab />}
         </main>
       </div>
     </div>
@@ -144,12 +154,47 @@ function UsersTab({ currentUser }) {
     });
   };
 
-  const handleToggleActive = async (id) => {
+  // Modal state for entering the block reason. Unblocking doesn't need a
+  // reason — only blocking does.
+  const [blockModal, setBlockModal] = useState({ open: false, userId: null, userName: '' });
+  const [blockReason, setBlockReason] = useState('');
+  const [blockSaving, setBlockSaving] = useState(false);
+
+  const handleToggleActive = async (user) => {
+    if (user.isActive === false) {
+      // Unblock — no reason needed, no modal.
+      try {
+        const res = await api.users.toggleActive(user.id);
+        setUsers(users.map((u) => (u.id === user.id ? { ...u, isActive: res.user.isActive } : u)));
+      } catch (err) {
+        toast.error(err.message || 'فشل التغيير');
+      }
+      return;
+    }
+    // Block — open the reason modal.
+    setBlockModal({ open: true, userId: user.id, userName: user.name });
+    setBlockReason('');
+  };
+
+  const confirmBlock = async () => {
+    const reason = blockReason.trim();
+    if (reason.length < 10 || reason.length > 200) {
+      toast.error('يجب إدخال سبب الحظر (10 إلى 200 حرف).');
+      return;
+    }
+    setBlockSaving(true);
     try {
-      const res = await api.users.toggleActive(id);
-      setUsers(users.map((u) => (u.id === id ? { ...u, isActive: res.user.isActive } : u)));
+      const res = await api.users.toggleActive(blockModal.userId, reason);
+      setUsers(users.map((u) =>
+        u.id === blockModal.userId ? { ...u, isActive: res.user.isActive } : u,
+      ));
+      toast.success('تم حظر أنشطة الحساب.');
+      setBlockModal({ open: false, userId: null, userName: '' });
+      setBlockReason('');
     } catch (err) {
-      toast.error(err.message || 'فشل التغيير');
+      toast.error(err.message || 'فشل الحظر');
+    } finally {
+      setBlockSaving(false);
     }
   };
 
@@ -241,7 +286,7 @@ function UsersTab({ currentUser }) {
                   </td>
                   <td>
                     <span className={`status-badge ${user.isActive !== false ? 'active' : 'inactive'}`}>
-                      {user.isActive !== false ? 'مفعّل' : 'معطّل'}
+                      {user.isActive !== false ? 'مفعّل' : 'محظور الأنشطة'}
                     </span>
                   </td>
                   <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString('ar-EG') : '—'}</td>
@@ -250,8 +295,8 @@ function UsersTab({ currentUser }) {
                       {user.id !== currentUser.id && user.role !== 'ADMIN' && (
                         <button
                           className="action-btn toggle-btn"
-                          onClick={() => handleToggleActive(user.id)}
-                          title={user.isActive !== false ? 'تعطيل' : 'تفعيل'}
+                          onClick={() => handleToggleActive(user)}
+                          title={user.isActive !== false ? 'حظر الأنشطة' : 'رفع الحظر'}
                         >
                           {user.isActive !== false ? <FiToggleRight color="#10b981" /> : <FiToggleLeft color="#dc2626" />}
                         </button>
@@ -287,6 +332,45 @@ function UsersTab({ currentUser }) {
         onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
       />
 
+      {/* Block reason modal */}
+      {blockModal.open && (
+        <div className="ad-modal-overlay" onClick={() => !blockSaving && setBlockModal({ open: false, userId: null, userName: '' })}>
+          <div className="ad-modal-box ad-block-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="ad-block-modal-title">حظر أنشطة: {blockModal.userName}</h3>
+            <p className="ad-block-modal-sub">
+              سيتلقى المستخدم إشعاراً + بريداً إلكترونياً بسبب الحظر، ويمكنه تقديم اعتراض واحد.
+            </p>
+            <label className="ad-block-modal-label">سبب الحظر (10–200 حرف) — إجباري</label>
+            <textarea
+              className="ad-block-modal-textarea"
+              value={blockReason}
+              onChange={(e) => setBlockReason(e.target.value.slice(0, 200))}
+              rows={4}
+              placeholder="مثال: إساءة في الرسائل، بيانات هوية مزورة، انتهاك متكرر لسياسة المنصة..."
+            />
+            <div className="ad-block-modal-counter">
+              {blockReason.length} / 200
+            </div>
+            <div className="ad-block-modal-actions">
+              <button
+                className="ad-block-modal-btn ghost"
+                onClick={() => setBlockModal({ open: false, userId: null, userName: '' })}
+                disabled={blockSaving}
+              >
+                إلغاء
+              </button>
+              <button
+                className="ad-block-modal-btn danger"
+                onClick={confirmBlock}
+                disabled={blockSaving || blockReason.trim().length < 10}
+              >
+                {blockSaving ? 'جاري الحفظ...' : 'حظر الأنشطة'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* User Detail Modal */}
       {selectedUser && (
         <div className="ad-modal-overlay" onClick={() => setSelectedUser(null)}>
@@ -311,7 +395,7 @@ function UsersTab({ currentUser }) {
                     { label: 'رقم الهوية', value: selectedUser.idNumber || '—' },
                     { label: 'الجنس', value: selectedUser.gender === 'MALE' ? 'ذكر' : selectedUser.gender === 'FEMALE' ? 'أنثى' : '—' },
                     { label: 'التخصص', value: selectedUser.major || '—' },
-                    { label: 'الحالة', value: selectedUser.isActive ? 'مفعّل' : 'معطّل' },
+                    { label: 'الحالة', value: selectedUser.isActive ? 'مفعّل' : 'محظور الأنشطة' },
                     { label: 'تاريخ التسجيل', value: new Date(selectedUser.createdAt).toLocaleDateString('ar-EG') },
                   ].map((row, i) => (
                     <div key={i} className={`ad-modal-row${i % 2 === 0 ? ' ad-modal-row--alt' : ''}`}>
@@ -430,47 +514,56 @@ function PropertiesTab() {
               <th>المالك</th>
               <th>الحالة</th>
               <th>الغرف</th>
+              <th>الحجوزات النشطة</th>
               <th>إجراءات</th>
             </tr>
           </thead>
           <tbody>
-            {properties.map((p) => (
-              <tr key={p.id}>
-                <td>
-                  <div className="user-cell-details">
-                    <span className="user-cell-name">{p.title}</span>
-                    <span className="user-cell-email">{p.city}</span>
-                  </div>
-                </td>
-                <td>{p.owner?.name || '—'}</td>
-                <td>
-                  <span className={`status-badge ${p.available ? 'active' : 'inactive'}`}>
-                    {p.available ? 'متاح' : 'معطّل'}
-                  </span>
-                </td>
-                <td>{p.roomVariants?.length || 0}</td>
-                <td>
-                  <div className="action-buttons">
-                    <button
-                      className="action-btn toggle-btn"
-                      onClick={() => handleToggleAvailability(p.id, p.available)}
-                      title={p.available ? 'تعطيل (رفض)' : 'تفعيل'}
-                    >
-                      {p.available ? <FiToggleRight color="#10b981" /> : <FiToggleLeft color="#dc2626" />}
-                    </button>
-                    <button
-                      className="action-btn delete-btn"
-                      onClick={() => handleDelete(p.id, p.title)}
-                      title="حذف"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {properties.map((p) => {
+              const activeBookings = p.activeBookingsCount ?? p._count?.bookings ?? 0;
+              return (
+                <tr key={p.id}>
+                  <td>
+                    <div className="user-cell-details">
+                      <span className="user-cell-name">{p.title}</span>
+                      <span className="user-cell-email">{p.city}</span>
+                    </div>
+                  </td>
+                  <td>{p.owner?.name || '—'}</td>
+                  <td>
+                    <span className={`status-badge ${p.available ? 'active' : 'inactive'}`}>
+                      {p.available ? 'متاح' : 'معطّل'}
+                    </span>
+                  </td>
+                  <td>{p.roomVariants?.length || 0}</td>
+                  <td>
+                    <span className={activeBookings > 0 ? 'ad-text-warning' : ''} style={{ fontWeight: 700 }}>
+                      {activeBookings}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="action-buttons">
+                      <button
+                        className="action-btn toggle-btn"
+                        onClick={() => handleToggleAvailability(p.id, p.available)}
+                        title={p.available ? 'تعطيل (رفض)' : 'تفعيل'}
+                      >
+                        {p.available ? <FiToggleRight color="#10b981" /> : <FiToggleLeft color="#dc2626" />}
+                      </button>
+                      <button
+                        className="action-btn delete-btn"
+                        onClick={() => handleDelete(p.id, p.title)}
+                        title="حذف"
+                      >
+                        <FiTrash2 />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
             {properties.length === 0 && (
-              <tr><td colSpan="5" className="at-td-center">لا يوجد عقارات</td></tr>
+              <tr><td colSpan="6" className="at-td-center">لا يوجد عقارات</td></tr>
             )}
           </tbody>
         </table>
@@ -1130,6 +1223,7 @@ function ReportsTab() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
+  const [detailReport, setDetailReport] = useState(null);
 
   const reasonLabels = {
     OFFENSIVE: 'لغة مسيئة',
@@ -1222,7 +1316,11 @@ function ReportsTab() {
                     : '—')
                 : (r.review?.comment || '—');
               return (
-                <tr key={r.id}>
+                <tr
+                  key={r.id}
+                  className="report-row-clickable"
+                  onClick={() => setDetailReport(r)}
+                >
                   <td>{r.reporter?.name || '—'}</td>
                   <td>{typeLabels[r.type] || r.type}</td>
                   <td className="at-truncate ad-cell--target">{targetText}</td>
@@ -1230,7 +1328,7 @@ function ReportsTab() {
                   <td className="at-truncate ad-cell--details">{r.details || '—'}</td>
                   <td><span className={`status-badge ${statusClass[r.status] || ''}`}>{statusLabels[r.status] || r.status}</span></td>
                   <td>{new Date(r.createdAt).toLocaleDateString('ar-EG')}</td>
-                  <td>
+                  <td onClick={(e) => e.stopPropagation()}>
                     {r.status === 'PENDING' && (
                       <div className="action-buttons">
                         <button className="action-btn delete-btn" onClick={() => handleDeleteTarget(r.id)} title="حذف المحتوى">
@@ -1260,7 +1358,237 @@ function ReportsTab() {
         onConfirm={async () => { await confirmState.action?.(); setConfirmState(s => ({ ...s, open: false })); }}
         onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
       />
+
+      {/* Report detail modal */}
+      {detailReport && (
+        <div className="ad-modal-overlay" onClick={() => setDetailReport(null)}>
+          <div className="ad-modal-box report-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="report-detail-header">
+              <h3>تفاصيل البلاغ</h3>
+              <button
+                type="button"
+                className="bb-modal-close"
+                onClick={() => setDetailReport(null)}
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <div className="report-detail-grid">
+              <div className="report-detail-item">
+                <span className="report-detail-label">المُبلِّغ</span>
+                <span className="report-detail-value">{detailReport.reporter?.name || '—'}</span>
+                {detailReport.reporter?.email && (
+                  <span className="report-detail-sub">{detailReport.reporter.email}</span>
+                )}
+              </div>
+
+              <div className="report-detail-item">
+                <span className="report-detail-label">النوع</span>
+                <span className="report-detail-value">{typeLabels[detailReport.type] || detailReport.type}</span>
+              </div>
+
+              <div className="report-detail-item">
+                <span className="report-detail-label">السبب</span>
+                <span className="report-detail-value">{reasonLabels[detailReport.reason] || detailReport.reason}</span>
+              </div>
+
+              <div className="report-detail-item">
+                <span className="report-detail-label">الحالة</span>
+                <span className={`status-badge ${statusClass[detailReport.status] || ''}`}>
+                  {statusLabels[detailReport.status] || detailReport.status}
+                </span>
+              </div>
+
+              <div className="report-detail-item">
+                <span className="report-detail-label">تاريخ البلاغ</span>
+                <span className="report-detail-value">{new Date(detailReport.createdAt).toLocaleString('ar-EG')}</span>
+              </div>
+            </div>
+
+            <div className="report-detail-section">
+              <h4>المحتوى المُبلَّغ عنه</h4>
+              {detailReport.type === 'MESSAGE' && detailReport.message ? (
+                <div className="report-detail-content">
+                  <div className="report-detail-sub">
+                    من: <strong>{detailReport.message.sender?.name || 'مرسل'}</strong> →
+                    إلى: <strong>{detailReport.message.receiver?.name || 'مستلم'}</strong>
+                  </div>
+                  <p className="report-detail-text">{detailReport.message.content || '—'}</p>
+                </div>
+              ) : detailReport.type === 'STUDENT_RATING' && detailReport.studentRating ? (
+                <div className="report-detail-content">
+                  <div className="report-detail-sub">
+                    تقييم المالك <strong>{detailReport.studentRating.owner?.name || '—'}</strong>
+                    للطالب <strong>{detailReport.studentRating.student?.name || '—'}</strong>
+                  </div>
+                  <p className="report-detail-text">{detailReport.studentRating.comment || 'بدون تعليق'}</p>
+                </div>
+              ) : detailReport.type === 'REVIEW' && detailReport.review ? (
+                <div className="report-detail-content">
+                  <p className="report-detail-text">{detailReport.review.comment || '—'}</p>
+                </div>
+              ) : (
+                <p className="report-detail-text muted">المحتوى غير متاح أو محذوف.</p>
+              )}
+            </div>
+
+            {detailReport.details && (
+              <div className="report-detail-section">
+                <h4>تفاصيل البلاغ من المُبلِّغ</h4>
+                <p className="report-detail-text">{detailReport.details}</p>
+              </div>
+            )}
+
+            {detailReport.status === 'PENDING' && (
+              <div className="report-detail-actions">
+                <button
+                  className="ad-block-modal-btn ghost"
+                  onClick={() => {
+                    handleDismiss(detailReport.id);
+                    setDetailReport(null);
+                  }}
+                >
+                  رفض البلاغ
+                </button>
+                <button
+                  className="ad-block-modal-btn danger"
+                  onClick={() => {
+                    handleDeleteTarget(detailReport.id);
+                    setDetailReport(null);
+                  }}
+                >
+                  حذف المحتوى المُبلَّغ عنه
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
 
+
+// ── Block Appeals Tab ──
+function AppealsTab() {
+  const toast = useToast();
+  const [appeals, setAppeals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('PENDING');
+  const [resolving, setResolving] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await api.blockAppeals.list(filter);
+      setAppeals(data.appeals || []);
+    } catch (err) {
+      toast.error(err.message || 'فشل جلب الاعتراضات');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, [filter]);
+
+  const handleResolve = async (id, decision) => {
+    const note = decision === 'REJECTED'
+      ? window.prompt('سبب الرفض (اختياري):') || ''
+      : '';
+    setResolving(id);
+    try {
+      await api.blockAppeals.resolve(id, decision, note);
+      toast.success(decision === 'ACCEPTED' ? 'تم قبول الاعتراض ورفع الحظر.' : 'تم رفض الاعتراض.');
+      await load();
+    } catch (err) {
+      toast.error(err.message || 'فشلت العملية');
+    } finally {
+      setResolving(null);
+    }
+  };
+
+  const statusLabel = { PENDING: 'قيد المراجعة', ACCEPTED: 'مقبول', REJECTED: 'مرفوض' };
+
+  return (
+    <>
+      <div className="admin-filters">
+        <select
+          className="admin-role-filter"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        >
+          <option value="PENDING">قيد المراجعة</option>
+          <option value="ACCEPTED">المقبولة</option>
+          <option value="REJECTED">المرفوضة</option>
+          <option value="">الكل</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div className="loading-state">جاري التحميل...</div>
+      ) : appeals.length === 0 ? (
+        <div className="admin-empty-state">لا يوجد اعتراضات.</div>
+      ) : (
+        <div className="appeals-list">
+          {appeals.map((a) => (
+            <div key={a.id} className={`appeal-card appeal-${a.status.toLowerCase()}`}>
+              <div className="appeal-header">
+                <div>
+                  <h4 className="appeal-user-name">{a.user?.name || 'مستخدم محذوف'}</h4>
+                  <p className="appeal-user-email">{a.user?.email}</p>
+                </div>
+                <span className={`status-badge appeal-status-${a.status.toLowerCase()}`}>
+                  {statusLabel[a.status]}
+                </span>
+              </div>
+
+              {a.user?.blockReason && (
+                <div className="appeal-section">
+                  <strong>سبب الحظر:</strong>
+                  <p>{a.user.blockReason}</p>
+                </div>
+              )}
+
+              <div className="appeal-section">
+                <strong>رد المستخدم:</strong>
+                <p>{a.message}</p>
+              </div>
+
+              {a.adminNote && (
+                <div className="appeal-section">
+                  <strong>ملاحظة الإدارة:</strong>
+                  <p>{a.adminNote}</p>
+                </div>
+              )}
+
+              <div className="appeal-footer">
+                <span className="appeal-date">
+                  {new Date(a.createdAt).toLocaleDateString('ar-EG')}
+                </span>
+                {a.status === 'PENDING' && (
+                  <div className="appeal-actions">
+                    <button
+                      className="ad-block-modal-btn danger"
+                      disabled={resolving === a.id}
+                      onClick={() => handleResolve(a.id, 'REJECTED')}
+                    >
+                      رفض
+                    </button>
+                    <button
+                      className="ad-block-modal-btn success"
+                      disabled={resolving === a.id}
+                      onClick={() => handleResolve(a.id, 'ACCEPTED')}
+                    >
+                      قبول ورفع الحظر
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}

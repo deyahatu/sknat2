@@ -293,6 +293,23 @@
   position: relative;
 }
 
+.stats__inner {
+  max-width: 760px;
+  margin: 0 auto 48px;
+  text-align: center;
+}
+
+.stats__inner .section-title {
+  margin-bottom: 16px;
+}
+
+.stats__subtitle {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--text-muted);
+  margin: 0;
+}
+
 .stats__grid {
   max-width: 1060px;
   margin: 0 auto;

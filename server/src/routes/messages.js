@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireActive } from '../middleware/auth.js';
 import { emitToUser } from '../utils/socket.js';
 import { notify } from '../utils/notify.js';
 
@@ -93,7 +93,7 @@ function chatContentViolation(text) {
 }
 
 // Send message
-router.post('/', authenticate, async (req, res, next) => {
+router.post('/', authenticate, requireActive, async (req, res, next) => {
   try {
     const { receiverId, content, bookingId } = req.body;
     if (!receiverId || !content?.trim()) {

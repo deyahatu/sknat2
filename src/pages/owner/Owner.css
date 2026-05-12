@@ -1152,6 +1152,60 @@
   gap: 16px;
 }
 
+.owner-rate-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.owner-rate-dimensions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.owner-rate-dimension {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.owner-rate-dimension:hover {
+  border-color: rgba(79, 70, 229, 0.22);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.06);
+}
+
+.owner-rate-dimension .owner-form-label {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.owner-rate-comment {
+  margin: 0;
+}
+
+.owner-rate-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .owner-rate-body {
+    padding: 18px;
+  }
+  .owner-rate-dimensions {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ─── RateStudents star input span ─── */
 .owner-star-input .filled,
 .owner-star-input .empty {
@@ -3226,5 +3280,185 @@
   max-width: 200px;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* ─── Locked-field notice on AddEditProperty when active bookings exist ─── */
+.wiz-locked-notice {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.7;
+  margin-bottom: 18px;
+}
+
+.wiz-input:disabled,
+.wiz-choice-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.wiz-choice-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ─── Flat rooms designer (new) ─── */
+.wiz-rooms-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  margin: 18px 0;
+  background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(79, 70, 229, 0.14);
+}
+
+.wiz-rooms-count {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wiz-rooms-count-num {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #4f46e5;
+}
+
+.wiz-rooms-count-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e1b4b;
+}
+
+.wiz-rooms-count-sub {
+  font-size: 0.82rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.wiz-flat-rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wiz-flat-room {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.wiz-flat-room:hover:not(.locked) {
+  border-color: #c7d2fe;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.06);
+}
+
+.wiz-flat-room.locked {
+  background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+  border-color: #d1d5db;
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+.wiz-flat-room-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.wiz-flat-room-num {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.wiz-flat-room-badge {
+  background: #4f46e5;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.wiz-flat-room.locked .wiz-flat-room-badge {
+  background: #94a3b8;
+}
+
+.wiz-flat-room-name-fixed {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1e293b;
+}
+
+.wiz-flat-room-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.wiz-flat-room-lock {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #dc2626;
+  background: #fee2e2;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.wiz-text-btn {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  transition: all 0.15s;
+}
+
+.wiz-text-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.wiz-text-btn.danger {
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.wiz-text-btn.danger:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+.wiz-review-room-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
 }
 

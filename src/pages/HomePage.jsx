@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import {
   FiSearch,
   FiHome,
@@ -22,6 +22,10 @@ function HomePage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const { user } = useAuth();
+  // Admins never see the marketing landing — drop them into the dashboard.
+  if (user?.role === "ADMIN") {
+    return <Navigate to="/admin" replace />;
+  }
   const isStudent = user?.role === "STUDENT";
   const firstName = user?.name?.split(" ")[0] || "";
   const [properties, setProperties] = useState([]);
@@ -142,6 +146,14 @@ function HomePage() {
       {/* ═══ Stats (guests only) ═══ */}
       {!isStudent && (
         <section className="stats">
+          <div className="stats__inner">
+            <span className="section-eyebrow">سكنات بالأرقام</span>
+            <h2 className="section-title">إنجازاتنا التي نفتخر بها</h2>
+            <p className="stats__subtitle">
+              منصة سكنات تجمع آلاف الطلاب مع أصحاب العقارات في فلسطين، ونعمل
+              يومياً على توفير تجربة سكن آمنة وموثوقة.
+            </p>
+          </div>
           <div className="stats__grid">
             {[
               { end: 100, suffix: "+", label: "عقار متاح", icon: <FiHome /> },
@@ -151,7 +163,7 @@ function HomePage() {
                 label: "طالب مسجّل",
                 icon: <FiCheckCircle />,
               },
-              { end: 3, suffix: "", label: "مدن فلسطينية", icon: <FiShield /> },
+              { end: 1, suffix: "", label: "مدينة فلسطينية", icon: <FiShield /> },
               { end: 1000, suffix: "+", label: "حجز ناجح", icon: <FiFileText /> },
             ].map((s, i) => (
               <div

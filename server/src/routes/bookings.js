@@ -1,13 +1,13 @@
 import { Router } from "express";
 import prisma from "../utils/prisma.js";
-import { authenticate, authorize } from "../middleware/auth.js";
+import { authenticate, authorize, requireActive } from "../middleware/auth.js";
 import { logAudit } from "../utils/audit.js";
 import { sendBookingAccepted, sendBookingRejected, sendBookingCompleted } from "../utils/email.js";
-import { notify } from '../utils/notify.js';
+import { notify, notifyAllAdmins } from '../utils/notify.js';
 
 const router = Router();
 
-router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
+router.post("/", authenticate, requireActive, authorize("STUDENT"), async (req, res, next) => {
   try {
     const { propertyId, roomVariantId, startDate, endDate } = req.body;
 
@@ -54,6 +54,7 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
         available: true,
         ownerId: true,
         policy: true,
+        owner: { select: { isActive: true } },
       },
     });
 
@@ -63,6 +64,13 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
 
     if (!property.available) {
       return res.status(400).json({ error: "هذا السكن غير متاح." });
+    }
+
+    // Owner blocked from activities — refuse new bookings on their listings.
+    if (property.owner?.isActive === false) {
+      return res.status(400).json({
+        error: "هذا السكن غير متاح حالياً للحجز. يرجى المحاولة لاحقاً.",
+      });
     }
 
     // Check room variant exists and has available beds
@@ -140,6 +148,7 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
         propertyId,
         roomVariantId,
         studentId: req.user.id,
+        monthlyPrice,
       },
       include: {
         property: {
@@ -163,6 +172,12 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
 
     notify(property.ownerId, 'طلب حجز جديد', 'طالب جديد يريد حجز غرفة', '/owner/bookings').catch(() => {});
 
+    notifyAllAdmins(
+      'حجز جديد',
+      `${req.user.name} طلب حجز ${property.title}`,
+      '/admin',
+    ).catch(() => {});
+
     res.status(201).json({
       message: "تم إرسال طلب الحجز بنجاح.",
       booking: { ...booking, totalPrice },
@@ -173,7 +188,7 @@ router.post("/", authenticate, authorize("STUDENT"), async (req, res, next) => {
 });
 
 // UC: Renew a booking (student requests to extend the same room/property after current end)
-router.post('/:id/renew', authenticate, authorize('STUDENT'), async (req, res, next) => {
+router.post('/:id/renew', authenticate, requireActive, authorize('STUDENT'), async (req, res, next) => {
   try {
     const { startDate, endDate } = req.body;
 
@@ -198,7 +213,15 @@ router.post('/:id/renew', authenticate, authorize('STUDENT'), async (req, res, n
     const parent = await prisma.booking.findUnique({
       where: { id: req.params.id },
       include: {
-        property: { select: { id: true, title: true, ownerId: true, available: true } },
+        property: {
+          select: {
+            id: true,
+            title: true,
+            ownerId: true,
+            available: true,
+            owner: { select: { isActive: true } },
+          },
+        },
         roomVariant: { select: { id: true, kind: true, fullPrice: true, halfPrice: true } },
         renewals: { select: { id: true, status: true } },
       },
@@ -212,6 +235,13 @@ router.post('/:id/renew', authenticate, authorize('STUDENT'), async (req, res, n
     }
     if (!['APPROVED', 'PAID'].includes(parent.status)) {
       return res.status(400).json({ error: 'يمكن تجديد الحجوزات النشطة فقط (المقبولة أو المدفوعة).' });
+    }
+    // Owner blocked from activities — they wouldn't be able to approve the
+    // renewal anyway, so block it upfront with a clear message.
+    if (parent.property.owner?.isActive === false) {
+      return res.status(400).json({
+        error: 'لا يمكن تجديد الحجز حالياً لأن المالك غير متاح. يرجى المحاولة لاحقاً.',
+      });
     }
 
     // Only one open renewal at a time
@@ -256,6 +286,23 @@ router.post('/:id/renew', authenticate, authorize('STUDENT'), async (req, res, n
       return res.status(400).json({ error: 'الغرفة محجوزة من قِبل طالب آخر في الفترة المطلوبة.' });
     }
 
+    // Student must not have another active booking elsewhere overlapping the renewal period.
+    // Exclude the parent itself — its dates end before the renewal starts, but be explicit.
+    const studentConflict = await prisma.booking.findFirst({
+      where: {
+        studentId: req.user.id,
+        id: { not: parent.id },
+        status: { in: ['APPROVED', 'PAID'] },
+        startDate: { lt: end },
+        endDate: { gt: start },
+      },
+    });
+    if (studentConflict) {
+      return res.status(400).json({
+        error: 'لا يمكن طلب التجديد: لديك حجز مؤكد آخر يتداخل مع فترة التجديد.',
+      });
+    }
+
     // Calculate price (same rules as a normal booking)
     const isDouble = parent.roomVariant.kind === 'DOUBLE';
     const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
@@ -276,6 +323,7 @@ router.post('/:id/renew', authenticate, authorize('STUDENT'), async (req, res, n
         roomVariantId: parent.roomVariantId,
         studentId: req.user.id,
         parentBookingId: parent.id,
+        monthlyPrice,
       },
       include: {
         property: { select: { id: true, title: true, city: true, images: true } },
@@ -288,6 +336,12 @@ router.post('/:id/renew', authenticate, authorize('STUDENT'), async (req, res, n
       'طلب تجديد حجز',
       `الطالب يرغب بتجديد حجزه على ${parent.property.title}`,
       '/owner/bookings',
+    ).catch(() => {});
+
+    notifyAllAdmins(
+      'طلب تجديد حجز',
+      `${req.user.name} طلب تجديد حجز ${parent.property.title}`,
+      '/admin',
     ).catch(() => {});
 
     logAudit({ action: 'RENEW_REQUEST', entity: 'BOOKING', entityId: renewal.id, user: req.user, details: `طلب تجديد للحجز ${parent.id}` });
@@ -463,82 +517,172 @@ router.get("/:id", authenticate, async (req, res, next) => {
 router.patch(
   "/:id/accept",
   authenticate,
+  requireActive,
   authorize("OWNER"),
   async (req, res, next) => {
     try {
-      const booking = await prisma.booking.findUnique({
+      // Fast authorization check before opening a transaction.
+      const initial = await prisma.booking.findUnique({
         where: { id: req.params.id },
-        include: {
-          property: { select: { ownerId: true, title: true } },
-          roomVariant: {
-            select: { id: true, kind: true, isOccupied: true, partiallyOccupied: true },
-          },
-        },
+        select: { id: true, property: { select: { ownerId: true } } },
       });
 
-      if (!booking) {
+      if (!initial) {
         return res.status(404).json({ error: "الحجز غير موجود." });
       }
 
-      if (booking.property.ownerId !== req.user.id) {
+      if (initial.property.ownerId !== req.user.id) {
         return res
           .status(403)
           .json({ error: "ليس لديك صلاحية لإدارة هذا الحجز." });
       }
 
-      if (booking.status !== "PENDING") {
-        return res
-          .status(400)
-          .json({ error: "يمكن قبول الحجوزات قيد الانتظار فقط." });
-      }
+      // All state checks + the update run inside one serializable transaction so
+      // concurrent approvals (race condition) can't both pass the same overlap guard.
+      let updated;
+      let isRenewal = false;
+      try {
+        updated = await prisma.$transaction(
+          async (tx) => {
+            const booking = await tx.booking.findUnique({
+              where: { id: req.params.id },
+              include: {
+                property: { select: { ownerId: true, title: true } },
+                roomVariant: {
+                  select: { id: true, kind: true, isOccupied: true, partiallyOccupied: true },
+                },
+                parentBooking: { select: { id: true, status: true } },
+              },
+            });
 
-      const isRenewal = !!booking.parentBookingId;
+            if (booking.status !== "PENDING") {
+              const err = new Error("يمكن قبول الحجوزات قيد الانتظار فقط.");
+              err.statusCode = 400;
+              throw err;
+            }
 
-      // For renewals: the room is already occupied by the same student via the
-      // parent booking, so skip the "is occupied" guard and don't touch room state.
-      if (!isRenewal && booking.roomVariant.isOccupied) {
-        return res
-          .status(400)
-          .json({ error: "هذه الغرفة محجوزة بالكامل. لا يمكن قبول هذا الطلب." });
-      }
+            // Reject if the booking's entire window has already passed.
+            // Without this an owner could approve a months-old PENDING request
+            // and trigger payment / room state changes for a stay that never happened.
+            if (booking.endDate <= new Date()) {
+              const err = new Error("لا يمكن قبول هذا الطلب: تاريخ انتهاء الحجز انقضى.");
+              err.statusCode = 400;
+              throw err;
+            }
 
-      // Determine the new room state on approval (regular booking only):
-      // - SINGLE → fully occupied
-      // - DOUBLE empty → partially occupied
-      // - DOUBLE partially occupied → fully occupied
-      const isDouble = booking.roomVariant.kind === "DOUBLE";
-      const newRoomData = isDouble
-        ? booking.roomVariant.partiallyOccupied
-          ? { isOccupied: true, partiallyOccupied: false }
-          : { partiallyOccupied: true }
-        : { isOccupied: true };
+            isRenewal = !!booking.parentBookingId;
 
-      const updated = await prisma.$transaction(async (tx) => {
-        const updatedBooking = await tx.booking.update({
-          where: { id: booking.id },
-          data: { status: "APPROVED" },
-          include: {
-            property: {
-              select: { id: true, title: true, city: true },
-            },
-            roomVariant: {
-              select: { id: true, name: true, kind: true, fullPrice: true, halfPrice: true },
-            },
-            student: {
-              select: { id: true, name: true, email: true },
-            },
+            // Renewal becomes orphaned if its parent was cancelled/rejected/completed.
+            if (
+              isRenewal &&
+              booking.parentBooking &&
+              !["APPROVED", "PAID"].includes(booking.parentBooking.status)
+            ) {
+              const err = new Error("لا يمكن قبول هذا التجديد: الحجز الأصلي لم يعد نشطاً.");
+              err.statusCode = 400;
+              throw err;
+            }
+
+            if (!isRenewal && booking.roomVariant.isOccupied) {
+              const err = new Error("هذه الغرفة محجوزة بالكامل. لا يمكن قبول هذا الطلب.");
+              err.statusCode = 400;
+              throw err;
+            }
+
+            // Student must not have another active booking overlapping these dates.
+            const excludeIds = isRenewal
+              ? [booking.id, booking.parentBookingId]
+              : [booking.id];
+            const studentConflict = await tx.booking.findFirst({
+              where: {
+                studentId: booking.studentId,
+                id: { notIn: excludeIds },
+                status: { in: ["APPROVED", "PAID"] },
+                startDate: { lt: booking.endDate },
+                endDate: { gt: booking.startDate },
+              },
+            });
+            if (studentConflict) {
+              const err = new Error(
+                "لا يمكن قبول هذا الطلب: الطالب لديه حجز مؤكد آخر يتداخل مع هذه الفترة.",
+              );
+              err.statusCode = 400;
+              throw err;
+            }
+
+            // For renewals: the room may have been claimed by another student
+            // after the renewal was requested. Re-verify here.
+            if (isRenewal) {
+              const otherConflict = await tx.booking.findFirst({
+                where: {
+                  roomVariantId: booking.roomVariantId,
+                  studentId: { not: booking.studentId },
+                  id: { not: booking.id },
+                  status: { in: ["APPROVED", "PAID"] },
+                  startDate: { lt: booking.endDate },
+                  endDate: { gt: booking.startDate },
+                },
+              });
+              if (otherConflict) {
+                const err = new Error(
+                  "تم حجز هذه الغرفة من قِبل طالب آخر في فترة التجديد. لا يمكن قبول الطلب.",
+                );
+                err.statusCode = 400;
+                throw err;
+              }
+            }
+
+            // Compute new room state (regular booking only):
+            // SINGLE → fully occupied; DOUBLE: empty→partial, partial→full.
+            const isDouble = booking.roomVariant.kind === "DOUBLE";
+            const newRoomData = isDouble
+              ? booking.roomVariant.partiallyOccupied
+                ? { isOccupied: true, partiallyOccupied: false }
+                : { partiallyOccupied: true }
+              : { isOccupied: true };
+
+            const updatedBooking = await tx.booking.update({
+              where: { id: booking.id },
+              data: { status: "APPROVED" },
+              include: {
+                property: {
+                  select: { id: true, title: true, city: true },
+                },
+                roomVariant: {
+                  select: { id: true, name: true, kind: true, fullPrice: true, halfPrice: true },
+                },
+                student: {
+                  select: { id: true, name: true, email: true },
+                },
+              },
+            });
+
+            if (!isRenewal) {
+              await tx.roomVariant.update({
+                where: { id: booking.roomVariantId },
+                data: newRoomData,
+              });
+            }
+
+            return updatedBooking;
           },
-        });
-
-        if (!isRenewal) {
-          await tx.roomVariant.update({
-            where: { id: booking.roomVariantId },
-            data: newRoomData,
+          { isolationLevel: "Serializable" },
+        );
+      } catch (txErr) {
+        if (txErr.statusCode) {
+          return res.status(txErr.statusCode).json({ error: txErr.message });
+        }
+        // PostgreSQL serialization failure — concurrent transaction conflicted.
+        if (
+          txErr.code === "P2034" ||
+          (typeof txErr.message === "string" && txErr.message.includes("40001"))
+        ) {
+          return res.status(409).json({
+            error: "حدث تعارض أثناء معالجة الطلب. يرجى المحاولة مرة أخرى.",
           });
         }
-
-        return updatedBooking;
-      });
+        throw txErr;
+      }
 
       logAudit({ action: 'ACCEPT', entity: 'BOOKING', entityId: updated.id, user: req.user, details: `قبول حجز` });
 
@@ -547,7 +691,7 @@ router.patch(
         updated.student.name,
         updated.property.title,
         updated.roomVariant.name,
-        `${booking.startDate.toLocaleDateString('ar-EG')} - ${booking.endDate.toLocaleDateString('ar-EG')}`
+        `${updated.startDate.toLocaleDateString('ar-EG')} - ${updated.endDate.toLocaleDateString('ar-EG')}`
       ).catch(() => {});
 
       notify(
@@ -570,6 +714,7 @@ router.patch(
 router.patch(
   "/:id/reject",
   authenticate,
+  requireActive,
   authorize("OWNER"),
   async (req, res, next) => {
     try {
@@ -643,6 +788,7 @@ router.patch(
 router.patch(
   "/:id/cancel",
   authenticate,
+  requireActive,
   authorize("STUDENT"),
   async (req, res, next) => {
     try {
@@ -726,6 +872,16 @@ router.patch(
           },
         });
 
+        // Cascade-cancel any PENDING renewals — they can no longer be approved
+        // (the parent they depend on is gone) and shouldn't linger in the owner's queue.
+        await tx.booking.updateMany({
+          where: {
+            parentBookingId: booking.id,
+            status: "PENDING",
+          },
+          data: { status: "CANCELLED" },
+        });
+
         if (wasBedOccupied) {
           // Recompute room state from remaining active bookings (incl. renewals)
           const otherActive = await tx.booking.count({
@@ -771,6 +927,16 @@ router.patch(
         '/owner/bookings',
       ).catch(() => {});
 
+      notifyAllAdmins(
+        booking.status === 'PAID' && refundAmount > 0
+          ? 'طلب استرداد جديد'
+          : 'إلغاء حجز',
+        booking.status === 'PAID' && refundAmount > 0
+          ? `${req.user.name} ألغى حجز ${booking.property.title} — استرداد ${refundAmount} ₪ (${refundPercentage}%)`
+          : `${req.user.name} ألغى حجز ${booking.property.title}`,
+        '/admin',
+      ).catch(() => {});
+
       res.json({
         message: "تم إلغاء الحجز بنجاح.",
         booking: updated,
@@ -789,6 +955,7 @@ router.patch(
 router.patch(
   "/:id/complete",
   authenticate,
+  requireActive,
   authorize("OWNER"),
   async (req, res, next) => {
     try {

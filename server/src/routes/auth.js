@@ -10,6 +10,7 @@ import {
 } from "../utils/email.js";
 import { withTimeout, TimeoutError } from "../utils/timeout.js";
 import { authenticate } from "../middleware/auth.js";
+import { notifyAllAdmins } from "../utils/notify.js";
 import {
   loginLimiter,
   forgotPasswordLimiter,
@@ -187,6 +188,12 @@ router.post("/register", registerLimiter, async (req, res) => {
         select: userSelect,
       });
 
+      notifyAllAdmins(
+        'مالك جديد سجّل',
+        `تم تسجيل مالك جديد: ${user.name} (${user.email})`,
+        '/admin',
+      ).catch(() => {});
+
       return res.status(201).json({
         message: "Registration successful. Please log in.",
         user,
@@ -342,6 +349,12 @@ router.post("/verify-email", verifyEmailLimiter, async (req, res, next) => {
 
     await prisma.emailVerification.delete({ where: { email } });
 
+    notifyAllAdmins(
+      'طالب جديد سجّل',
+      `تم تسجيل طالب جديد: ${user.name} (${user.email})`,
+      '/admin',
+    ).catch(() => {});
+
     return res.status(201).json({
       message: "تم التحقق من بريدك بنجاح. يمكنك الآن تسجيل الدخول.",
       user,
@@ -456,11 +469,8 @@ router.post("/login", loginLimiter, async (req, res) => {
         .json({ error: "البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى." });
     }
 
-    if (!user.isActive) {
-      return res
-        .status(403)
-        .json({ error: "تم تعطيل حسابك. يرجى التواصل مع الإدارة." });
-    }
+    // Note: we no longer block login for inactive users. They can sign in and
+    // read their data, but state-changing endpoints are gated by `requireActive`.
 
     const token = generateToken(user.id);
 

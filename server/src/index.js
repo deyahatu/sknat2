@@ -23,6 +23,7 @@ import messageRoutes from './routes/messages.js';
 import pushRoutes from './routes/push.js';
 import notificationRoutes from './routes/notifications.js';
 import reportRoutes from './routes/reports.js';
+import blockAppealRoutes from './routes/blockAppeals.js';
 import { startRenewalScheduler } from './utils/renewalScheduler.js';
 
 const app = express();
@@ -54,6 +55,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/block-appeals', blockAppealRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

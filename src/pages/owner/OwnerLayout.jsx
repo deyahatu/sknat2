@@ -3,6 +3,7 @@ import { Outlet, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import OwnerSidebar from "../../components/owner/OwnerSidebar";
 import NotificationBell from "../../components/shared/NotificationBell";
+import BlockedBanner from "../../components/shared/BlockedBanner";
 import "./Owner.css";
 
 export default function OwnerLayout() {
@@ -35,6 +36,7 @@ export default function OwnerLayout() {
           </div>
         </header>
 
+        <BlockedBanner />
         <main className="owner-content">
           <Outlet />
         </main>

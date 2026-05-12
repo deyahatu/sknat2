@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
-import { authenticate, authorize } from '../middleware/auth.js';
-import { notify } from '../utils/notify.js';
+import { authenticate, authorize, requireActive } from '../middleware/auth.js';
+import { notify, notifyAllAdmins } from '../utils/notify.js';
 
 const router = Router();
 
@@ -84,7 +84,7 @@ async function findOwnerBooking(bookingId, ownerId) {
   });
 }
 
-router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
+router.post('/', authenticate, requireActive, authorize('OWNER'), async (req, res, next) => {
   try {
     const { bookingId, comment } = req.body;
 
@@ -145,6 +145,12 @@ router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
       'تقييم جديد عليك',
       `قام ${req.user.name} بتقييمك بعد إقامتك في ${booking.property.title}.`,
       '/my-ratings',
+    ).catch(() => {});
+
+    notifyAllAdmins(
+      'تقييم طالب جديد',
+      `${req.user.name} قيّم الطالب على ${booking.property.title}`,
+      '/admin',
     ).catch(() => {});
 
     res.status(201).json({

@@ -89,6 +89,29 @@
   color: rgba(255,255,255,0.4);
 }
 
+.admin-sidebar-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 20px 16px;
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 10px;
+  color: #fca5a5;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.admin-sidebar-logout:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fff;
+}
+
 .admin-main {
   flex: 1;
   padding: 30px;
@@ -1202,3 +1225,306 @@
 
 /* ---- SVG ring transition ---- */
 .ad-ring-segment { transition: stroke-dasharray 1s ease; }
+/* ─── Block reason modal ─── */
+.ad-block-modal {
+  max-width: 540px;
+  padding: 28px;
+}
+
+.ad-block-modal-title {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.ad-block-modal-sub {
+  margin: 0 0 18px;
+  color: #64748b;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.ad-block-modal-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.ad-block-modal-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ad-block-modal-textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.ad-block-modal-counter {
+  text-align: end;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin: 6px 0 18px;
+}
+
+.ad-block-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.ad-block-modal-btn {
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+
+.ad-block-modal-btn.ghost {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #e2e8f0;
+}
+
+.ad-block-modal-btn.ghost:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.ad-block-modal-btn.danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.ad-block-modal-btn.danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.ad-block-modal-btn.success {
+  background: #10b981;
+  color: #fff;
+}
+
+.ad-block-modal-btn.success:hover:not(:disabled) {
+  background: #059669;
+}
+
+.ad-block-modal-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Appeals tab ─── */
+.appeals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.appeal-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px;
+  border-left: 4px solid #f59e0b;
+}
+
+.appeal-card.appeal-accepted { border-left-color: #10b981; }
+.appeal-card.appeal-rejected { border-left-color: #dc2626; }
+
+.appeal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.appeal-user-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.appeal-user-email {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.appeal-status-pending { background: #fef3c7; color: #92400e; }
+.appeal-status-accepted { background: #d1fae5; color: #065f46; }
+.appeal-status-rejected { background: #fee2e2; color: #7f1d1d; }
+
+.appeal-section {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.appeal-section strong {
+  display: block;
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.appeal-section p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #1e293b;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.appeal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.appeal-date {
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.appeal-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ad-text-warning { color: #d97706; }
+
+.admin-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+/* ─── Report detail modal ─── */
+.report-row-clickable {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.report-row-clickable:hover td {
+  background: var(--bg-secondary) !important;
+}
+
+.report-detail-modal {
+  max-width: 720px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px;
+}
+
+.report-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.report-detail-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.report-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.report-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.report-detail-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.report-detail-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.report-detail-sub {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.report-detail-section {
+  margin-bottom: 20px;
+}
+
+.report-detail-section h4 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.report-detail-content {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.report-detail-text {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+  color: #1e293b;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.report-detail-text.muted {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.report-detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}

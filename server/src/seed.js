@@ -503,11 +503,21 @@ async function seed() {
   console.log("  Owner2:  sara@owner.com          — clean, no properties");
   console.log("");
   console.log("🎯 Per-student test scenarios:");
-  console.log("  s11111111@stu.najah.edu  محمد علي    → renewal (ends in 4 days) + completed (rate-able)");
-  console.log("  s22222222@stu.najah.edu  يوسف خالد   → refund 100% (paid today) + a PENDING booking for owner");
-  console.log("  s33333333@stu.najah.edu  ريم حسن     → refund 50%  (paid 5 days ago)");
-  console.log("  s44444444@stu.najah.edu  نور أحمد    → refund 0%   (paid 10 days ago)");
-  console.log("  s55555555@stu.najah.edu  عمر سعيد    → CLEAN — no bookings, no anything");
+  console.log(
+    "  s11111111@stu.najah.edu  محمد علي    → renewal (ends in 4 days) + completed (rate-able)",
+  );
+  console.log(
+    "  s22222222@stu.najah.edu  يوسف خالد   → refund 100% (paid today) + a PENDING booking for owner",
+  );
+  console.log(
+    "  s33333333@stu.najah.edu  ريم حسن     → refund 50%  (paid 5 days ago)",
+  );
+  console.log(
+    "  s44444444@stu.najah.edu  نور أحمد    → refund 0%   (paid 10 days ago)",
+  );
+  console.log(
+    "  s55555555@stu.najah.edu  عمر سعيد    → CLEAN — no bookings, no anything",
+  );
   console.log("");
   console.log("🏠 Properties: 3 (2 apartments, 1 studio)");
   console.log("🛏️ Rooms: 8 variants total");

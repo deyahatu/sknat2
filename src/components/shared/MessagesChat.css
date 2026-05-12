@@ -409,22 +409,30 @@
   margin-bottom: 8px;
 }
 
-.mc-info-booking {
+.mc-info-booking,
+.mc-info-section {
   width: 100%;
-  margin-top: 8px;
+  margin-top: 12px;
   padding: 16px;
   border-radius: 12px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
 }
 
-.mc-info-booking h4 {
+.mc-info-booking h4,
+.mc-info-section h4 {
   font-size: 14px;
   font-weight: 700;
   margin: 0 0 12px;
   color: #1e293b;
   padding-bottom: 8px;
   border-bottom: 1px solid #e2e8f0;
+}
+
+.mc-info-row-muted {
+  color: #94a3b8;
+  font-style: italic;
+  justify-content: center;
 }
 
 .mc-info-row {

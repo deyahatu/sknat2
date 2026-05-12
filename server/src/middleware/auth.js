@@ -14,7 +14,19 @@ export async function authenticate(req, res, next) {
     const decoded = verifyToken(token);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, name: true, email: true, phone: true, role: true, avatar: true, gender: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        avatar: true,
+        gender: true,
+        isActive: true,
+        blockReason: true,
+        blockedAt: true,
+        createdAt: true,
+      },
     });
 
     if (!user) {
@@ -38,4 +50,21 @@ export function authorize(...roles) {
     }
     next();
   };
+}
+
+// Block state-changing actions for users who have been "activity-blocked" by
+// an admin. They can still log in and read their data, but POST/PATCH/DELETE
+// must be refused. Admins are exempt — they manage the blocking themselves
+// and the toggle-active endpoint already forbids self-block.
+export function requireActive(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'غير مصرح' });
+  }
+  if (req.user.role === 'ADMIN') return next();
+  if (req.user.isActive === false) {
+    return res.status(403).json({
+      error: 'حسابك محظور من تنفيذ هذه العملية. يرجى التواصل مع الإدارة.',
+    });
+  }
+  next();
 }
