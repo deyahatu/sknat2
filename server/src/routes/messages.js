@@ -71,7 +71,7 @@ router.get('/:userId', authenticate, async (req, res, next) => {
 
     const otherUser = await prisma.user.findUnique({
       where: { id: otherId },
-      select: { id: true, name: true, avatar: true, role: true },
+      select: { id: true, name: true, avatar: true, role: true, email: true, phone: true },
     });
 
     res.json({ messages, otherUser });

@@ -49,17 +49,17 @@
   align-items: center;
   justify-content: center;
   background: var(--indigo-deep);
+  background-image: linear-gradient(rgba(12, 10, 46, 0.4), rgba(12, 10, 46, 0.5)), url('../assets/hero-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   padding: 100px 24px 80px;
   overflow: hidden;
 }
 
 /* Animated gradient orbs */
 .hero__orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.5;
-  pointer-events: none;
+  display: none;
 }
 
 .hero__orb--1 {
@@ -161,10 +161,10 @@
 
 /* Subtitle */
 .hero__sub {
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.65);
+  font-size: 1.3rem;
+  color: rgba(255, 255, 255, 0.95);
   line-height: 1.9;
-  max-width: 600px;
+  max-width: 650px;
   margin: 0 auto 40px;
   animation: fadeInDown 0.8s 0.3s ease both;
 }
@@ -616,4 +616,56 @@
   .cta h2 { font-size: 1.6rem; }
   .cta__buttons { flex-direction: column; align-items: center; }
   .cta__btn { width: 100%; max-width: 300px; justify-content: center; }
+}
+
+/* ═══════════ HOME PROPERTIES (logged-in students) ═══════════ */
+.home-properties {
+  padding: 80px 24px;
+  background: var(--indigo-wash);
+  text-align: center;
+}
+
+.home-properties__inner {
+  max-width: 100%;
+  padding: 0 40px;
+  margin: 0 auto;
+}
+
+.home-properties__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  text-align: right;
+}
+
+.home-properties__loading,
+.home-properties__empty {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  padding: 40px 0;
+}
+
+.home-properties__more {
+  margin-top: 40px;
+}
+
+@media (max-width: 1100px) {
+  .home-properties__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .home-properties__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .home-properties__grid {
+    grid-template-columns: 1fr;
+  }
+  .home-properties {
+    padding: 48px 16px;
+  }
 }

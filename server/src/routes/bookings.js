@@ -378,17 +378,34 @@ router.get(
             select: { id: true, name: true, fullPrice: true, halfPrice: true },
           },
           student: {
-            select: { id: true, name: true, email: true, phone: true },
+            select: {
+              id: true, name: true, email: true, phone: true,
+              studentRatingsReceived: {
+                select: { overallRating: true },
+              },
+            },
           },
           payment: true,
           parentBooking: {
             select: { id: true, startDate: true, endDate: true, status: true },
           },
+          studentRating: {
+            select: { overallRating: true, behaviorRating: true, cleanlinessRating: true, communicationRating: true, comment: true },
+          },
         },
         orderBy: { createdAt: "desc" },
       });
 
-      res.json({ bookings });
+      const decorated = bookings.map((b) => {
+        const ratings = b.student?.studentRatingsReceived || [];
+        const avgRating = ratings.length
+          ? Number((ratings.reduce((s, r) => s + r.overallRating, 0) / ratings.length).toFixed(1))
+          : null;
+        const { studentRatingsReceived, ...studentRest } = b.student || {};
+        return { ...b, student: { ...studentRest, avgRating, totalRatings: ratings.length } };
+      });
+
+      res.json({ bookings: decorated });
     } catch (err) {
       next(err);
     }

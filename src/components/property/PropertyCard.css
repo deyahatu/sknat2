@@ -76,6 +76,11 @@
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
 }
 
+.property-card-unavailable-text {
+  color: #dc2626;
+  font-weight: 700;
+}
+
 .property-card-campus {
   color: var(--primary, #2563eb);
   font-weight: 600;

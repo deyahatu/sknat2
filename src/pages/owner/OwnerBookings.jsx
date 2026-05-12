@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCalendar, FiRefreshCw, FiMessageSquare } from 'react-icons/fi';
+import { FiCalendar, FiRefreshCw, FiMessageSquare, FiStar } from 'react-icons/fi';
 import { api } from '../../utils/api';
 import Skeleton, { SkeletonCard } from '../../components/shared/Skeleton';
 
@@ -113,6 +113,7 @@ export default function OwnerBookings() {
                 <tr>
                   <th>العقار</th>
                   <th>الطالب</th>
+                  <th>التقييم</th>
                   <th>من</th>
                   <th>إلى</th>
                   <th>الحالة</th>
@@ -134,6 +135,15 @@ export default function OwnerBookings() {
                         )}
                       </td>
                       <td>{b.student?.name || '—'}</td>
+                      <td>
+                        {b.student?.avgRating != null ? (
+                          <span className="owner-rating-cell" title={`معدل ${b.student.totalRatings} تقييم من كل الملاك`}>
+                            <FiStar className="owner-rating-star" />
+                            {b.student.avgRating}/5
+                            <span className="owner-rating-count">({b.student.totalRatings})</span>
+                          </span>
+                        ) : '—'}
+                      </td>
                       <td dir="ltr">
                         {formatDate(b.startDate)}
                         {isRenewal && b.parentBooking && (

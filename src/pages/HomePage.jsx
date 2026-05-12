@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FiSearch,
@@ -13,7 +13,9 @@ import {
   FiCalendar,
 } from "react-icons/fi";
 import AnimatedCounter from "../components/shared/AnimatedCounter";
+import PropertyCard from "../components/property/PropertyCard";
 import { useAuth } from "../context/AuthContext";
+import { api } from "../utils/api";
 import "./HomePage.css";
 
 function HomePage() {
@@ -22,6 +24,17 @@ function HomePage() {
   const { user } = useAuth();
   const isStudent = user?.role === "STUDENT";
   const firstName = user?.name?.split(" ")[0] || "";
+  const [properties, setProperties] = useState([]);
+  const [loadingProps, setLoadingProps] = useState(false);
+
+  useEffect(() => {
+    if (!isStudent) return;
+    setLoadingProps(true);
+    api.properties.list({ limit: 12, sort: 'rating', targetGender: user?.gender })
+      .then((data) => setProperties(data.properties || data))
+      .catch(() => {})
+      .finally(() => setLoadingProps(false));
+  }, [isStudent]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -98,78 +111,110 @@ function HomePage() {
         </div>
       </section>
 
-      {/* ═══ Stats ═══ */}
-      <section className="stats">
-        <div className="stats__grid">
-          {[
-            { end: 100, suffix: "+", label: "عقار متاح", icon: <FiHome /> },
-            {
-              end: 500,
-              suffix: "+",
-              label: "طالب مسجّل",
-              icon: <FiCheckCircle />,
-            },
-            { end: 3, suffix: "", label: "مدن فلسطينية", icon: <FiShield /> },
-            { end: 1000, suffix: "+", label: "حجز ناجح", icon: <FiFileText /> },
-          ].map((s, i) => (
-            <div
-              className="stats__card"
-              key={i}
-              style={{ animationDelay: `${i * 0.1}s` }}
-            >
-              <div className="stats__icon">{s.icon}</div>
-              <span className="stats__number">
-                <AnimatedCounter end={s.end} suffix={s.suffix} />
-              </span>
-              <span className="stats__label">{s.label}</span>
+      {/* ═══ Properties for logged-in students ═══ */}
+      {isStudent && (
+        <section className="home-properties">
+          <div className="home-properties__inner">
+            <span className="section-eyebrow">عقارات متاحة</span>
+            <h2 className="section-title">عقارات مقترحة لك</h2>
+
+            {loadingProps ? (
+              <div className="home-properties__loading">جاري التحميل...</div>
+            ) : properties.length > 0 ? (
+              <div className="home-properties__grid">
+                {properties.map((p) => (
+                  <PropertyCard key={p.id} property={p} />
+                ))}
+              </div>
+            ) : (
+              <p className="home-properties__empty">لا توجد عقارات متاحة حالياً</p>
+            )}
+
+            <div className="home-properties__more">
+              <Link to="/search" className="hero__cta hero__cta--solid">
+                عرض جميع العقارات
+              </Link>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
-      {/* ═══ Features ═══ */}
-      <section className="features">
-        <div className="features__inner">
-          <span className="section-eyebrow">المميزات</span>
-          <h2 className="section-title">لماذا يختار الطلاب سكنات؟</h2>
-
-          <div className="features__grid">
+      {/* ═══ Stats (guests only) ═══ */}
+      {!isStudent && (
+        <section className="stats">
+          <div className="stats__grid">
             {[
+              { end: 100, suffix: "+", label: "عقار متاح", icon: <FiHome /> },
               {
-                icon: <FiSearch />,
-                title: "بحث ذكي",
-                desc: "فلتر حسب الحي، السعر، نوع الغرفة، الحرم الجامعي، والجنس",
+                end: 500,
+                suffix: "+",
+                label: "طالب مسجّل",
+                icon: <FiCheckCircle />,
               },
-              {
-                icon: <FiHome />,
-                title: "خيارات متنوعة",
-                desc: "غرف مفردة ومزدوجة، استوديوهات مستقلة، وشقق كاملة بأسعار تنافسية",
-              },
-              {
-                icon: <FiCreditCard />,
-                title: "دفع آمن",
-                desc: "نظام دفع إلكتروني مع إيصالات وفواتير قابلة للطباعة",
-              },
-              {
-                icon: <FiStar />,
-                title: "تقييمات موثوقة",
-                desc: "آراء حقيقية من طلاب سابقين تساعدك باتخاذ القرار الصحيح",
-              },
-            ].map((f, i) => (
+              { end: 3, suffix: "", label: "مدن فلسطينية", icon: <FiShield /> },
+              { end: 1000, suffix: "+", label: "حجز ناجح", icon: <FiFileText /> },
+            ].map((s, i) => (
               <div
-                className="features__card"
+                className="stats__card"
                 key={i}
-                style={{ animationDelay: `${i * 0.08}s` }}
+                style={{ animationDelay: `${i * 0.1}s` }}
               >
-                <div className="features__card-icon">{f.icon}</div>
-                <h3>{f.title}</h3>
-                <p>{f.desc}</p>
-                <div className="features__card-shine" />
+                <div className="stats__icon">{s.icon}</div>
+                <span className="stats__number">
+                  <AnimatedCounter end={s.end} suffix={s.suffix} />
+                </span>
+                <span className="stats__label">{s.label}</span>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* ═══ Features (guests only) ═══ */}
+      {!isStudent && (
+        <section className="features">
+          <div className="features__inner">
+            <span className="section-eyebrow">المميزات</span>
+            <h2 className="section-title">لماذا يختار الطلاب سكنات؟</h2>
+
+            <div className="features__grid">
+              {[
+                {
+                  icon: <FiSearch />,
+                  title: "بحث ذكي",
+                  desc: "فلتر حسب الحي، السعر، نوع الغرفة، الحرم الجامعي، والجنس",
+                },
+                {
+                  icon: <FiHome />,
+                  title: "خيارات متنوعة",
+                  desc: "غرف مفردة ومزدوجة، استوديوهات مستقلة، وشقق كاملة بأسعار تنافسية",
+                },
+                {
+                  icon: <FiCreditCard />,
+                  title: "دفع آمن",
+                  desc: "نظام دفع إلكتروني مع إيصالات وفواتير قابلة للطباعة",
+                },
+                {
+                  icon: <FiStar />,
+                  title: "تقييمات موثوقة",
+                  desc: "آراء حقيقية من طلاب سابقين تساعدك باتخاذ القرار الصحيح",
+                },
+              ].map((f, i) => (
+                <div
+                  className="features__card"
+                  key={i}
+                  style={{ animationDelay: `${i * 0.08}s` }}
+                >
+                  <div className="features__card-icon">{f.icon}</div>
+                  <h3>{f.title}</h3>
+                  <p>{f.desc}</p>
+                  <div className="features__card-shine" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ═══ How It Works (guests only) ═══ */}
       {!isStudent && (
@@ -212,39 +257,24 @@ function HomePage() {
         </section>
       )}
 
-      {/* ═══ CTA ═══ */}
-      <section className="cta">
-        <div className="cta__noise" />
-        <div className="cta__inner">
-          {isStudent ? (
-            <>
-              <h2>جاهز تلاقي سكنك التالي؟</h2>
-              <p>تصفّح العقارات المتاحة الآن، أو ارجع لحجوزاتك ومفضلاتك</p>
-              <div className="cta__buttons">
-                <Link to="/search" className="cta__btn cta__btn--primary">
-                  تصفّح العقارات
-                </Link>
-                <Link to="/bookings" className="cta__btn cta__btn--outline">
-                  حجوزاتي
-                </Link>
-              </div>
-            </>
-          ) : (
-            <>
-              <h2>جاهز تلاقي سكنك؟</h2>
-              <p>انضم لمئات الطلاب الذين وجدوا سكنهم المثالي عبر سكنات</p>
-              <div className="cta__buttons">
-                <Link to="/register" className="cta__btn cta__btn--primary">
-                  أنشئ حساب مجاناً
-                </Link>
-                <Link to="/search" className="cta__btn cta__btn--outline">
-                  تصفّح بدون تسجيل
-                </Link>
-              </div>
-            </>
-          )}
-        </div>
-      </section>
+      {/* ═══ CTA (guests only) ═══ */}
+      {!isStudent && (
+        <section className="cta">
+          <div className="cta__noise" />
+          <div className="cta__inner">
+            <h2>جاهز تلاقي سكنك؟</h2>
+            <p>انضم لمئات الطلاب الذين وجدوا سكنهم المثالي عبر سكنات</p>
+            <div className="cta__buttons">
+              <Link to="/register" className="cta__btn cta__btn--primary">
+                أنشئ حساب مجاناً
+              </Link>
+              <Link to="/search" className="cta__btn cta__btn--outline">
+                تصفّح بدون تسجيل
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

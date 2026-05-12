@@ -321,13 +321,14 @@ router.get('/', async (req, res, next) => {
       campus,
       roomKind,
       maxDistance,
+      sort,
+      limit,
     } = req.query;
 
     // A property is listable if:
     //  - it has at least one room variant (apartment), OR
     //  - it's a STUDIO with a price set
     const where = {
-      available: true,
       AND: [{
         OR: [
           { roomVariants: { some: {} } },
@@ -419,8 +420,10 @@ router.get('/', async (req, res, next) => {
       return { ...rest, avgRating };
     });
 
-    // Sort: matching gender first, then by date
-    if (userGender && !targetGender) {
+    // Sort
+    if (sort === 'rating') {
+      decorated.sort((a, b) => b.avgRating - a.avgRating || new Date(b.createdAt) - new Date(a.createdAt));
+    } else if (userGender && !targetGender) {
       decorated.sort((a, b) => {
         const aMatch = a.targetGender === userGender ? 0 : 1;
         const bMatch = b.targetGender === userGender ? 0 : 1;
@@ -429,7 +432,8 @@ router.get('/', async (req, res, next) => {
       });
     }
 
-    res.json({ properties: decorated });
+    const maxResults = limit ? Math.min(Math.max(Number(limit), 1), 50) : undefined;
+    res.json({ properties: maxResults ? decorated.slice(0, maxResults) : decorated });
   } catch (err) {
     next(err);
   }

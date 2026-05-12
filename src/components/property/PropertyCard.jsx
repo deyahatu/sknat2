@@ -129,7 +129,10 @@ function PropertyCard({ property, initialFavorited = false, onFavoriteChange }) 
           {property.roomVariants?.length > 0 && (
             <div className="spec">
               <IoBedOutline />
-              <span>{property.roomVariants.filter((v) => !v.isOccupied).length} غرف متاحة</span>
+              {!property.available || property.roomVariants.filter((v) => !v.isOccupied).length === 0
+                ? <span className="property-card-unavailable-text">غير متوفر</span>
+                : <span>{property.roomVariants.filter((v) => !v.isOccupied).length} غرف متاحة</span>
+              }
             </div>
           )}
           <div className="spec">

@@ -179,6 +179,29 @@ async function seed() {
     },
   });
 
+  const prop4 = await prisma.property.upsert({
+    where: { id: "seed-prop-4" },
+    update: {},
+    create: {
+      id: "seed-prop-4",
+      title: "سكن الأندلس",
+      kind: "APARTMENT",
+      city: "رفيديا",
+      address: "شارع الجامعة - مقابل كلية الطب",
+      campus: "OLD",
+      distance: 3,
+      description: "سكن طلابي مميز بجانب الحرم القديم، جميع الغرف محجوزة حالياً",
+      policy: "ممنوع التدخين، الهدوء بعد العاشرة مساءً",
+      targetGender: "MALE",
+      sharedServices: ["واي فاي", "غسالة", "مطبخ مشترك", "حراسة"],
+      bathrooms: 2,
+      area: 100,
+      images: ["data:image/jpeg;base64,/9j/4AAQSkZJRg=="],
+      available: false,
+      ownerId: owner1.id,
+    },
+  });
+
   // ── Room Variants ──
   // Prop1: 3 rooms
   const rooms1 = [];
@@ -239,6 +262,27 @@ async function seed() {
         patternName: "غرفة مفردة",
         patternColor: "#059669",
         propertyId: prop3.id,
+      },
+    });
+  }
+
+  // Prop4: 3 rooms (all occupied)
+  for (let i = 1; i <= 3; i++) {
+    await prisma.roomVariant.upsert({
+      where: { id: `seed-room-4-${i}` },
+      update: {},
+      create: {
+        id: `seed-room-4-${i}`,
+        name: `الغرفة ${i}`,
+        kind: "SINGLE",
+        capacity: 1,
+        area: 12,
+        fullPrice: 400,
+        services: ["تكييف", "حمام خاص"],
+        isOccupied: true,
+        patternName: "غرفة مفردة",
+        patternColor: "#dc2626",
+        propertyId: prop4.id,
       },
     });
   }

@@ -4,28 +4,29 @@
 
 /* ---- Page wrapper (used by Messages.jsx / OwnerMessages.jsx) ---- */
 .mc-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 16px;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .mc-page__title {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 16px;
-  direction: rtl;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: none;
+}
+
+/* Override owner-content constraints when messages are active */
+.owner-content:has(.mc-container) {
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
 }
 
 /* ---- Layout ---- */
 .mc-container {
   display: flex;
-  height: calc(100vh - 120px);
+  height: 100vh;
   direction: rtl;
-  border: 1px solid var(--border, #e2e8f0);
-  border-radius: 12px;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
   background: var(--bg-primary, #fff);
 }
@@ -101,6 +102,27 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.mc-conv-booking-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+}
+
+.mc-conv-property {
+  font-weight: 600;
+  color: var(--primary, #3b82f6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mc-conv-end-date {
+  font-size: 10px;
+  color: #94a3b8;
 }
 
 .mc-conv-unread {
@@ -339,4 +361,104 @@
 
 .mc-skeleton-gap {
   height: 12px;
+}
+
+/* ---- Info Sidebar (left, owner view) ---- */
+.mc-info-sidebar {
+  width: 300px;
+  min-width: 300px;
+  border-right: 1px solid var(--border, #e2e8f0);
+  background: #fff;
+  padding: 32px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.mc-info-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 28px;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+}
+
+.mc-info-name {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: #1e293b;
+}
+
+.mc-info-role {
+  font-size: 12px;
+  color: #4f46e5;
+  background: #eef2ff;
+  padding: 3px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.mc-info-booking {
+  width: 100%;
+  margin-top: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.mc-info-booking h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: #1e293b;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mc-info-row {
+  width: 100%;
+  font-size: 13px;
+  color: #475569;
+  padding: 6px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  word-break: break-word;
+}
+
+.mc-info-row strong {
+  color: #64748b;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.mc-info-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.mc-info-status--paid { background: #dcfce7; color: #166534; }
+.mc-info-status--approved { background: #dbeafe; color: #1e40af; }
+.mc-info-status--pending { background: #fef9c3; color: #854d0e; }
+.mc-info-status--completed { background: #f3e8ff; color: #6b21a8; }
+.mc-info-status--cancelled, .mc-info-status--rejected { background: #fee2e2; color: #991b1b; }
+
+@media (max-width: 900px) {
+  .mc-info-sidebar {
+    display: none;
+  }
 }

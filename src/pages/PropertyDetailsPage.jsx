@@ -592,6 +592,8 @@ function PropertyDetailsPage() {
 
               {!property.available ? (
                 <div className="price-card-unavailable">السكن غير متاح حالياً</div>
+              ) : availableSpots === 0 ? (
+                <div className="price-card-unavailable">جميع الغرف محجوزة حالياً</div>
               ) : isOwnProperty ? (
                 <div className="price-card-unavailable">هذا سكنك الخاص</div>
               ) : (

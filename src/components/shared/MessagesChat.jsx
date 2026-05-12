@@ -76,7 +76,75 @@ export default function MessagesChat() {
   const loadConversations = async () => {
     try {
       const data = await api.messages.conversations();
-      setConversations(data.conversations || []);
+      let convs = data.conversations || [];
+
+      // Auto-add booking contacts to sidebar
+      try {
+        const existingIds = new Set(convs.map(c => c.userId));
+
+        if (user?.role === 'STUDENT') {
+          const bookingsData = await api.bookings.studentList();
+          const bookings = bookingsData.bookings || bookingsData || [];
+          bookings.forEach(b => {
+            const owner = b.property?.owner;
+            if (owner && !existingIds.has(owner.id)) {
+              existingIds.add(owner.id);
+              convs.push({
+                userId: owner.id,
+                userName: owner.name,
+                userAvatar: owner.avatar,
+                userRole: 'OWNER',
+                lastMessage: '',
+                lastMessageAt: b.createdAt,
+                unreadCount: 0,
+              });
+            }
+          });
+        } else if (user?.role === 'OWNER') {
+          const bookingsData = await api.bookings.ownerList();
+          const bookings = bookingsData.bookings || bookingsData || [];
+          // Group bookings by student, pick best active booking
+          const studentMap = {};
+          const goodStatuses = ['PAID', 'APPROVED', 'COMPLETED'];
+          bookings.forEach(b => {
+            const student = b.student;
+            if (!student || existingIds.has(student.id)) return;
+            if (!goodStatuses.includes(b.status)) return;
+            if (!studentMap[student.id] || goodStatuses.indexOf(b.status) < goodStatuses.indexOf(studentMap[student.id].status)) {
+              studentMap[student.id] = b;
+            }
+          });
+
+          // Enrich existing conversations with booking info + add new ones
+          Object.entries(studentMap).forEach(([studentId, b]) => {
+            const bInfo = {
+              propertyTitle: b.property?.title,
+              roomName: b.roomVariant?.name,
+              roomPrice: b.roomVariant?.fullPrice,
+              endDate: b.endDate,
+              status: b.status,
+            };
+            const existing = convs.find(c => c.userId === studentId);
+            if (existing) {
+              existing.bookingInfo = bInfo;
+            } else {
+              existingIds.add(studentId);
+              convs.push({
+                userId: b.student.id,
+                userName: b.student.name,
+                userAvatar: b.student.avatar,
+                userRole: 'STUDENT',
+                lastMessage: '',
+                lastMessageAt: b.createdAt,
+                unreadCount: 0,
+                bookingInfo: bInfo,
+              });
+            }
+          });
+        }
+      } catch { /* no bookings */ }
+
+      setConversations(convs);
     } catch (err) {
       console.error(err);
     } finally {
@@ -197,7 +265,19 @@ export default function MessagesChat() {
               <div className="mc-conv-avatar">{getInitial(conv.userName)}</div>
               <div className="mc-conv-info">
                 <div className="mc-conv-name">{conv.userName}</div>
-                <div className="mc-conv-last-msg">{conv.lastMessage}</div>
+                {conv.bookingInfo ? (
+                  <div className="mc-conv-booking-info">
+                    <span className="mc-conv-property">{conv.bookingInfo.propertyTitle}</span>
+                    <span className="mc-conv-end-date">
+                      {conv.bookingInfo.roomName} — {conv.bookingInfo.roomPrice?.toLocaleString()} ₪/شهر
+                    </span>
+                    <span className="mc-conv-end-date">
+                      ينتهي: {new Date(conv.bookingInfo.endDate).toLocaleDateString('ar-SA')}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mc-conv-last-msg">{conv.lastMessage}</div>
+                )}
               </div>
               {conv.unreadCount > 0 && <div className="mc-conv-unread">{conv.unreadCount}</div>}
             </div>
@@ -284,6 +364,29 @@ export default function MessagesChat() {
           </>
         )}
       </div>
+
+      {/* Info sidebar — shown for owners when a student is selected */}
+      {user?.role === 'OWNER' && selectedUser && !chatLoading && (() => {
+        const conv = conversations.find(c => c.userId === selectedUser);
+        const info = conv?.bookingInfo;
+        return (
+          <div className="mc-info-sidebar">
+            <div className="mc-info-avatar">{otherUser?.name?.charAt(0) || '?'}</div>
+            <h3 className="mc-info-name">{otherUser?.name}</h3>
+            <span className="mc-info-role">طالب</span>
+            {info && (
+              <div className="mc-info-booking">
+                <h4>معلومات الحجز</h4>
+                <div className="mc-info-row"><strong>العقار:</strong> {info.propertyTitle}</div>
+                {info.roomName && <div className="mc-info-row"><strong>الغرفة:</strong> {info.roomName}</div>}
+                {info.roomPrice && <div className="mc-info-row"><strong>السعر:</strong> {info.roomPrice.toLocaleString()} ₪/شهر</div>}
+                <div className="mc-info-row"><strong>ينتهي:</strong> {new Date(info.endDate).toLocaleDateString('ar-SA')}</div>
+                <div className="mc-info-row"><strong>الحالة:</strong> <span className={`mc-info-status mc-info-status--${info.status?.toLowerCase()}`}>{{ PENDING: 'قيد الانتظار', APPROVED: 'مقبول', PAID: 'مدفوع', COMPLETED: 'مكتمل', CANCELLED: 'ملغي', REJECTED: 'مرفوض' }[info.status] || info.status}</span></div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
     </>
   );
