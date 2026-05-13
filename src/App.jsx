@@ -52,7 +52,8 @@ function ProtectedRoute({ children, roles }) {
 function PublicLayout() {
   const { user } = useAuth();
   if (user?.role === 'OWNER') return <Navigate to="/owner" replace />;
-  const isAdmin = user?.role === 'ADMIN';
+  if (user?.role === 'ADMIN') return <Navigate to="/admin" replace />;
+  const isAdmin = false;
   return (
     <>
       <Navbar />
@@ -110,8 +111,8 @@ function App() {
             <Route path="/favorites" element={<ProtectedRoute roles={['STUDENT']}><Favorites /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute roles={['STUDENT']}><StudentMessages /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute roles={['STUDENT', 'OWNER', 'ADMIN']}><Notifications /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
           </Route>
+          <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
           </AuthProvider>

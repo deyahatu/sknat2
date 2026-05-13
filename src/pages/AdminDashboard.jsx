@@ -4,7 +4,7 @@ import { api } from '../utils/api';
 import { useToast } from '../components/shared/Toast';
 import ConfirmModal from '../components/shared/ConfirmModal';
 import Skeleton from '../components/shared/Skeleton';
-import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText, FiFlag } from 'react-icons/fi';
+import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText, FiFlag, FiLogOut } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import './AdminDashboard.css';
 
@@ -34,7 +34,7 @@ function exportCSV(data, filename) {
 }
 
 export default function AdminDashboard() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('users');
   const [pendingCounts, setPendingCounts] = useState({ refunds: 0, withdrawals: 0 });
 
@@ -76,6 +76,9 @@ export default function AdminDashboard() {
           </nav>
           <div className="admin-sidebar-footer">
             <span>مدير النظام</span>
+            <button className="admin-logout-btn" onClick={logout}>
+              <FiLogOut /> تسجيل الخروج
+            </button>
           </div>
         </aside>
 
