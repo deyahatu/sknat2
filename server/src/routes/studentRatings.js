@@ -91,6 +91,9 @@ router.post('/', authenticate, requireActive, authorize('OWNER'), async (req, re
     if (!bookingId) {
       return res.status(400).json({ error: 'الحجز مطلوب.' });
     }
+    if (comment && String(comment).length > 500) {
+      return res.status(400).json({ error: 'التعليق طويل جداً (الحد الأقصى 500 حرف).' });
+    }
 
     const ratingData = buildRatingData(req.body);
 

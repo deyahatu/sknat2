@@ -142,6 +142,7 @@ enum ReportStatus {
     images          String[]
     available       Boolean  @default(true)
     disabledByAdmin Boolean  @default(false)
+    deletedAt       DateTime?
     studioPrice     Decimal? @db.Decimal(10, 2)
     ownerId         String
     createdAt       DateTime @default(now())

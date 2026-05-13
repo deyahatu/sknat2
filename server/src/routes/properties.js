@@ -7,6 +7,7 @@ import { logAudit } from '../utils/audit.js';
 const router = Router();
 
 const IMAGE_REGEX = /^data:image\/(jpeg|jpg|png|webp);base64,/i;
+const UPLOAD_URL_REGEX = /^\/uploads\/[\w-]+\.(jpg|jpeg|png|webp)$/i;
 const VALID_GENDERS = ['MALE', 'FEMALE'];
 const VALID_PROPERTY_KINDS = ['APARTMENT', 'STUDIO'];
 const VALID_ROOM_KINDS = ['SINGLE', 'DOUBLE'];
@@ -125,7 +126,7 @@ function validateImages(images) {
   }
 
   const invalidImage = images.some((image) => (
-    typeof image !== 'string' || !IMAGE_REGEX.test(image)
+    typeof image !== 'string' || (!IMAGE_REGEX.test(image) && !UPLOAD_URL_REGEX.test(image))
   ));
 
   if (invalidImage) {
@@ -367,6 +368,7 @@ router.get('/', async (req, res, next) => {
     //  - it's a STUDIO with a price set
     // AND (for non-admin viewers) its owner is not currently blocked.
     const where = {
+      deletedAt: null,
       AND: [
         {
           OR: [
@@ -522,7 +524,7 @@ router.post('/', authenticate, requireActive, authorize('OWNER'), async (req, re
 router.get('/mine', authenticate, requireActive, authorize('OWNER'), async (req, res, next) => {
   try {
     const properties = await prisma.property.findMany({
-      where: { ownerId: req.user.id },
+      where: { ownerId: req.user.id, deletedAt: null },
       select: {
         ...propertySelect,
         _count: {
@@ -838,7 +840,10 @@ router.delete('/:id', authenticate, requireActive, async (req, res, next) => {
       return res.status(400).json({ error: 'هذا السكن لديه حجوزات نشطة. لا يمكن حذفه.' });
     }
 
-    await prisma.property.delete({ where: { id: existing.id } });
+    await prisma.property.update({
+      where: { id: existing.id },
+      data: { deletedAt: new Date(), available: false },
+    });
     logAudit({ action: 'DELETE', entity: 'PROPERTY', entityId: existing.id, user: req.user, details: existing.title });
     res.json({ message: 'تم حذف السكن بنجاح.' });
   } catch (err) {

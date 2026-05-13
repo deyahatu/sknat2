@@ -16,6 +16,9 @@ router.post('/', authenticate, requireActive, async (req, res, next) => {
     if (!targetId) {
       return res.status(400).json({ error: 'يرجى تحديد المحتوى المُبلَّغ عنه.' });
     }
+    if (details && String(details).length > 1000) {
+      return res.status(400).json({ error: 'تفاصيل البلاغ طويلة جداً (الحد الأقصى 1000 حرف).' });
+    }
     if (!reason || !VALID_REASONS.includes(reason)) {
       return res.status(400).json({ error: 'يرجى اختيار سبب صحيح للبلاغ.' });
     }
@@ -151,6 +154,10 @@ router.patch('/:id/review', authenticate, authorize('ADMIN'), async (req, res, n
     const { action, adminNote } = req.body;
     const report = await prisma.report.findUnique({ where: { id: req.params.id } });
     if (!report) return res.status(404).json({ error: 'البلاغ غير موجود.' });
+
+    if (report.status !== 'PENDING') {
+      return res.status(400).json({ error: 'تمت مراجعة هذا البلاغ مسبقاً.' });
+    }
 
     if (action === 'delete_target') {
       if (report.type === 'REVIEW') {

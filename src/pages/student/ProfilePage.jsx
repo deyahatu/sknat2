@@ -159,8 +159,9 @@ export default function ProfilePage() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (ev) => uploadAvatar(ev.target.result);
+    api.upload.single(file)
+      .then((data) => uploadAvatar(data.url))
+      .catch((err) => setAvatarStatus({ type: "error", message: err.message || "فشل رفع الصورة" }));
     reader.onerror = () =>
       setAvatarStatus({ type: "error", message: "تعذر قراءة الصورة" });
     reader.readAsDataURL(file);

@@ -238,19 +238,19 @@ export default function AddEditProperty() {
     return { total, available, booked, partial };
   }, [rooms]);
 
-  function handlePropertyImageFiles(e) {
+  async function handlePropertyImageFiles(e) {
     const files = Array.from(e.target.files);
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setPropertyData((prev) => ({
-          ...prev,
-          images: [...prev.images, ev.target.result],
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
     e.target.value = "";
+    if (files.length === 0) return;
+    try {
+      const data = await api.upload.images(files);
+      setPropertyData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...data.urls],
+      }));
+    } catch (err) {
+      toast.error(err.message || 'فشل رفع الصور');
+    }
   }
 
   function togglePropertyService(s) {

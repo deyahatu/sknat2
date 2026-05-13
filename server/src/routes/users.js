@@ -40,6 +40,7 @@ router.get('/profile', authenticate, async (req, res, next) => {
 });
 
 const AVATAR_REGEX = /^data:image\/(jpeg|jpg|png|webp);base64,/i;
+const UPLOAD_URL_REGEX = /^\/uploads\/[\w-]+\.(jpg|jpeg|png|webp)$/i;
 
 router.put('/profile', authenticate, requireActive, async (req, res, next) => {
   try {
@@ -77,7 +78,7 @@ router.put('/profile', authenticate, requireActive, async (req, res, next) => {
     if (avatar === null) {
       data.avatar = null;
     } else if (typeof avatar === 'string' && avatar) {
-      if (!AVATAR_REGEX.test(avatar)) {
+      if (!AVATAR_REGEX.test(avatar) && !UPLOAD_URL_REGEX.test(avatar)) {
         return res.status(400).json({ error: 'يرجى رفع صورة صحيحة (JPG, PNG, أو WEBP).' });
       }
       data.avatar = avatar;

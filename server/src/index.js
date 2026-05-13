@@ -36,6 +36,11 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '20mb' }));
 app.use(cookieParser());
+app.use('/uploads', express.static('uploads'));
+
+// General API rate limit
+import { apiLimiter } from './middleware/rateLimit.js';
+app.use('/api', apiLimiter);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -56,6 +61,23 @@ app.use('/api/push', pushRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/block-appeals', blockAppealRoutes);
+
+// File upload endpoint
+import { authenticate } from './middleware/auth.js';
+import { upload, filesToUrls, fileToUrl } from './utils/upload.js';
+app.post('/api/upload', authenticate, upload.array('images', 10), (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: 'لم يتم رفع أي صورة.' });
+  }
+  const urls = filesToUrls(req.files);
+  res.json({ urls });
+});
+app.post('/api/upload/single', authenticate, upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'لم يتم رفع أي صورة.' });
+  }
+  res.json({ url: fileToUrl(req.file) });
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -97,12 +119,21 @@ io.on('connection', (socket) => {
   const { userId } = socket;
   socket.join(`user_${userId}`);
 
+  // Rate limit typing events: max 1 per second per socket
+  let lastTyping = 0;
   socket.on('typing', ({ to }) => {
-    io.to(`user_${to}`).emit('typing', { from: userId });
+    const now = Date.now();
+    if (now - lastTyping < 1000) return;
+    lastTyping = now;
+    if (typeof to === 'string' && to.length > 0) {
+      io.to(`user_${to}`).emit('typing', { from: userId });
+    }
   });
 
   socket.on('stop_typing', ({ to }) => {
-    io.to(`user_${to}`).emit('stop_typing', { from: userId });
+    if (typeof to === 'string' && to.length > 0) {
+      io.to(`user_${to}`).emit('stop_typing', { from: userId });
+    }
   });
 });
 

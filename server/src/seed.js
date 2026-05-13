@@ -32,7 +32,7 @@ async function seed() {
       password: pw,
       role: "OWNER",
       idNumber: "111111111",
-      idPhoto: "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
+      idPhoto: "/uploads/placeholder-id.jpg",
     },
   });
   const owner2 = await prisma.user.upsert({
@@ -45,7 +45,7 @@ async function seed() {
       password: pw,
       role: "OWNER",
       idNumber: "222222222",
-      idPhoto: "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
+      idPhoto: "/uploads/placeholder-id.jpg",
     },
   });
 
@@ -101,7 +101,7 @@ async function seed() {
         ...s,
         password: pw,
         role: "STUDENT",
-        idPhoto: "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
+        idPhoto: "/uploads/placeholder-id.jpg",
       },
     });
     students.push(st);
@@ -126,7 +126,7 @@ async function seed() {
       sharedServices: ["واي فاي", "غسالة", "مطبخ مشترك"],
       bathrooms: 2,
       area: 120,
-      images: ["data:image/jpeg;base64,/9j/4AAQSkZJRg=="],
+      images: ["/uploads/placeholder-property.jpg"],
       available: true,
       ownerId: owner1.id,
     },
@@ -149,7 +149,7 @@ async function seed() {
       sharedServices: ["واي فاي", "موقف سيارات"],
       bathrooms: 1,
       area: 40,
-      images: ["data:image/jpeg;base64,/9j/4AAQSkZJRg=="],
+      images: ["/uploads/placeholder-property.jpg"],
       available: true,
       studioPrice: 600,
       ownerId: owner2.id,
@@ -173,7 +173,7 @@ async function seed() {
       sharedServices: ["واي فاي", "مصعد", "حراسة"],
       bathrooms: 3,
       area: 150,
-      images: ["data:image/jpeg;base64,/9j/4AAQSkZJRg=="],
+      images: ["/uploads/placeholder-property.jpg"],
       available: true,
       ownerId: owner1.id,
     },
@@ -196,7 +196,7 @@ async function seed() {
       sharedServices: ["واي فاي", "غسالة", "مطبخ مشترك", "حراسة"],
       bathrooms: 2,
       area: 100,
-      images: ["data:image/jpeg;base64,/9j/4AAQSkZJRg=="],
+      images: ["/uploads/placeholder-property.jpg"],
       available: false,
       ownerId: owner1.id,
     },

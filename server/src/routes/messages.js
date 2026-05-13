@@ -131,6 +131,9 @@ router.post('/', authenticate, requireActive, async (req, res, next) => {
     if (!receiverId || !content?.trim()) {
       return res.status(400).json({ error: 'يرجى كتابة الرسالة.' });
     }
+    if (content.length > 2000) {
+      return res.status(400).json({ error: 'الرسالة طويلة جداً (الحد الأقصى 2000 حرف).' });
+    }
     if (receiverId === req.user.id) {
       return res.status(400).json({ error: 'لا يمكنك مراسلة نفسك.' });
     }

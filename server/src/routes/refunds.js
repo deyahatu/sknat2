@@ -82,57 +82,69 @@ router.patch(
   authorize('ADMIN'),
   async (req, res, next) => {
     try {
-      const refund = await prisma.refundRequest.findUnique({
-        where: { id: req.params.id },
-        include: {
-          booking: {
+      try {
+        await prisma.$transaction(async (tx) => {
+          const refund = await tx.refundRequest.findUnique({
+            where: { id: req.params.id },
             include: {
-              property: { select: { ownerId: true } },
-              payment: true,
+              booking: {
+                include: {
+                  property: { select: { ownerId: true } },
+                  payment: true,
+                },
+              },
             },
-          },
-        },
-      });
-
-      if (!refund) {
-        return res.status(404).json({ error: 'طلب الاسترداد غير موجود.' });
-      }
-
-      if (refund.status !== 'PENDING') {
-        return res
-          .status(400)
-          .json({ error: 'يمكن الموافقة على الطلبات المعلقة فقط.' });
-      }
-
-      const ownerId = refund.booking.property.ownerId;
-      const refundAmount = Number(refund.refundAmount);
-
-      const wallet = await prisma.wallet.findUnique({ where: { ownerId } });
-
-      if (!wallet || Number(wallet.balance) < refundAmount) {
-        return res.status(400).json({
-          error: 'رصيد المالك غير كافٍ لإتمام الاسترداد.',
-        });
-      }
-
-      await prisma.$transaction(async (tx) => {
-        await tx.wallet.update({
-          where: { id: wallet.id },
-          data: { balance: { decrement: refundAmount } },
-        });
-
-        if (refund.booking.payment) {
-          await tx.payment.update({
-            where: { id: refund.booking.payment.id },
-            data: { status: 'REFUNDED' },
           });
-        }
 
-        await tx.refundRequest.update({
-          where: { id: refund.id },
-          data: { status: 'COMPLETED' },
-        });
-      });
+          if (!refund) {
+            const err = new Error('طلب الاسترداد غير موجود.');
+            err.statusCode = 404;
+            throw err;
+          }
+
+          if (refund.status !== 'PENDING') {
+            const err = new Error('يمكن الموافقة على الطلبات المعلقة فقط.');
+            err.statusCode = 400;
+            throw err;
+          }
+
+          const ownerId = refund.booking.property.ownerId;
+          const refundAmount = Math.max(0, Number(refund.refundAmount));
+
+          const wallet = await tx.wallet.findUnique({ where: { ownerId } });
+
+          if (!wallet || Number(wallet.balance) < refundAmount) {
+            const err = new Error('رصيد المالك غير كافٍ لإتمام الاسترداد.');
+            err.statusCode = 400;
+            throw err;
+          }
+
+          await tx.wallet.update({
+            where: { id: wallet.id },
+            data: { balance: { decrement: refundAmount } },
+          });
+
+          if (refund.booking.payment) {
+            await tx.payment.update({
+              where: { id: refund.booking.payment.id },
+              data: { status: 'REFUNDED' },
+            });
+          }
+
+          await tx.refundRequest.update({
+            where: { id: refund.id },
+            data: { status: 'COMPLETED' },
+          });
+        }, { isolationLevel: "Serializable" });
+      } catch (txErr) {
+        if (txErr.statusCode) {
+          return res.status(txErr.statusCode).json({ error: txErr.message });
+        }
+        if (txErr.code === "P2034" || txErr.message?.includes("40001")) {
+          return res.status(409).json({ error: "حدث تعارض. يرجى المحاولة مرة أخرى." });
+        }
+        throw txErr;
+      }
 
       const updated = await prisma.refundRequest.findUnique({
         where: { id: refund.id },

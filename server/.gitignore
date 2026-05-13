@@ -6,3 +6,7 @@ node_modules
 
 # Prisma Studio temp logs
 .tmp/
+
+# Uploaded files (except placeholders)
+uploads/*
+!uploads/placeholder-*.jpg

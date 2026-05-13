@@ -151,6 +151,32 @@ export const api = {
         body: JSON.stringify({ decision, adminNote }),
       }),
   },
+  upload: {
+    images: async (files) => {
+      const formData = new FormData();
+      files.forEach(f => formData.append('images', f));
+      const res = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'فشل رفع الصور');
+      return data;
+    },
+    single: async (file) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch(`${API_URL}/upload/single`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'فشل رفع الصورة');
+      return data;
+    },
+  },
   admin: {
     stats: () => request('/admin/stats'),
     monthlyStats: () => request('/admin/stats/monthly'),

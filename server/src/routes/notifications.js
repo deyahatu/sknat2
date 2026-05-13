@@ -36,6 +36,10 @@ router.patch('/read-all', authenticate, async (req, res, next) => {
 
 router.patch('/:id/read', authenticate, async (req, res, next) => {
   try {
+    const notification = await prisma.notification.findUnique({ where: { id: req.params.id } });
+    if (!notification || notification.userId !== req.user.id) {
+      return res.status(404).json({ error: 'الإشعار غير موجود.' });
+    }
     await prisma.notification.update({
       where: { id: req.params.id },
       data: { isRead: true },

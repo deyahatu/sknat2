@@ -69,13 +69,15 @@ function RegisterPage() {
     setFormData({ ...formData, [name]: filteredValue });
   };
 
-  const handleIdPhoto = (e) => {
+  const handleIdPhoto = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) =>
-      setFormData((prev) => ({ ...prev, idPhoto: ev.target.result }));
-    reader.readAsDataURL(file);
+    try {
+      const data = await api.upload.single(file);
+      setFormData((prev) => ({ ...prev, idPhoto: data.url }));
+    } catch (err) {
+      setError(err.message || 'فشل رفع الصورة');
+    }
   };
 
   const handleSubmit = async (e) => {

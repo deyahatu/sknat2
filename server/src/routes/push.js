@@ -18,9 +18,15 @@ router.post('/subscribe', authenticate, async (req, res, next) => {
       return res.status(400).json({ error: 'بيانات الاشتراك غير صالحة.' });
     }
 
+    // Check if endpoint belongs to another user (prevent hijacking)
+    const existing = await prisma.pushSubscription.findUnique({ where: { endpoint } });
+    if (existing && existing.userId !== req.user.id) {
+      return res.status(403).json({ error: 'هذا الاشتراك مرتبط بحساب آخر.' });
+    }
+
     await prisma.pushSubscription.upsert({
       where: { endpoint },
-      update: { userId: req.user.id, p256dh: keys.p256dh, auth: keys.auth },
+      update: { p256dh: keys.p256dh, auth: keys.auth },
       create: { userId: req.user.id, endpoint, p256dh: keys.p256dh, auth: keys.auth },
     });
 

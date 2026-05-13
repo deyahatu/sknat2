@@ -21,6 +21,9 @@ router.post('/', authenticate, requireActive, authorize('STUDENT'), async (req, 
     if (!bookingId || rating === undefined) {
       return res.status(400).json({ error: 'الحجز والتقييم مطلوبان.' });
     }
+    if (comment && String(comment).length > 500) {
+      return res.status(400).json({ error: 'التعليق طويل جداً (الحد الأقصى 500 حرف).' });
+    }
 
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },

@@ -200,43 +200,56 @@ router.post("/", authenticate, requireActive, authorize("OWNER"), async (req, re
         });
     }
 
-    const { availableBalance, lockedBalance } = await getWalletSnapshot(
-      req.user.id,
-    );
+    let request;
+    try {
+      request = await prisma.$transaction(async (tx) => {
+        const { availableBalance, lockedBalance } = await getWalletSnapshot(
+          req.user.id,
+        );
 
-    if (withdrawAmount > availableBalance) {
-      const lockedMsg = lockedBalance > 0
-        ? ` (${lockedBalance.toFixed(2)} شيكل مقفولة مؤقتاً خلال فترة الاسترداد).`
-        : ".";
-      return res.status(400).json({
-        error:
-          `الرصيد المتاح للسحب غير كافٍ. الرصيد المتاح حالياً ${availableBalance.toFixed(2)} شيكل${lockedMsg}`,
-      });
-    }
+        if (withdrawAmount > availableBalance) {
+          const lockedMsg = lockedBalance > 0
+            ? ` (${lockedBalance.toFixed(2)} شيكل مقفولة مؤقتاً خلال فترة الاسترداد).`
+            : ".";
+          const err = new Error(
+            `الرصيد المتاح للسحب غير كافٍ. الرصيد المتاح حالياً ${availableBalance.toFixed(2)} شيكل${lockedMsg}`,
+          );
+          err.statusCode = 400;
+          throw err;
+        }
 
-    const pendingRequest = await prisma.withdrawRequest.findFirst({
-      where: { ownerId: req.user.id, status: "PENDING" },
-    });
-
-    if (pendingRequest) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "لديك طلب سحب قيد المعالجة بالفعل. يرجى الانتظار حتى تتم معالجته.",
+        const pendingRequest = await tx.withdrawRequest.findFirst({
+          where: { ownerId: req.user.id, status: "PENDING" },
         });
-    }
 
-    const request = await prisma.withdrawRequest.create({
-      data: {
-        amount: withdrawAmount,
-        status: "PENDING",
-        ownerId: req.user.id,
-        bankName: owner.bankName,
-        bankAccountHolder: owner.bankAccountHolder,
-        bankAccountNumber: owner.bankAccountNumber,
-      },
-    });
+        if (pendingRequest) {
+          const err = new Error(
+            "لديك طلب سحب قيد المعالجة بالفعل. يرجى الانتظار حتى تتم معالجته.",
+          );
+          err.statusCode = 400;
+          throw err;
+        }
+
+        return tx.withdrawRequest.create({
+          data: {
+            amount: withdrawAmount,
+            status: "PENDING",
+            ownerId: req.user.id,
+            bankName: owner.bankName,
+            bankAccountHolder: owner.bankAccountHolder,
+            bankAccountNumber: owner.bankAccountNumber,
+          },
+        });
+      }, { isolationLevel: "Serializable" });
+    } catch (txErr) {
+      if (txErr.statusCode) {
+        return res.status(txErr.statusCode).json({ error: txErr.message });
+      }
+      if (txErr.code === "P2034" || txErr.message?.includes("40001")) {
+        return res.status(409).json({ error: "حدث تعارض. يرجى المحاولة مرة أخرى." });
+      }
+      throw txErr;
+    }
 
     notifyAllAdmins(
       'طلب سحب جديد',

@@ -38,6 +38,7 @@ const PHONE_REGEX = /^\d{10}$/;
 const ID_NUMBER_REGEX = /^\d{9}$/;
 const UNIVERSITY_ID_REGEX = /^\d{8}$/;
 const ID_PHOTO_REGEX = /^data:image\/(jpeg|jpg|png|webp);base64,/i;
+const UPLOAD_URL_REGEX = /^\/uploads\/[\w-]+\.(jpg|jpeg|png|webp)$/i;
 const GENDER_VALUES = ["MALE", "FEMALE"];
 
 const userSelect = {
@@ -111,7 +112,7 @@ router.post("/register", registerLimiter, async (req, res) => {
       });
     }
 
-    if (!ID_PHOTO_REGEX.test(idPhoto)) {
+    if (!ID_PHOTO_REGEX.test(idPhoto) && !UPLOAD_URL_REGEX.test(idPhoto)) {
       return res.status(400).json({ error: "يرجى إعادة رفع الصورة." });
     }
 

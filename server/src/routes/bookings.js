@@ -7,6 +7,16 @@ import { notify, notifyAllAdmins } from '../utils/notify.js';
 
 const router = Router();
 
+// Shared refund policy constants — single source of truth
+const REFUND_FULL_DAYS = 3;
+const REFUND_HALF_DAYS = 7;
+
+function calcRefundPercentage(daysSincePayment) {
+  if (daysSincePayment <= REFUND_FULL_DAYS) return 100;
+  if (daysSincePayment <= REFUND_HALF_DAYS) return 50;
+  return 0;
+}
+
 router.post("/", authenticate, requireActive, authorize("STUDENT"), async (req, res, next) => {
   try {
     const { propertyId, roomVariantId, startDate, endDate } = req.body;
@@ -854,15 +864,8 @@ router.patch(
           (now.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24),
         );
 
-        if (daysSincePayment <= 3) {
-          refundPercentage = 100;
-        } else if (daysSincePayment <= 7) {
-          refundPercentage = 50;
-        } else {
-          refundPercentage = 0;
-        }
-
-        refundAmount = originalAmount * (refundPercentage / 100);
+        refundPercentage = calcRefundPercentage(daysSincePayment);
+        refundAmount = Math.max(0, originalAmount * (refundPercentage / 100));
       }
       // PENDING — just cancel, no payment to refund
 
@@ -1099,15 +1102,8 @@ router.get("/:id/cancellation-policy", authenticate, async (req, res, next) => {
           (1000 * 60 * 60 * 24),
       );
 
-      if (daysSincePayment <= 3) {
-        refundPercentage = 100;
-      } else if (daysSincePayment <= 7) {
-        refundPercentage = 50;
-      } else {
-        refundPercentage = 0;
-      }
-
-      refundAmount = Number(booking.payment.amount) * (refundPercentage / 100);
+      refundPercentage = calcRefundPercentage(daysSincePayment);
+      refundAmount = Math.max(0, Number(booking.payment.amount) * (refundPercentage / 100));
     }
 
     res.json({

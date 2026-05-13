@@ -81,18 +81,15 @@ export default function AdminDashboard() {
               );
             })}
           </nav>
-          <button
-            type="button"
-            className="admin-sidebar-logout"
-            onClick={() => logout()}
-          >
-            <FiLogOut />
-            <span>تسجيل الخروج</span>
-          </button>
           <div className="admin-sidebar-footer">
             <span>مدير النظام</span>
-            <button className="admin-logout-btn" onClick={logout}>
-              <FiLogOut /> تسجيل الخروج
+            <button
+              type="button"
+              className="admin-sidebar-logout"
+              onClick={() => logout()}
+            >
+              <FiLogOut />
+              <span>تسجيل الخروج</span>
             </button>
           </div>
         </aside>
