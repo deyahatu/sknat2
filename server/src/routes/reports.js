@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate, authorize, requireActive } from '../middleware/auth.js';
+import { notifyAllAdmins } from '../utils/notify.js';
 
 const router = Router();
 
@@ -8,7 +9,7 @@ const VALID_REASONS = ['OFFENSIVE', 'FALSE_INFO', 'HARASSMENT', 'POLICY_VIOLATIO
 const VALID_TYPES = ['REVIEW', 'STUDENT_RATING', 'MESSAGE'];
 
 // UC-41: Submit a report on a review, student rating, or chat message
-router.post('/', authenticate, async (req, res, next) => {
+router.post('/', authenticate, requireActive, async (req, res, next) => {
   try {
     const { type, targetId, reason, details } = req.body;
 
@@ -62,6 +63,12 @@ router.post('/', authenticate, async (req, res, next) => {
         details: details?.trim() || null,
       },
     });
+
+    notifyAllAdmins(
+      'بلاغ جديد',
+      `${req.user.name} قدّم بلاغاً (${reason}) — يحتاج مراجعة`,
+      '/admin',
+    ).catch(() => {});
 
     res.status(201).json({ message: 'تم إرسال البلاغ بنجاح.', report });
   } catch (err) {

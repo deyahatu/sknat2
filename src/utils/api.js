@@ -50,7 +50,7 @@ export const api = {
     list: (params) => request(`/users${buildQuery(params)}`),
     get: (id) => request(`/users/${id}`),
     delete: (id) => request(`/users/${id}`, { method: 'DELETE' }),
-    toggleActive: (id) => request(`/users/${id}/toggle-active`, { method: 'PATCH' }),
+    toggleActive: (id, reason) => request(`/users/${id}/toggle-active`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
   },
   properties: {
     list: (filters) => request(`/properties${buildQuery(filters)}`),
@@ -67,6 +67,7 @@ export const api = {
     createVariant: (propertyId, body) => request(`/properties/${propertyId}/variants`, { method: 'POST', body: JSON.stringify(body) }),
     bulkCreateVariants: (propertyId, variants) => request(`/properties/${propertyId}/variants/bulk`, { method: 'POST', body: JSON.stringify({ variants }) }),
     updateVariant: (propertyId, variantId, body) => request(`/properties/${propertyId}/variants/${variantId}`, { method: 'PUT', body: JSON.stringify(body) }),
+    setRoomManualStatus: (propertyId, variantId, status) => request(`/properties/${propertyId}/variants/${variantId}/manual-status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
     deleteVariant: (propertyId, variantId) => request(`/properties/${propertyId}/variants/${variantId}`, { method: 'DELETE' }),
   },
   bookings: {
@@ -139,6 +140,16 @@ export const api = {
     create: (body) => request('/reports', { method: 'POST', body: JSON.stringify(body) }),
     list: (status) => request(`/reports${status ? `?status=${status}` : ''}`),
     review: (id, body) => request(`/reports/${id}/review`, { method: 'PATCH', body: JSON.stringify(body) }),
+  },
+  blockAppeals: {
+    submit: (message) => request('/block-appeals', { method: 'POST', body: JSON.stringify({ message }) }),
+    mine: () => request('/block-appeals/me'),
+    list: (status) => request(`/block-appeals${status ? `?status=${status}` : ''}`),
+    resolve: (id, decision, adminNote) =>
+      request(`/block-appeals/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ decision, adminNote }),
+      }),
   },
   admin: {
     stats: () => request('/admin/stats'),

@@ -4,6 +4,7 @@ import ErrorBoundary from './components/shared/ErrorBoundary';
 import { ToastProvider } from './components/shared/Toast';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import BlockedBanner from './components/shared/BlockedBanner';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -57,6 +58,7 @@ function PublicLayout() {
   return (
     <>
       <Navbar />
+      <BlockedBanner />
       <Outlet />
       {!isAdmin && <Footer />}
     </>

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate, authorize, requireActive } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -37,7 +37,7 @@ router.get('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
 });
 
 // POST /api/favorites — add a property to favorites
-router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
+router.post('/', authenticate, requireActive, authorize('STUDENT'), async (req, res, next) => {
   try {
     const { propertyId } = req.body;
 
@@ -83,6 +83,7 @@ router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
 router.delete(
   '/:propertyId',
   authenticate,
+  requireActive,
   authorize('STUDENT'),
   async (req, res, next) => {
     try {

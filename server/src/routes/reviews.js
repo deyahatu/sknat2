@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
-import { authenticate, authorize } from '../middleware/auth.js';
-import { notify } from '../utils/notify.js';
+import { authenticate, authorize, requireActive } from '../middleware/auth.js';
+import { notify, notifyAllAdmins } from '../utils/notify.js';
 
 const router = Router();
 
@@ -14,7 +14,7 @@ function validateRating(value) {
 }
 
 // POST /api/reviews — student rates an accommodation (UC-9)
-router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
+router.post('/', authenticate, requireActive, authorize('STUDENT'), async (req, res, next) => {
   try {
     const { bookingId, rating, comment } = req.body;
 
@@ -86,6 +86,12 @@ router.post('/', authenticate, authorize('STUDENT'), async (req, res, next) => {
     });
 
     notify(review.property.ownerId, 'تقييم جديد', `تقييم جديد على ${review.property.title}`, '/owner/ratings').catch(() => {});
+
+    notifyAllAdmins(
+      'تقييم سكن جديد',
+      `${req.user.name} قيّم ${review.property.title} (${review.rating}⭐)`,
+      '/admin',
+    ).catch(() => {});
 
     res.status(201).json({
       message: 'شكراً لتقييمك.',

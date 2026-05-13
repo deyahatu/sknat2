@@ -10,12 +10,14 @@ import {
 } from "../utils/email.js";
 import { withTimeout, TimeoutError } from "../utils/timeout.js";
 import { authenticate } from "../middleware/auth.js";
+import { notifyAllAdmins } from "../utils/notify.js";
 import {
   loginLimiter,
   forgotPasswordLimiter,
   verifyEmailLimiter,
   resendCodeLimiter,
   registerLimiter,
+  resetPasswordLimiter,
 } from "../middleware/rateLimit.js";
 
 const router = Router();
@@ -149,6 +151,24 @@ router.post("/register", registerLimiter, async (req, res) => {
       });
     }
 
+    // After admin deletes a user, their identity (email/phone/idNumber) is
+    // recorded in BlockedIdentity. Reject re-registration so a deleted abuser
+    // can't just sign up again with the same credentials.
+    const blockedIdentity = await prisma.blockedIdentity.findFirst({
+      where: {
+        OR: [
+          { email },
+          { phone },
+          { idNumber },
+        ],
+      },
+    });
+    if (blockedIdentity) {
+      return res.status(403).json({
+        error: "لا يمكن إنشاء حساب جديد بهذه البيانات. للاستفسار، يرجى التواصل مع الدعم.",
+      });
+    }
+
     if (!isOwner) {
       const pendingPhoneConflict = await prisma.emailVerification.findFirst({
         where: { phone, NOT: { email } },
@@ -186,6 +206,12 @@ router.post("/register", registerLimiter, async (req, res) => {
         },
         select: userSelect,
       });
+
+      notifyAllAdmins(
+        'مالك جديد سجّل',
+        `تم تسجيل مالك جديد: ${user.name} (${user.email})`,
+        '/admin',
+      ).catch(() => {});
 
       return res.status(201).json({
         message: "Registration successful. Please log in.",
@@ -324,6 +350,24 @@ router.post("/verify-email", verifyEmailLimiter, async (req, res, next) => {
       });
     }
 
+    // Re-check the blocklist at verification time too: an admin may have
+    // deleted a user (and blocked the identity) between register and verify.
+    const blockedIdentity = await prisma.blockedIdentity.findFirst({
+      where: {
+        OR: [
+          { email: pending.email },
+          { phone: pending.phone },
+          { idNumber: pending.idNumber },
+        ],
+      },
+    });
+    if (blockedIdentity) {
+      await prisma.emailVerification.delete({ where: { email } });
+      return res.status(403).json({
+        error: "لا يمكن إنشاء حساب جديد بهذه البيانات. للاستفسار، يرجى التواصل مع الدعم.",
+      });
+    }
+
     // Code matches — create the User and clean up
     const user = await prisma.user.create({
       data: {
@@ -341,6 +385,12 @@ router.post("/verify-email", verifyEmailLimiter, async (req, res, next) => {
     });
 
     await prisma.emailVerification.delete({ where: { email } });
+
+    notifyAllAdmins(
+      'طالب جديد سجّل',
+      `تم تسجيل طالب جديد: ${user.name} (${user.email})`,
+      '/admin',
+    ).catch(() => {});
 
     return res.status(201).json({
       message: "تم التحقق من بريدك بنجاح. يمكنك الآن تسجيل الدخول.",
@@ -456,11 +506,8 @@ router.post("/login", loginLimiter, async (req, res) => {
         .json({ error: "البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى." });
     }
 
-    if (!user.isActive) {
-      return res
-        .status(403)
-        .json({ error: "تم تعطيل حسابك. يرجى التواصل مع الإدارة." });
-    }
+    // Note: we no longer block login for inactive users. They can sign in and
+    // read their data, but state-changing endpoints are gated by `requireActive`.
 
     const token = generateToken(user.id);
 
@@ -537,7 +584,7 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res, next) =>
   }
 });
 
-router.post("/reset-password", async (req, res, next) => {
+router.post("/reset-password", resetPasswordLimiter, async (req, res, next) => {
   try {
     const { token, password } = req.body;
 

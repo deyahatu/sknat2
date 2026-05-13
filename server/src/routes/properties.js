@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate, authorize, requireActive } from '../middleware/auth.js';
+import { notify, notifyAllAdmins } from '../utils/notify.js';
 import { logAudit } from '../utils/audit.js';
 
 const router = Router();
@@ -48,6 +49,7 @@ const propertySelect = {
   area: true,
   images: true,
   available: true,
+  disabledByAdmin: true,
   studioPrice: true,
   ownerId: true,
   createdAt: true,
@@ -62,6 +64,15 @@ function asRequiredString(value) {
 function asOptionalString(value) {
   const trimmed = asRequiredString(value);
   return trimmed || null;
+}
+
+// Reject text that opens with characters Excel/Sheets treat as formula triggers
+// (=, +, -, @, tab, CR). This keeps CSV exports of these fields safe even if a
+// future viewer forgets to escape on the way out.
+function assertNoFormula(value, fieldName) {
+  if (typeof value === 'string' && /^[=+\-@\t\r]/.test(value)) {
+    throw new Error(`لا يمكن أن يبدأ ${fieldName} بالرموز = أو + أو - أو @`);
+  }
 }
 
 function asPositiveInteger(value, fieldName) {
@@ -166,6 +177,14 @@ function buildCreateData(body, ownerId) {
     throw new Error('يرجى تعبئة اسم السكن والحي.');
   }
 
+  assertNoFormula(title, 'اسم السكن');
+  assertNoFormula(city, 'الحي');
+  assertNoFormula(description, 'الوصف');
+  assertNoFormula(policy, 'السياسة');
+  assertNoFormula(address, 'العنوان');
+  assertNoFormula(otherServices, 'الخدمات الإضافية');
+  assertNoFormula(campus, 'الحرم الجامعي');
+
   if (!VALID_GENDERS.includes(targetGender)) {
     throw new Error('الجنس المستهدف يجب أن يكون MALE أو FEMALE.');
   }
@@ -217,6 +236,7 @@ function buildUpdateData(body) {
   if (body.title !== undefined || body.name !== undefined) {
     const title = asRequiredString(body.title || body.name);
     if (!title) throw new Error('اسم السكن لا يمكن أن يكون فارغاً.');
+    assertNoFormula(title, 'اسم السكن');
     data.title = title;
   }
 
@@ -231,13 +251,26 @@ function buildUpdateData(body) {
   if (body.city !== undefined) {
     const city = asRequiredString(body.city);
     if (!city) throw new Error('الحي لا يمكن أن يكون فارغاً.');
+    assertNoFormula(city, 'الحي');
     data.city = city;
   }
 
-  if (body.address !== undefined) data.address = asOptionalString(body.address);
-  if (body.description !== undefined) data.description = asOptionalString(body.description);
-  if (body.policy !== undefined) data.policy = asOptionalString(body.policy);
-  if (body.campus !== undefined) data.campus = asOptionalString(body.campus);
+  if (body.address !== undefined) {
+    data.address = asOptionalString(body.address);
+    assertNoFormula(data.address, 'العنوان');
+  }
+  if (body.description !== undefined) {
+    data.description = asOptionalString(body.description);
+    assertNoFormula(data.description, 'الوصف');
+  }
+  if (body.policy !== undefined) {
+    data.policy = asOptionalString(body.policy);
+    assertNoFormula(data.policy, 'السياسة');
+  }
+  if (body.campus !== undefined) {
+    data.campus = asOptionalString(body.campus);
+    assertNoFormula(data.campus, 'الحرم الجامعي');
+  }
 
   if (body.distance !== undefined) {
     data.distance = body.distance === null || body.distance === ''
@@ -268,6 +301,7 @@ function buildUpdateData(body) {
 
   if (body.otherServices !== undefined) {
     data.otherServices = asOptionalString(body.otherServices);
+    assertNoFormula(data.otherServices, 'الخدمات الإضافية');
   }
 
   if (body.images !== undefined) {
@@ -298,15 +332,18 @@ async function findOwnerProperty(propertyId, ownerId) {
 // Public: list available properties with filters
 // ───────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
-  // Optional auth — try to get user gender for sorting
+  // Optional auth — try to get user gender for sorting, and role so admins
+  // can see properties of blocked owners (which are otherwise filtered out).
   let userGender = null;
+  let userRole = null;
   try {
     const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '');
     if (token) {
       const { verifyToken } = await import('../utils/jwt.js');
       const decoded = verifyToken(token);
-      const u = await prisma.user.findUnique({ where: { id: decoded.userId }, select: { gender: true } });
+      const u = await prisma.user.findUnique({ where: { id: decoded.userId }, select: { gender: true, role: true } });
       if (u?.gender) userGender = u.gender;
+      if (u?.role) userRole = u.role;
     }
   } catch { /* not logged in — fine */ }
   try {
@@ -328,13 +365,17 @@ router.get('/', async (req, res, next) => {
     // A property is listable if:
     //  - it has at least one room variant (apartment), OR
     //  - it's a STUDIO with a price set
+    // AND (for non-admin viewers) its owner is not currently blocked.
     const where = {
-      AND: [{
-        OR: [
-          { roomVariants: { some: {} } },
-          { kind: 'STUDIO', studioPrice: { not: null } },
-        ],
-      }],
+      AND: [
+        {
+          OR: [
+            { roomVariants: { some: {} } },
+            { kind: 'STUDIO', studioPrice: { not: null } },
+          ],
+        },
+        ...(userRole === 'ADMIN' ? [] : [{ owner: { isActive: true } }]),
+      ],
     };
 
     if (q) {
@@ -403,21 +444,33 @@ router.get('/', async (req, res, next) => {
       where,
       select: {
         ...propertySelect,
-        owner: { select: { id: true, name: true, phone: true, email: true } },
+        // The list endpoint is unauthenticated. We expose only the owner's
+        // display fields; phone/email are reserved for the detail endpoint so
+        // scrapers can't harvest every owner's contact info in a single call.
+        owner: { select: { id: true, name: true, isActive: true } },
         reviews: { select: { rating: true } },
         _count: { select: { reviews: true } },
+        bookings: userRole === 'ADMIN'
+          ? { where: { status: { in: ['APPROVED', 'PAID'] } }, select: { id: true } }
+          : false,
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Inject avgRating per property; strip raw reviews from payload
+    // Inject avgRating per property; strip raw reviews from payload.
+    // For admins, also surface the active-booking count so the admin table
+    // can warn before disabling/deleting a busy property.
     const decorated = properties.map((p) => {
       const ratings = p.reviews || [];
       const avgRating = ratings.length
         ? Number((ratings.reduce((s, r) => s + r.rating, 0) / ratings.length).toFixed(1))
         : 0;
-      const { reviews: _ignored, ...rest } = p;
-      return { ...rest, avgRating };
+      const { reviews: _ignored, bookings, ...rest } = p;
+      const result = { ...rest, avgRating };
+      if (Array.isArray(bookings)) {
+        result.activeBookingsCount = bookings.length;
+      }
+      return result;
     });
 
     // Sort
@@ -439,7 +492,7 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
+router.post('/', authenticate, requireActive, authorize('OWNER'), async (req, res, next) => {
   try {
     const property = await prisma.property.create({
       data: buildCreateData(req.body, req.user.id),
@@ -447,6 +500,12 @@ router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
     });
 
     logAudit({ action: 'CREATE', entity: 'PROPERTY', entityId: property.id, user: req.user, details: property.title });
+
+    notifyAllAdmins(
+      'عقار جديد',
+      `${req.user.name} أضاف عقار: ${property.title}`,
+      '/admin',
+    ).catch(() => {});
 
     res.status(201).json({
       message: 'تم إنشاء السكن بنجاح.',
@@ -460,7 +519,7 @@ router.post('/', authenticate, authorize('OWNER'), async (req, res, next) => {
   }
 });
 
-router.get('/mine', authenticate, authorize('OWNER'), async (req, res, next) => {
+router.get('/mine', authenticate, requireActive, authorize('OWNER'), async (req, res, next) => {
   try {
     const properties = await prisma.property.findMany({
       where: { ownerId: req.user.id },
@@ -482,7 +541,7 @@ router.get('/mine', authenticate, authorize('OWNER'), async (req, res, next) => 
   }
 });
 
-router.get('/ratings', authenticate, authorize('OWNER'), async (req, res, next) => {
+router.get('/ratings', authenticate, requireActive, authorize('OWNER'), async (req, res, next) => {
   try {
     const ratings = await prisma.review.findMany({
       where: {
@@ -516,7 +575,7 @@ router.get('/ratings', authenticate, authorize('OWNER'), async (req, res, next) 
   }
 });
 
-router.get('/:id/ratings', authenticate, authorize('OWNER'), async (req, res, next) => {
+router.get('/:id/ratings', authenticate, requireActive, authorize('OWNER'), async (req, res, next) => {
   try {
     const property = await findOwnerProperty(req.params.id, req.user.id);
 
@@ -585,13 +644,36 @@ router.get('/:id', async (req, res, next) => {
       activeBookings.map(b => b.student?.major).filter(Boolean)
     )];
 
-    res.json({ property, tenantMajors });
+    // Surface this so the owner edit page can disable sensitive fields up-front
+    // instead of letting the owner fill the form and fail at save time.
+    const hasActiveBookings = activeBookings.length > 0;
+
+    // Per-room: which variants currently have an in-app booking holding them.
+    // The edit UI uses this to lock those rooms so the owner can't edit price/
+    // kind / status until the booking ends.
+    const lockedRoomBookings = await prisma.booking.findMany({
+      where: {
+        propertyId: req.params.id,
+        status: { in: ['APPROVED', 'PAID'] },
+      },
+      select: { roomVariantId: true },
+    });
+    const lockedRoomIds = [
+      ...new Set(lockedRoomBookings.map((b) => b.roomVariantId)),
+    ];
+
+    res.json({ property, tenantMajors, hasActiveBookings, lockedRoomIds });
   } catch (err) {
     next(err);
   }
 });
 
-router.put('/:id', authenticate, authorize('OWNER'), async (req, res, next) => {
+// Fields that materially change what a student agreed to when they booked.
+// Editing any of these is blocked while the property has active bookings —
+// services / description / images / policy etc. stay freely editable.
+const SENSITIVE_PROPERTY_FIELDS = ['targetGender', 'address', 'city', 'campus', 'kind'];
+
+router.put('/:id', authenticate, requireActive, authorize('OWNER'), async (req, res, next) => {
   try {
     const existing = await findOwnerProperty(req.params.id, req.user.id);
 
@@ -603,6 +685,26 @@ router.put('/:id', authenticate, authorize('OWNER'), async (req, res, next) => {
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ error: 'لا توجد بيانات سكن للتحديث.' });
+    }
+
+    // Determine whether the diff touches any sensitive field (i.e. the value
+    // actually changes — sending the same value back is a no-op and allowed).
+    const sensitiveTouched = SENSITIVE_PROPERTY_FIELDS.some(
+      (f) => f in updateData && updateData[f] !== existing[f],
+    );
+
+    if (sensitiveTouched) {
+      const activeBookings = await prisma.booking.count({
+        where: {
+          propertyId: existing.id,
+          status: { in: ['APPROVED', 'PAID'] },
+        },
+      });
+      if (activeBookings > 0) {
+        return res.status(400).json({
+          error: 'لا يمكن تعديل (الجنس المستهدف / العنوان / المدينة / النوع) بينما توجد حجوزات نشطة على السكن. باقي البيانات (الخدمات، الوصف، الصور...) يمكن تعديلها.',
+        });
+      }
     }
 
     const property = await prisma.property.update({
@@ -623,7 +725,7 @@ router.put('/:id', authenticate, authorize('OWNER'), async (req, res, next) => {
   }
 });
 
-router.patch('/:id/availability', authenticate, async (req, res, next) => {
+router.patch('/:id/availability', authenticate, requireActive, async (req, res, next) => {
   try {
     const isAdmin = req.user.role === 'ADMIN';
     const existing = isAdmin
@@ -634,11 +736,66 @@ router.patch('/:id/availability', authenticate, async (req, res, next) => {
       return res.status(404).json({ error: 'السكن غير موجود.' });
     }
 
+    const nextAvailable = asBoolean(req.body.available);
+
+    // If an admin previously disabled this listing, the owner can't bring it
+    // back online — they must contact support. Prevents the workflow where an
+    // owner bypasses moderation by simply toggling the flag back themselves.
+    if (!isAdmin && existing.disabledByAdmin && nextAvailable) {
+      return res.status(403).json({
+        error: 'تم تعطيل هذا السكن من قبل الإدارة. لا يمكنك إعادة تفعيله. تواصل مع الدعم.',
+      });
+    }
+
+    // Refuse to mark unavailable while students still have confirmed bookings —
+    // that would silently strand paying tenants. Admins bypass since they may
+    // need to disable a problematic listing despite active bookings.
+    if (!nextAvailable && !isAdmin) {
+      const activeBookings = await prisma.booking.count({
+        where: {
+          propertyId: existing.id,
+          status: { in: ['APPROVED', 'PAID'] },
+        },
+      });
+      if (activeBookings > 0) {
+        return res.status(400).json({
+          error: 'لا يمكن تعطيل السكن بينما توجد حجوزات نشطة. يرجى إكمالها أو إلغاؤها أولاً.',
+        });
+      }
+    }
+
+    // Admin actions stamp/clear the moderation flag; owner actions don't touch it.
+    const updateData = { available: nextAvailable };
+    if (isAdmin) {
+      updateData.disabledByAdmin = !nextAvailable;
+    }
+
     const property = await prisma.property.update({
       where: { id: existing.id },
-      data: { available: asBoolean(req.body.available) },
+      data: updateData,
       select: propertySelect,
     });
+
+    // If an admin disabled a property that still has active residents, notify
+    // them so they're not blindsided. (Owner self-disable already blocks above.)
+    if (!nextAvailable && isAdmin) {
+      const residents = await prisma.booking.findMany({
+        where: {
+          propertyId: existing.id,
+          status: { in: ['APPROVED', 'PAID'] },
+        },
+        select: { studentId: true },
+      });
+      const uniqueStudents = [...new Set(residents.map((r) => r.studentId))];
+      for (const sid of uniqueStudents) {
+        notify(
+          sid,
+          'تم تعطيل سكنك من الإدارة',
+          `تم تعطيل "${existing.title}" مؤقتاً من قبل الإدارة. حجزك لا يزال نشطاً، لكن لن يتم إرسال طلبات تجديد. للاستفسار، تواصل مع الدعم.`,
+          '/bookings',
+        ).catch(() => {});
+      }
+    }
 
     res.json({
       message: 'تم تحديث حالة التوفر بنجاح.',
@@ -652,7 +809,7 @@ router.patch('/:id/availability', authenticate, async (req, res, next) => {
   }
 });
 
-router.delete('/:id', authenticate, async (req, res, next) => {
+router.delete('/:id', authenticate, requireActive, async (req, res, next) => {
   try {
     const isAdmin = req.user.role === 'ADMIN';
     const existing = isAdmin
@@ -661,6 +818,13 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 
     if (!existing) {
       return res.status(404).json({ error: 'السكن غير موجود.' });
+    }
+
+    // Owners can't escape an admin disable by deleting + re-adding the listing.
+    if (!isAdmin && existing.disabledByAdmin) {
+      return res.status(403).json({
+        error: 'تم تعطيل هذا السكن من قبل الإدارة. لا يمكنك حذفه. تواصل مع الدعم.',
+      });
     }
 
     const activeBookings = await prisma.booking.count({
@@ -709,22 +873,17 @@ function buildVariantData(body) {
     : null;
   const images = body.images?.length ? validateImages(body.images) : [];
   const services = body.services?.length ? validateServices(body.services) : [];
-  const isOccupied = body.isOccupied === undefined ? false : asBoolean(body.isOccupied);
-  const partiallyOccupied = body.partiallyOccupied === undefined
-    ? false
-    : asBoolean(body.partiallyOccupied);
 
-  // Sanity: SINGLE rooms can't be partial
-  const finalPartial = kind === 'SINGLE' ? false : (isOccupied ? false : partiallyOccupied);
-
+  // Newly-created rooms always start vacant. Occupancy is computed from
+  // active bookings — never accepted from the client.
   return {
     name,
     roomNumber: asOptionalString(body.roomNumber),
     kind,
     capacity,
     area,
-    isOccupied,
-    partiallyOccupied: finalPartial,
+    isOccupied: false,
+    partiallyOccupied: false,
     fullPrice,
     halfPrice,
     images,
@@ -734,12 +893,21 @@ function buildVariantData(body) {
   };
 }
 
+// Maximum rooms per property. Kept here (not exposed to clients) to avoid
+// signalling the exact cap; the rejection message stays generic by design.
+const MAX_ROOMS_PER_PROPERTY = 5;
+
 // Add room variant to property
-router.post('/:id/variants', authenticate, authorize('OWNER'), async (req, res, next) => {
+router.post('/:id/variants', authenticate, requireActive, authorize('OWNER'), async (req, res, next) => {
   try {
     const property = await findOwnerProperty(req.params.id, req.user.id);
     if (!property) {
       return res.status(404).json({ error: 'السكن غير موجود.' });
+    }
+
+    const existingCount = await prisma.roomVariant.count({ where: { propertyId: property.id } });
+    if (existingCount >= MAX_ROOMS_PER_PROPERTY) {
+      return res.status(400).json({ error: 'لا يمكن إضافة المزيد من الغرف لهذا السكن.' });
     }
 
     const variant = await prisma.roomVariant.create({
@@ -760,7 +928,7 @@ router.post('/:id/variants', authenticate, authorize('OWNER'), async (req, res, 
 });
 
 // Bulk-create room variants (used by the wizard)
-router.post('/:id/variants/bulk', authenticate, authorize('OWNER'), async (req, res, next) => {
+router.post('/:id/variants/bulk', authenticate, requireActive, authorize('OWNER'), async (req, res, next) => {
   try {
     const property = await findOwnerProperty(req.params.id, req.user.id);
     if (!property) {
@@ -770,6 +938,11 @@ router.post('/:id/variants/bulk', authenticate, authorize('OWNER'), async (req, 
     const list = Array.isArray(req.body.variants) ? req.body.variants : [];
     if (list.length === 0) {
       return res.status(400).json({ error: 'لا توجد غرف لإضافتها.' });
+    }
+
+    const existingCount = await prisma.roomVariant.count({ where: { propertyId: property.id } });
+    if (existingCount + list.length > MAX_ROOMS_PER_PROPERTY) {
+      return res.status(400).json({ error: 'لا يمكن إضافة المزيد من الغرف لهذا السكن.' });
     }
 
     const dataList = list.map((v) => ({ ...buildVariantData(v), propertyId: property.id }));
@@ -812,7 +985,7 @@ router.get('/:id/variants', async (req, res, next) => {
 });
 
 // Update a room variant
-router.put('/:id/variants/:variantId', authenticate, authorize('OWNER'), async (req, res, next) => {
+router.put('/:id/variants/:variantId', authenticate, requireActive, authorize('OWNER'), async (req, res, next) => {
   try {
     const property = await findOwnerProperty(req.params.id, req.user.id);
     if (!property) {
@@ -825,6 +998,20 @@ router.put('/:id/variants/:variantId', authenticate, authorize('OWNER'), async (
 
     if (!existing) {
       return res.status(404).json({ error: 'نوع الغرفة غير موجود.' });
+    }
+
+    // Refuse any modification while the room has active bookings. Changing
+    // kind/price/name/area mid-stay breaks the deal a student already paid for.
+    const activeOnRoom = await prisma.booking.count({
+      where: {
+        roomVariantId: existing.id,
+        status: { in: ['APPROVED', 'PAID'] },
+      },
+    });
+    if (activeOnRoom > 0) {
+      return res.status(400).json({
+        error: 'لا يمكن تعديل هذه الغرفة بينما توجد حجوزات نشطة عليها. يمكن التعديل بعد انتهاء أو إلغاء الحجوزات.',
+      });
     }
 
     const data = {};
@@ -858,10 +1045,11 @@ router.put('/:id/variants/:variantId', authenticate, authorize('OWNER'), async (
     if (req.body.services !== undefined) data.services = validateServices(req.body.services);
     if (req.body.patternName !== undefined) data.patternName = asOptionalString(req.body.patternName);
     if (req.body.patternColor !== undefined) data.patternColor = asOptionalString(req.body.patternColor);
-    if (req.body.isOccupied !== undefined) data.isOccupied = asBoolean(req.body.isOccupied);
-    if (req.body.partiallyOccupied !== undefined) {
-      data.partiallyOccupied = asBoolean(req.body.partiallyOccupied);
-    }
+    // Note: isOccupied / partiallyOccupied are NOT accepted from the client.
+    // They're derived from active bookings (see booking accept/cancel/complete
+    // flows). Allowing the owner to flip them lets them free a room out from
+    // under a paying student and enable double-booking. Any value sent here
+    // is silently ignored.
 
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ error: 'لا توجد بيانات للتحديث.' });
@@ -885,8 +1073,82 @@ router.put('/:id/variants/:variantId', authenticate, authorize('OWNER'), async (
   }
 });
 
+// Manually toggle a room's occupancy state for external (off-app) holds.
+// Separate from the regular variant edit so the owner can still mark a room
+// as taken / free in cases that don't go through the in-app booking flow,
+// without exposing isOccupied to other endpoints. Any in-app APPROVED/PAID
+// booking for the room blocks the change — the system is authoritative.
+router.patch('/:id/variants/:variantId/manual-status', authenticate, requireActive, authorize('OWNER'), async (req, res, next) => {
+  try {
+    const property = await findOwnerProperty(req.params.id, req.user.id);
+    if (!property) {
+      return res.status(404).json({ error: 'السكن غير موجود.' });
+    }
+
+    const existing = await prisma.roomVariant.findFirst({
+      where: { id: req.params.variantId, propertyId: property.id },
+    });
+    if (!existing) {
+      return res.status(404).json({ error: 'الغرفة غير موجودة.' });
+    }
+
+    const status = asRequiredString(req.body.status).toUpperCase();
+    const VALID_MANUAL_STATUSES = ['AVAILABLE', 'OCCUPIED', 'PARTIAL'];
+    if (!VALID_MANUAL_STATUSES.includes(status)) {
+      return res.status(400).json({
+        error: 'الحالة يجب أن تكون AVAILABLE أو OCCUPIED أو PARTIAL.',
+      });
+    }
+
+    if (status === 'PARTIAL' && existing.kind === 'SINGLE') {
+      return res.status(400).json({
+        error: 'لا يمكن تعليم غرفة فردية كنصف محجوزة.',
+      });
+    }
+
+    // Refuse if any in-app booking is holding the room. The booking
+    // accept/cancel/complete flows are the only writers of isOccupied in
+    // that case — owner intervention would desync the two.
+    const inAppBooking = await prisma.booking.findFirst({
+      where: {
+        roomVariantId: existing.id,
+        status: { in: ['APPROVED', 'PAID'] },
+      },
+      select: { id: true },
+    });
+    if (inAppBooking) {
+      return res.status(400).json({
+        error: 'هذه الغرفة محجوزة عبر التطبيق. لا يمكن تغيير حالتها يدوياً.',
+      });
+    }
+
+    const newState =
+      status === 'OCCUPIED'
+        ? { isOccupied: true, partiallyOccupied: false }
+        : status === 'PARTIAL'
+          ? { isOccupied: false, partiallyOccupied: true }
+          : { isOccupied: false, partiallyOccupied: false };
+
+    const variant = await prisma.roomVariant.update({
+      where: { id: existing.id },
+      data: newState,
+      select: roomVariantSelect,
+    });
+
+    res.json({
+      message: 'تم تحديث حالة الغرفة بنجاح.',
+      variant,
+    });
+  } catch (err) {
+    if (err.message) {
+      return res.status(400).json({ error: err.message });
+    }
+    next(err);
+  }
+});
+
 // Delete a room variant
-router.delete('/:id/variants/:variantId', authenticate, authorize('OWNER'), async (req, res, next) => {
+router.delete('/:id/variants/:variantId', authenticate, requireActive, authorize('OWNER'), async (req, res, next) => {
   try {
     const property = await findOwnerProperty(req.params.id, req.user.id);
     if (!property) {

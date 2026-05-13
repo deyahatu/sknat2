@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
@@ -15,9 +15,16 @@ function LoginPage() {
   const [successMessage, setSuccessMessage] = useState(location.state?.successMessage || null);
   const [fieldErrors, setFieldErrors] = useState({});
 
-  const { login } = useAuth();
+  const { login, idleLogout, clearIdleLogout } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
+
+  useEffect(() => {
+    if (idleLogout) {
+      toast.info('تم تسجيل الخروج تلقائياً بسبب عدم النشاط لمدة 20 دقيقة.');
+      clearIdleLogout();
+    }
+  }, [idleLogout, toast, clearIdleLogout]);
 
   function validateField(name, value) {
     if (name === 'email' && !value.trim()) return 'البريد الإلكتروني مطلوب';
@@ -40,7 +47,8 @@ function LoginPage() {
     setSuccessMessage(null);
     try {
       const data = await login(email, password);
-      navigate(data.user?.role === 'OWNER' ? '/owner' : '/');
+      const role = data.user?.role;
+      navigate(role === 'OWNER' ? '/owner' : role === 'ADMIN' ? '/admin' : '/');
     } catch (err) {
       toast.error(err.message || 'حدث خطأ أثناء تسجيل الدخول');
     } finally {

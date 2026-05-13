@@ -16,29 +16,25 @@ function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   const { user, logout } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
 
-  const navLinks = [
-    { path: '/', label: 'الرئيسية', icon: <FiHome /> },
-  ];
-
-  if (!user || user?.role !== 'ADMIN') {
+  // Admins live entirely inside the dashboard sidebar — the top nav for them
+  // is just the logo + the notification bell. Logout moves to the sidebar.
+  const navLinks = [];
+  if (!isAdmin) {
+    navLinks.push({ path: '/', label: 'الرئيسية', icon: <FiHome /> });
     navLinks.push({ path: '/search', label: 'البحث عن سكن', icon: <FiSearch /> });
   }
 
   if (!user) {
     navLinks.push({ path: '/login', label: 'تسجيل الدخول', icon: <FiLogIn /> });
     navLinks.push({ path: '/register', label: 'إنشاء حساب', icon: <FiUserPlus /> });
-  } else {
-    if (user?.role === 'STUDENT') {
-      navLinks.push({ path: '/bookings', label: 'حجوزاتي', icon: <FiCalendar /> });
-      navLinks.push({ path: '/messages', label: 'الرسائل', icon: <FiMessageSquare /> });
-      navLinks.push({ path: '/favorites', label: 'المفضلة', icon: <FiHeart /> });
-      navLinks.push({ path: '/my-ratings', label: 'تقييماتي', icon: <FiStar /> });
-      navLinks.push({ path: '/profile', label: 'الملف الشخصي', icon: <FiUser /> });
-    }
-    if (user?.role === 'ADMIN') {
-      navLinks.push({ path: '/admin', label: 'لوحة التحكم', icon: <FiSettings /> });
-    }
+  } else if (user?.role === 'STUDENT') {
+    navLinks.push({ path: '/bookings', label: 'حجوزاتي', icon: <FiCalendar /> });
+    navLinks.push({ path: '/messages', label: 'الرسائل', icon: <FiMessageSquare /> });
+    navLinks.push({ path: '/favorites', label: 'المفضلة', icon: <FiHeart /> });
+    navLinks.push({ path: '/my-ratings', label: 'تقييماتي', icon: <FiStar /> });
+    navLinks.push({ path: '/profile', label: 'الملف الشخصي', icon: <FiUser /> });
   }
 
   const isActive = (path) => location.pathname === path;
@@ -74,7 +70,7 @@ function Navbar() {
               <NotificationBell />
             </li>
           )}
-          {user && (
+          {user && !isAdmin && (
             <li>
               <button
                 className="navbar-link navbar-logout-btn"

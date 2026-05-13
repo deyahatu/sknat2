@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../utils/prisma.js";
-import { authenticate, authorize } from "../middleware/auth.js";
+import { authenticate, authorize, requireActive } from "../middleware/auth.js";
+import { notifyAllAdmins } from "../utils/notify.js";
 
 const router = Router();
 
@@ -66,6 +67,7 @@ router.get(
 router.put(
   "/bank-account",
   authenticate,
+  requireActive,
   authorize("OWNER"),
   async (req, res, next) => {
     try {
@@ -126,6 +128,7 @@ router.put(
 router.delete(
   "/bank-account",
   authenticate,
+  requireActive,
   authorize("OWNER"),
   async (req, res, next) => {
     try {
@@ -158,7 +161,7 @@ router.delete(
   },
 );
 
-router.post("/", authenticate, authorize("OWNER"), async (req, res, next) => {
+router.post("/", authenticate, requireActive, authorize("OWNER"), async (req, res, next) => {
   try {
     const { amount } = req.body;
 
@@ -234,6 +237,12 @@ router.post("/", authenticate, authorize("OWNER"), async (req, res, next) => {
         bankAccountNumber: owner.bankAccountNumber,
       },
     });
+
+    notifyAllAdmins(
+      'طلب سحب جديد',
+      `${req.user.name} طلب سحب ${withdrawAmount} ₪ — يحتاج مراجعة`,
+      '/admin',
+    ).catch(() => {});
 
     res.status(201).json({
       message: "تم إرسال طلب السحب. بانتظار موافقة المسؤول.",

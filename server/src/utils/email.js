@@ -169,3 +169,43 @@ export async function sendPasswordResetEmail(to, resetUrl) {
     html,
   });
 }
+
+export async function sendAccountBlockedEmail(to, userName, reason) {
+  const t = getTransporter();
+  const fromName = process.env.SMTP_FROM_NAME || "منصة سكنات";
+
+  if (!t) {
+    console.log(`\n🚫 [DEV] Account blocked email for ${to} — reason: ${reason}\n`);
+    return;
+  }
+
+  const html = `
+    <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; background:#fffaf5; border-radius: 16px;">
+      <h2 style="color:#9a3412; margin:0 0 16px;">تنبيه بخصوص حسابك في سكنات</h2>
+      <p style="color:#1f3558; font-size:15px; line-height:1.8; margin:0 0 18px;">
+        مرحباً ${userName}،
+      </p>
+      <p style="color:#1f3558; font-size:15px; line-height:1.8; margin:0 0 18px;">
+        نود إعلامك بأنه تم تقييد أنشطة حسابك مؤقتاً على منصة سكنات. لن تتمكن من إنشاء حجوزات جديدة، إرسال رسائل، أو تعديل عقاراتك في الوقت الحالي. يمكنك الاستمرار في تسجيل الدخول وعرض حساباتك.
+      </p>
+      <div style="background:#ffffff; border:1px solid #fed7aa; border-radius:12px; padding:16px; margin:0 0 18px;">
+        <div style="color:#9a3412; font-weight:700; font-size:14px; margin:0 0 8px;">السبب:</div>
+        <div style="color:#1f3558; font-size:14px; line-height:1.7;">${reason}</div>
+      </div>
+      <p style="color:#1f3558; font-size:14px; line-height:1.8; margin:0 0 8px;">
+        إن كنت ترى أن هذا قرار خاطئ أو لديك توضيح، يمكنك تقديم اعتراض من خلال حسابك (مرة واحدة).
+      </p>
+      <p style="color:#64748b; font-size:13px; line-height:1.7; margin:0;">
+        نشكر تفهمك ونعتذر عن أي إزعاج.
+      </p>
+    </div>
+  `;
+
+  await t.sendMail({
+    from: `"${fromName}" <${process.env.SMTP_USER}>`,
+    to,
+    subject: "تقييد أنشطة الحساب - سكنات",
+    text: `مرحباً ${userName}،\n\nتم تقييد أنشطة حسابك في سكنات. السبب: ${reason}\n\nيمكنك تقديم اعتراض من حسابك.`,
+    html,
+  });
+}

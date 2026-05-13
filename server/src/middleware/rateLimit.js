@@ -63,3 +63,16 @@ export const registerLimiter = rateLimit({
     "تجاوزت الحد المسموح من محاولات إنشاء الحساب. يرجى المحاولة بعد ساعة.",
   ),
 });
+
+// Reset-password is bcrypt-heavy (cost 12 → ~250ms CPU per request even on a
+// bogus token). Without a limiter an attacker can saturate the CPU just by
+// hammering this endpoint with random tokens.
+export const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: arabicMessage(
+    "تجاوزت الحد المسموح من محاولات إعادة تعيين كلمة المرور. يرجى الانتظار 15 دقيقة.",
+  ),
+});

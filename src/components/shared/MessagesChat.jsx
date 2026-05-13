@@ -103,19 +103,35 @@ export default function MessagesChat() {
         } else if (user?.role === 'OWNER') {
           const bookingsData = await api.bookings.ownerList();
           const bookings = bookingsData.bookings || bookingsData || [];
-          // Group bookings by student, pick best active booking
+          // Owners can only chat with students who have a confirmed booking
+          // (APPROVED/PAID/COMPLETED). Anything else is hidden from the sidebar.
+          const allowedStatuses = new Set(['PAID', 'APPROVED', 'COMPLETED']);
+          const statusPriority = { PAID: 0, APPROVED: 1, COMPLETED: 2 };
+
+          // Pick the best booking per student (active first, then most recent).
           const studentMap = {};
-          const goodStatuses = ['PAID', 'APPROVED', 'COMPLETED'];
           bookings.forEach(b => {
             const student = b.student;
-            if (!student || existingIds.has(student.id)) return;
-            if (!goodStatuses.includes(b.status)) return;
-            if (!studentMap[student.id] || goodStatuses.indexOf(b.status) < goodStatuses.indexOf(studentMap[student.id].status)) {
+            if (!student || !allowedStatuses.has(b.status)) return;
+            const current = studentMap[student.id];
+            if (
+              !current ||
+              statusPriority[b.status] < statusPriority[current.status] ||
+              (statusPriority[b.status] === statusPriority[current.status] &&
+                new Date(b.createdAt) > new Date(current.createdAt))
+            ) {
               studentMap[student.id] = b;
             }
           });
 
-          // Enrich existing conversations with booking info + add new ones
+          // Drop any existing conversation whose student no longer has a confirmed
+          // booking — past messages exist but the chat is no longer reachable.
+          convs = convs.filter(c => {
+            if (c.userRole && c.userRole !== 'STUDENT') return true;
+            return studentMap[c.userId] !== undefined;
+          });
+
+          // Enrich existing conversations + auto-add students we haven't messaged yet.
           Object.entries(studentMap).forEach(([studentId, b]) => {
             const bInfo = {
               propertyTitle: b.property?.title,
@@ -369,19 +385,33 @@ export default function MessagesChat() {
       {user?.role === 'OWNER' && selectedUser && !chatLoading && (() => {
         const conv = conversations.find(c => c.userId === selectedUser);
         const info = conv?.bookingInfo;
+        const statusLabel = {
+          PENDING: 'قيد الانتظار',
+          APPROVED: 'مقبول',
+          PAID: 'مدفوع',
+          COMPLETED: 'مكتمل',
+          CANCELLED: 'ملغي',
+          REJECTED: 'مرفوض',
+        };
         return (
           <div className="mc-info-sidebar">
             <div className="mc-info-avatar">{otherUser?.name?.charAt(0) || '?'}</div>
             <h3 className="mc-info-name">{otherUser?.name}</h3>
             <span className="mc-info-role">طالب</span>
-            {info && (
-              <div className="mc-info-booking">
+
+            {info ? (
+              <div className="mc-info-section">
                 <h4>معلومات الحجز</h4>
                 <div className="mc-info-row"><strong>العقار:</strong> {info.propertyTitle}</div>
                 {info.roomName && <div className="mc-info-row"><strong>الغرفة:</strong> {info.roomName}</div>}
                 {info.roomPrice && <div className="mc-info-row"><strong>السعر:</strong> {info.roomPrice.toLocaleString()} ₪/شهر</div>}
                 <div className="mc-info-row"><strong>ينتهي:</strong> {new Date(info.endDate).toLocaleDateString('ar-SA')}</div>
-                <div className="mc-info-row"><strong>الحالة:</strong> <span className={`mc-info-status mc-info-status--${info.status?.toLowerCase()}`}>{{ PENDING: 'قيد الانتظار', APPROVED: 'مقبول', PAID: 'مدفوع', COMPLETED: 'مكتمل', CANCELLED: 'ملغي', REJECTED: 'مرفوض' }[info.status] || info.status}</span></div>
+                <div className="mc-info-row"><strong>الحالة:</strong> <span className={`mc-info-status mc-info-status--${info.status?.toLowerCase()}`}>{statusLabel[info.status] || info.status}</span></div>
+              </div>
+            ) : (
+              <div className="mc-info-section">
+                <h4>معلومات الحجز</h4>
+                <div className="mc-info-row mc-info-row-muted">لا يوجد حجز مرتبط</div>
               </div>
             )}
           </div>

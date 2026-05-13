@@ -23,6 +23,7 @@ import messageRoutes from './routes/messages.js';
 import pushRoutes from './routes/push.js';
 import notificationRoutes from './routes/notifications.js';
 import reportRoutes from './routes/reports.js';
+import blockAppealRoutes from './routes/blockAppeals.js';
 import { startRenewalScheduler } from './utils/renewalScheduler.js';
 
 const app = express();
@@ -54,6 +55,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/block-appeals', blockAppealRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -79,8 +81,6 @@ const io = new SocketIO(server, {
 
 setIO(io);
 
-const onlineUsers = new Map();
-
 io.use((socket, next) => {
   try {
     const token = socket.handshake.auth?.token || socket.handshake.headers?.cookie?.match(/token=([^;]+)/)?.[1];
@@ -96,8 +96,6 @@ io.use((socket, next) => {
 io.on('connection', (socket) => {
   const { userId } = socket;
   socket.join(`user_${userId}`);
-  onlineUsers.set(userId, socket.id);
-  io.emit('online_users', Array.from(onlineUsers.keys()));
 
   socket.on('typing', ({ to }) => {
     io.to(`user_${to}`).emit('typing', { from: userId });
@@ -105,11 +103,6 @@ io.on('connection', (socket) => {
 
   socket.on('stop_typing', ({ to }) => {
     io.to(`user_${to}`).emit('stop_typing', { from: userId });
-  });
-
-  socket.on('disconnect', () => {
-    onlineUsers.delete(userId);
-    io.emit('online_users', Array.from(onlineUsers.keys()));
   });
 });
 

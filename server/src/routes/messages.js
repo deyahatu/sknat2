@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireActive } from '../middleware/auth.js';
 import { emitToUser } from '../utils/socket.js';
 import { notify } from '../utils/notify.js';
 
@@ -50,6 +50,43 @@ router.get('/:userId', authenticate, async (req, res, next) => {
     const myId = req.user.id;
     const otherId = req.params.userId;
 
+    if (myId === otherId) {
+      return res.status(400).json({ error: 'لا يمكنك مراسلة نفسك.' });
+    }
+
+    // Authorization: only allow opening a conversation when there is a real
+    // relationship between the two users. Admins are exempt (they need access
+    // for support); otherwise either side must be an admin, OR the requester
+    // and the other user share a booking that has reached APPROVED/PAID/COMPLETED.
+    const otherUser = await prisma.user.findUnique({
+      where: { id: otherId },
+      select: { id: true, name: true, avatar: true, role: true },
+    });
+    if (!otherUser) {
+      return res.status(404).json({ error: 'المستخدم غير موجود.' });
+    }
+
+    const isAdmin = req.user.role === 'ADMIN';
+    let allowed = isAdmin || otherUser.role === 'ADMIN';
+
+    if (!allowed) {
+      const relationship = await prisma.booking.findFirst({
+        where: {
+          status: { in: ['APPROVED', 'PAID', 'COMPLETED'] },
+          OR: [
+            { studentId: myId, property: { ownerId: otherId } },
+            { studentId: otherId, property: { ownerId: myId } },
+          ],
+        },
+        select: { id: true },
+      });
+      allowed = !!relationship;
+    }
+
+    if (!allowed) {
+      return res.status(403).json({ error: 'لا يمكنك الوصول لهذه المحادثة.' });
+    }
+
     const messages = await prisma.message.findMany({
       where: {
         OR: [
@@ -67,11 +104,6 @@ router.get('/:userId', authenticate, async (req, res, next) => {
     await prisma.message.updateMany({
       where: { senderId: otherId, receiverId: myId, isRead: false },
       data: { isRead: true },
-    });
-
-    const otherUser = await prisma.user.findUnique({
-      where: { id: otherId },
-      select: { id: true, name: true, avatar: true, role: true, email: true, phone: true },
     });
 
     res.json({ messages, otherUser });
@@ -93,7 +125,7 @@ function chatContentViolation(text) {
 }
 
 // Send message
-router.post('/', authenticate, async (req, res, next) => {
+router.post('/', authenticate, requireActive, async (req, res, next) => {
   try {
     const { receiverId, content, bookingId } = req.body;
     if (!receiverId || !content?.trim()) {

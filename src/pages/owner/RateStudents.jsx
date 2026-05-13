@@ -164,17 +164,19 @@ export default function RateStudents() {
                     <span className="owner-badge approved">تم التقييم</span>
                   )}
                 </div>
-                <div className="owner-card-body">
-                  {DIMENSIONS.map((d) => (
-                    <div key={d.key} className="owner-form-group">
-                      <label className="owner-form-label">{d.label}</label>
-                      <StarInput
-                        value={current[d.key] || 0}
-                        onChange={(v) => setDimension(b.id, d.key, v)}
-                      />
-                    </div>
-                  ))}
-                  <div className="owner-form-group">
+                <div className="owner-card-body owner-rate-body">
+                  <div className="owner-rate-dimensions">
+                    {DIMENSIONS.map((d) => (
+                      <div key={d.key} className="owner-rate-dimension">
+                        <label className="owner-form-label">{d.label}</label>
+                        <StarInput
+                          value={current[d.key] || 0}
+                          onChange={(v) => setDimension(b.id, d.key, v)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="owner-form-group owner-rate-comment">
                     <label className="owner-form-label">تعليق (اختياري)</label>
                     <textarea
                       className="owner-form-textarea"
@@ -185,20 +187,22 @@ export default function RateStudents() {
                           [b.id]: e.target.value,
                         }))
                       }
-                      rows={2}
+                      rows={3}
                     />
                   </div>
-                  <button
-                    className="owner-btn owner-btn-primary"
-                    disabled={saving === b.id}
-                    onClick={() => handleSave(b.id, b.student?.id)}
-                  >
-                    {saving === b.id
-                      ? "جاري الحفظ..."
-                      : isRated
-                        ? "تحديث التقييم"
-                        : "حفظ التقييم"}
-                  </button>
+                  <div className="owner-rate-actions">
+                    <button
+                      className="owner-btn owner-btn-primary"
+                      disabled={saving === b.id}
+                      onClick={() => handleSave(b.id, b.student?.id)}
+                    >
+                      {saving === b.id
+                        ? "جاري الحفظ..."
+                        : isRated
+                          ? "تحديث التقييم"
+                          : "حفظ التقييم"}
+                    </button>
+                  </div>
                 </div>
               </div>
             );

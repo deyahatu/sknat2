@@ -24,33 +24,18 @@ const ROOM_STATUSES = [
 
 const MAX_ROOMS = 5;
 
-let _patternIdCounter = 1;
 let _roomIdCounter = 1;
-const newPatternId = () => `pat_${_patternIdCounter++}`;
 const newRoomId = () => `room_${_roomIdCounter++}`;
 
-const PATTERN_COLORS = [
-  "#4f46e5",
-  "#0891b2",
-  "#059669",
-  "#d97706",
-  "#dc2626",
-  "#7c3aed",
-];
-let _colorCounter = 0;
-function pickColor() {
-  return PATTERN_COLORS[_colorCounter++ % PATTERN_COLORS.length];
-}
-
-function makePattern() {
+function makeRoom(index = 0) {
   return {
-    id: newPatternId(),
-    name: "",
+    id: newRoomId(),
+    label: `الغرفة ${index + 1}`,
     kind: "SINGLE",
     price: "",
     area: "",
     features: [],
-    color: pickColor(),
+    status: "AVAILABLE",
   };
 }
 
@@ -99,6 +84,10 @@ export default function AddEditProperty() {
   const [loadingEdit, setLoadingEdit] = useState(isEdit);
   // Track variants that existed on load so we can compute deletes on save
   const [originalVariantIds, setOriginalVariantIds] = useState([]);
+  // When editing a property that currently has APPROVED/PAID bookings, the
+  // backend refuses changes to (gender / address / city / kind). We mirror
+  // that here by disabling those fields and showing a banner.
+  const [hasActiveBookings, setHasActiveBookings] = useState(false);
 
   // Step 1
   const [kind, setKind] = useState(null);
@@ -117,14 +106,11 @@ export default function AddEditProperty() {
     studioPrice: "",
   });
 
-  // Step 3 - rooms (apartment only)
-  const [totalRooms, setTotalRooms] = useState(4);
-  const [patterns, setPatterns] = useState(() => [
-    { ...makePattern(), name: "الغرفة 1", kind: "SINGLE" },
-  ]);
-  const [rooms, setRooms] = useState([]);
-  const [roomsGenerated, setRoomsGenerated] = useState(false);
-  const [setupConfirmed, setSetupConfirmed] = useState(false);
+  // Step 3 - rooms (apartment only). Flat list — each room owns its kind/
+  // price/area/features. No abstract "patterns" any more. Locked rooms (those
+  // with an in-app booking) are read-only.
+  const [rooms, setRooms] = useState(() => [makeRoom(0)]);
+  const [lockedRoomIds, setLockedRoomIds] = useState(() => new Set());
 
   const propertyImageRef = useRef(null);
 
@@ -140,6 +126,7 @@ export default function AddEditProperty() {
       .then((res) => {
         if (cancelled) return;
         const p = res.property;
+        setHasActiveBookings(!!res.hasActiveBookings);
         setKind(p.kind || "APARTMENT");
         setPropertyData({
           title: p.title || "",
@@ -156,43 +143,31 @@ export default function AddEditProperty() {
 
         const variants = p.roomVariants || [];
         setOriginalVariantIds(variants.map((v) => v.id));
+        setLockedRoomIds(new Set(res.lockedRoomIds || []));
 
         if (p.kind === "APARTMENT" && variants.length > 0) {
-          // Group variants into patterns by patternName + kind + fullPrice + services
-          const patternMap = new Map();
-          const newRooms = [];
-          variants.forEach((v) => {
-            const key = `${v.patternName || ""}|${v.kind}|${v.fullPrice}|${v.area || ""}|${(v.services || []).join(",")}`;
-            if (!patternMap.has(key)) {
-              patternMap.set(key, {
-                id: newPatternId(),
-                name: `الغرفة ${patternMap.size + 1}`,
-                kind: v.kind || "SINGLE",
-                price: String(v.fullPrice),
-                area: v.area ? String(v.area) : "",
-                features: v.services || [],
-                color: v.patternColor || pickColor(),
-              });
-            }
-            const pat = patternMap.get(key);
+          // Each variant becomes one independent room. No pattern grouping —
+          // the flat shape matches what the owner actually edits.
+          const newRooms = variants.map((v, i) => {
             const status = v.isOccupied
               ? "BOOKED"
               : v.partiallyOccupied
                 ? "PARTIAL"
                 : "AVAILABLE";
-            newRooms.push({
+            return {
               id: newRoomId(),
               dbId: v.id,
-              label: v.name,
-              patternId: pat.id,
+              label: v.name || `الغرفة ${i + 1}`,
+              kind: v.kind || "SINGLE",
+              price: v.fullPrice != null ? String(v.fullPrice) : "",
+              area: v.area != null ? String(v.area) : "",
+              features: v.services || [],
               status,
-            });
+              // Snapshot so we can detect manual status flips on save.
+              originalStatus: status,
+            };
           });
-          setPatterns(Array.from(patternMap.values()));
           setRooms(newRooms);
-          setTotalRooms(newRooms.length);
-          setRoomsGenerated(true);
-          setSetupConfirmed(true);
         }
       })
       .catch((err) => setSubmitError(err.message || "تعذر تحميل العقار"))
@@ -205,110 +180,63 @@ export default function AddEditProperty() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId, isEdit]);
 
-  // ── Pattern handlers ──
-  function addPattern() {
-    setPatterns((prev) => {
-      const newPattern = { ...makePattern(), name: `الغرفة ${prev.length + 1}` };
-      const next = [...prev, newPattern];
-      const newIndex = next.length - 1;
-      // Auto-link the room at the matching index to the new pattern
-      // (1-to-1 by order: room[0] → pattern[0], room[1] → pattern[1], ...)
-      setRooms((rs) =>
-        rs.map((r, i) =>
-          i === newIndex ? { ...r, patternId: newPattern.id } : r,
-        ),
-      );
-      return next;
-    });
-  }
-  function updatePattern(id, patch) {
-    setPatterns((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-    );
-  }
-  function removePattern(id) {
-    setPatterns((prev) => {
-      const filtered = prev.filter((p) => p.id !== id);
-      // Re-label sequentially: الغرفة 1, الغرفة 2, ...
-      const next = filtered.map((p, i) => ({ ...p, name: `الغرفة ${i + 1}` }));
-      const fallbackId = next[0]?.id || null;
-      setRooms((rs) =>
-        rs.map((r) =>
-          r.patternId === id ? { ...r, patternId: fallbackId } : r,
-        ),
-      );
-      return next;
-    });
-  }
-  function togglePatternFeature(id, f) {
-    setPatterns((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              features: p.features.includes(f)
-                ? p.features.filter((x) => x !== f)
-                : [...p.features, f],
-            }
-          : p,
-      ),
-    );
+  // ── Rooms handlers ──
+  function isRoomLocked(room) {
+    return isEdit && !!room.dbId && lockedRoomIds.has(room.dbId);
   }
 
-  // ── Rooms handlers ──
-  function generateRooms() {
-    const total = Number(totalRooms) || 0;
-    if (total < 1) return;
-    const defaultPatternId = patterns[0]?.id || null;
-    const newRooms = Array.from({ length: total }, (_, i) => ({
-      id: newRoomId(),
-      label: `الغرفة ${i + 1}`,
-      patternId: defaultPatternId,
-      status: "AVAILABLE",
-    }));
-    setRooms(newRooms);
-    setRoomsGenerated(true);
+  function addRoom() {
+    setRooms((prev) => {
+      if (prev.length >= MAX_ROOMS) return prev;
+      return [...prev, makeRoom(prev.length)];
+    });
+  }
+
+  function removeRoom(id) {
+    setRooms((prev) => {
+      const target = prev.find((r) => r.id === id);
+      if (target && isRoomLocked(target)) return prev; // can't delete booked rooms
+      return prev.filter((r) => r.id !== id);
+    });
   }
 
   function updateRoom(id, patch) {
     setRooms((prev) =>
       prev.map((r) => {
         if (r.id !== id) return r;
+        if (isRoomLocked(r)) return r;
         const merged = { ...r, ...patch };
-        if (patch.patternId !== undefined) {
-          const newPat = patterns.find((p) => p.id === patch.patternId);
-          if (newPat?.kind === "SINGLE" && merged.status === "PARTIAL") {
-            merged.status = "BOOKED";
-          }
+        // SINGLE rooms can't be PARTIAL — fold to BOOKED if user shrinks the kind.
+        if (merged.kind === "SINGLE" && merged.status === "PARTIAL") {
+          merged.status = "BOOKED";
         }
         return merged;
       }),
     );
   }
 
+  function toggleRoomFeature(id, f) {
+    setRooms((prev) =>
+      prev.map((r) => {
+        if (r.id !== id || isRoomLocked(r)) return r;
+        return {
+          ...r,
+          features: r.features.includes(f)
+            ? r.features.filter((x) => x !== f)
+            : [...r.features, f],
+        };
+      }),
+    );
+  }
+
   // ── Stats ──
-  const patternStats = useMemo(() => {
-    return patterns.map((p) => {
-      const matching = rooms.filter((r) => r.patternId === p.id);
-      const cap = ROOM_KINDS.find((k) => k.id === p.kind)?.capacity || 1;
-      const freeBeds = matching.reduce((sum, r) => {
-        if (r.status === "AVAILABLE") return sum + cap;
-        if (r.status === "PARTIAL") return sum + 1;
-        return sum;
-      }, 0);
-      const totalBeds = matching.length * cap;
-      const fullyAvailableRooms = matching.filter(
-        (r) => r.status === "AVAILABLE",
-      ).length;
-      return {
-        pattern: p,
-        total: matching.length,
-        available: fullyAvailableRooms,
-        freeBeds,
-        totalBeds,
-      };
-    });
-  }, [patterns, rooms]);
+  const roomsSummary = useMemo(() => {
+    const total = rooms.length;
+    const available = rooms.filter((r) => r.status === "AVAILABLE").length;
+    const booked = rooms.filter((r) => r.status === "BOOKED").length;
+    const partial = rooms.filter((r) => r.status === "PARTIAL").length;
+    return { total, available, booked, partial };
+  }, [rooms]);
 
   function handlePropertyImageFiles(e) {
     const files = Array.from(e.target.files);
@@ -420,12 +348,20 @@ export default function AddEditProperty() {
               placeholder="مثلاً: شقة النخبة"
             />
           </div>
+          {hasActiveBookings && (
+            <div className="wiz-locked-notice">
+              ⚠️ بعض الحقول (الحي، الحرم، الجنس المستهدف) مقفلة لأن السكن عليه حجوزات نشطة.
+              يمكن تعديلها بعد انتهاء أو إلغاء كل الحجوزات.
+            </div>
+          )}
+
           <div className="wiz-form-row">
             <div className="wiz-form-group">
               <label>الحي</label>
               <input
                 className="wiz-input"
                 value={propertyData.neighborhood}
+                disabled={hasActiveBookings}
                 onChange={(e) =>
                   setPropertyData({
                     ...propertyData,
@@ -463,6 +399,7 @@ export default function AddEditProperty() {
                 <button
                   key={c.id}
                   type="button"
+                  disabled={hasActiveBookings}
                   className={`wiz-choice-btn ${propertyData.campus === c.id ? "active" : ""}`}
                   onClick={() =>
                     setPropertyData({ ...propertyData, campus: c.id })
@@ -479,6 +416,7 @@ export default function AddEditProperty() {
             <div className="wiz-choice-row">
               <button
                 type="button"
+                disabled={hasActiveBookings}
                 className={`wiz-choice-btn ${propertyData.targetGender === "MALE" ? "active" : ""}`}
                 onClick={() =>
                   setPropertyData({ ...propertyData, targetGender: "MALE" })
@@ -488,6 +426,7 @@ export default function AddEditProperty() {
               </button>
               <button
                 type="button"
+                disabled={hasActiveBookings}
                 className={`wiz-choice-btn ${propertyData.targetGender === "FEMALE" ? "active" : ""}`}
                 onClick={() =>
                   setPropertyData({ ...propertyData, targetGender: "FEMALE" })
@@ -635,349 +574,193 @@ export default function AddEditProperty() {
     );
   }
 
-  // ── Step 3: Rooms & Patterns (the big one) ──
+  // ── Step 3: Rooms (flat, no patterns) ──
   function renderStep3() {
+    const hasLockedRooms = rooms.some((r) => isRoomLocked(r));
     return (
       <div>
-        <h2 className="wiz-h2">توزيع الغرف</h2>
-        <p className="wiz-sub">حدّد عدد الغرف (نوع + سعر + مميزات).</p>
+        <h2 className="wiz-h2">غرف العقار</h2>
+        <p className="wiz-sub">
+          أضف غرفة، عدّل بياناتها، أو انسخ غرفة موجودة بسرعة.
+        </p>
 
-        {/* ── Section A: Total rooms ── */}
-        <div className="wiz-card">
-          <div className="wiz-card-title">
-            <span className="wiz-section-num">1</span>
-            عدد الغرف في الشقة
-          </div>
-          <div className="wiz-card-hint">
-            كم عدد الغرف القابلة للتأجير في الشقة؟ (الحد الأقصى {MAX_ROOMS} غرف)
-          </div>
-          <div className="wiz-form-row">
-            <div className="wiz-form-group" style={{ maxWidth: 200 }}>
-              <input
-                className="wiz-input"
-                type="number"
-                min="1"
-                max={MAX_ROOMS}
-                value={totalRooms}
-                onChange={(e) => {
-                  const cleaned = toEnglishDigits(e.target.value);
-                  const v =
-                    cleaned === ""
-                      ? ""
-                      : Math.min(Math.max(Number(cleaned), 1), MAX_ROOMS);
-                  setTotalRooms(v);
-                }}
-                onKeyDown={blockNonEnglishDigits}
-                onPaste={sanitizeNumberPaste}
-                inputMode="numeric"
-                disabled={roomsGenerated}
-              />
-            </div>
-            {!roomsGenerated && (
-              <button
-                type="button"
-                className="wiz-btn-primary"
-                onClick={generateRooms}
-              >
-                توليد الغرف
-              </button>
-            )}
-            {roomsGenerated && (
-              <div className="wiz-tip">
-                ✓ تم توليد {rooms.length} غرفة.{" "}
-                <button
-                  type="button"
-                  className="wiz-link"
-                  onClick={() => {
-                    setConfirmState({
-                      open: true,
-                      title: 'تأكيد',
-                      message: 'هذا سيمسح كل الغرف الحالية. متابعة؟',
-                      action: () => {
-                        setRooms([]);
-                        setRoomsGenerated(false);
-                        setSetupConfirmed(false);
-                        setPatterns([
-                          { ...makePattern(), name: "الغرفة 1", kind: "SINGLE" },
-                        ]);
-                        setTotalRooms(4);
-                        setConfirmState((s) => ({ ...s, open: false }));
-                      },
-                    });
-                  }}
-                >
-                  إعادة التوليد
-                </button>
-              </div>
+        {/* ── Toolbar: count + add ── */}
+        <div className="wiz-rooms-toolbar">
+          <div className="wiz-rooms-count">
+            <span className="wiz-rooms-count-num">{rooms.length}</span>
+            <span className="wiz-rooms-count-label">غرفة</span>
+            {rooms.length > 0 && (
+              <span className="wiz-rooms-count-sub">
+                ({roomsSummary.available} متاحة، {roomsSummary.partial} نصف،{" "}
+                {roomsSummary.booked} محجوزة)
+              </span>
             )}
           </div>
+          <button
+            type="button"
+            className="wiz-btn-primary"
+            onClick={addRoom}
+            disabled={rooms.length >= MAX_ROOMS}
+          >
+            + إضافة غرفة
+          </button>
         </div>
 
-        {roomsGenerated && (
-          <>
-            {/* ── Section B: Patterns ── */}
-            <div className="wiz-card">
-              <div className="wiz-card-title">
-                <span className="wiz-section-num">2</span>
-                تعريف الغرف
-              </div>
+        {hasLockedRooms && (
+          <div className="wiz-locked-notice">
+            🔒 الغرف المقفلة فيها حجوزات نشطة من التطبيق — يمكن تعديلها بعد انتهاء أو إلغاء الحجوزات.
+          </div>
+        )}
 
-              {patterns.map((p) => (
-                <div
-                  key={p.id}
-                  className="wiz-pattern-block"
-                  style={{ borderRightColor: p.color }}
-                >
-                  <div className="wiz-pattern-head">
-                    <strong className="wiz-pattern-name-readonly">
-                      {p.name}
-                    </strong>
-                    <span
-                      className="wiz-pattern-color-dot"
-                      style={{ background: p.color }}
-                      title="اللون المميز"
-                    />
-                    <div style={{ flex: 1 }} />
-                    {patterns.length > 1 && (
+        {/* ── Rooms list ── */}
+        <div className="wiz-flat-rooms-list">
+          {rooms.map((r, i) => {
+            const locked = isRoomLocked(r);
+            const isDouble = r.kind === "DOUBLE";
+            return (
+              <div
+                key={r.id}
+                className={`wiz-flat-room ${locked ? "locked" : ""}`}
+              >
+                <div className="wiz-flat-room-head">
+                  <div className="wiz-flat-room-num">
+                    <span className="wiz-flat-room-badge">#{i + 1}</span>
+                    <span className="wiz-flat-room-name-fixed">
+                      الغرفة {i + 1}
+                    </span>
+                  </div>
+                  <div className="wiz-flat-room-actions">
+                    {locked && (
+                      <span className="wiz-flat-room-lock">🔒 محجوزة</span>
+                    )}
+                    {!locked && rooms.length > 1 && (
                       <button
                         type="button"
-                        className="wiz-btn-ghost danger"
-                        onClick={() => removePattern(p.id)}
+                        className="wiz-text-btn danger"
+                        onClick={() => removeRoom(r.id)}
                       >
                         حذف
                       </button>
                     )}
                   </div>
+                </div>
 
-                  <div className="wiz-form-row">
-                    <div className="wiz-form-group">
-                      <label>نوع الغرفة</label>
-                      <div className="wiz-mini-segmented">
-                        {ROOM_KINDS.map((rk) => (
-                          <button
-                            key={rk.id}
-                            type="button"
-                            className={`wiz-seg-btn ${p.kind === rk.id ? "active" : ""}`}
-                            onClick={() => updatePattern(p.id, { kind: rk.id })}
-                          >
-                            <span>{rk.icon}</span> {rk.title}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="wiz-form-group">
-                      <label>السعر الشهري للغرفة (₪)</label>
-                      <input
-                        className="wiz-input"
-                        type="number"
-                        min="1"
-                        value={p.price}
-                        onChange={(e) =>
-                          updatePattern(p.id, {
-                            price: toEnglishDigits(e.target.value),
-                          })
-                        }
-                        onKeyDown={blockNonEnglishDigits}
-                        onPaste={sanitizeNumberPaste}
-                        inputMode="numeric"
-                        placeholder="500"
-                      />
-                      {p.kind !== "SINGLE" && p.price && (
-                        <div className="wiz-tip-small">
-                          للشخص الواحد:{" "}
-                          <strong>
-                            {Math.round(
-                              Number(p.price) /
-                                (ROOM_KINDS.find((k) => k.id === p.kind)
-                                  ?.capacity || 1),
-                            )}{" "}
-                            ₪
-                          </strong>
-                        </div>
-                      )}
-                    </div>
-                    <div className="wiz-form-group">
-                      <label>مساحة الغرفة (م²)</label>
-                      <input
-                        className="wiz-input"
-                        type="number"
-                        min="1"
-                        value={p.area}
-                        onChange={(e) =>
-                          updatePattern(p.id, {
-                            area: toEnglishDigits(e.target.value),
-                          })
-                        }
-                        onKeyDown={blockNonEnglishDigits}
-                        onPaste={sanitizeNumberPaste}
-                        inputMode="numeric"
-                        placeholder="مثلاً 12"
-                      />
-                    </div>
-                  </div>
-
+                <div className="wiz-form-row">
                   <div className="wiz-form-group">
-                    <label>مميزات الغرفة</label>
-                    <div className="wiz-chips-grid">
-                      {ROOM_LEVEL_FEATURES.map((f) => (
+                    <label>نوع الغرفة</label>
+                    <div className="wiz-mini-segmented">
+                      {ROOM_KINDS.map((rk) => (
                         <button
-                          key={f}
+                          key={rk.id}
                           type="button"
-                          className={`wiz-chip ${p.features.includes(f) ? "active" : ""}`}
-                          onClick={() => togglePatternFeature(p.id, f)}
+                          disabled={locked}
+                          className={`wiz-seg-btn ${r.kind === rk.id ? "active" : ""}`}
+                          onClick={() => updateRoom(r.id, { kind: rk.id })}
                         >
-                          {p.features.includes(f) ? "✓ " : ""}
-                          {f}
+                          <span>{rk.icon}</span> {rk.title}
                         </button>
                       ))}
                     </div>
                   </div>
-                </div>
-              ))}
-
-              {patterns.length < rooms.length ? (
-                <button
-                  type="button"
-                  className="wiz-add-variant-btn"
-                  onClick={addPattern}
-                >
-                  + إضافة نوع غرفة آخر
-                </button>
-              ) : (
-                <div className="wiz-tip" style={{ textAlign: "center" }}>
-                  وصلت للحد الأقصى من الأنواع ({rooms.length}).
-                </div>
-              )}
-
-              {/* Confirm button — reveals section C below */}
-              {!setupConfirmed && (
-                <div className="wiz-confirm-row">
-                  <div
-                    className="wiz-tip-small"
-                    style={{ marginBottom: 8, color: "#6b7280" }}
-                  >
-                    يمكنك تعريف نوع واحد لجميع الغرف، أو أنواع مختلفة لكل غرفة.
+                  <div className="wiz-form-group">
+                    <label>السعر الشهري (₪)</label>
+                    <input
+                      className="wiz-input"
+                      type="number"
+                      min="1"
+                      value={r.price}
+                      disabled={locked}
+                      onChange={(e) =>
+                        updateRoom(r.id, {
+                          price: toEnglishDigits(e.target.value),
+                        })
+                      }
+                      onKeyDown={blockNonEnglishDigits}
+                      onPaste={sanitizeNumberPaste}
+                      inputMode="numeric"
+                      placeholder="500"
+                    />
+                    {isDouble && r.price && (
+                      <div className="wiz-tip-small">
+                        للسرير الواحد: <strong>{Math.round(Number(r.price) / 2)} ₪</strong>
+                      </div>
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    className="wiz-btn-primary"
-                    disabled={
-                      patterns.length === 0 ||
-                      !patterns.every(
-                        (p) => p.name?.trim() && Number(p.price) > 0,
-                      )
-                    }
-                    onClick={() => setSetupConfirmed(true)}
-                  >
-                    ✓ تم — تابع لمطابقة الغرف
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* ── Section C: Rooms matching (visible only after confirm) ── */}
-            {setupConfirmed && (
-              <div className="wiz-card">
-                <div className="wiz-card-title">
-                  <span className="wiz-section-num">3</span>
-                  مطابقة الغرف
-                  <button
-                    type="button"
-                    className="wiz-btn-ghost"
-                    style={{ marginRight: "auto", fontSize: 12 }}
-                    onClick={() => setSetupConfirmed(false)}
-                  >
-                    ← تعديل الغرف
-                  </button>
+                  <div className="wiz-form-group">
+                    <label>المساحة (م²)</label>
+                    <input
+                      className="wiz-input"
+                      type="number"
+                      min="1"
+                      value={r.area}
+                      disabled={locked}
+                      onChange={(e) =>
+                        updateRoom(r.id, {
+                          area: toEnglishDigits(e.target.value),
+                        })
+                      }
+                      onKeyDown={blockNonEnglishDigits}
+                      onPaste={sanitizeNumberPaste}
+                      inputMode="numeric"
+                      placeholder="12"
+                    />
+                  </div>
                 </div>
 
-                <div className="wiz-rooms-list">
-                  {rooms.map((r) => {
-                    const pat = patterns.find((p) => p.id === r.patternId);
-                    return (
-                      <div
-                        key={r.id}
-                        className="wiz-room-row"
-                        style={{
-                          borderRightColor: pat?.color || "#e5e7eb",
-                          borderRightWidth: 4,
-                        }}
+                <div className="wiz-form-group">
+                  <label>المميزات</label>
+                  <div className="wiz-chips-grid">
+                    {ROOM_LEVEL_FEATURES.map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        disabled={locked}
+                        className={`wiz-chip ${r.features.includes(f) ? "active" : ""}`}
+                        onClick={() => toggleRoomFeature(r.id, f)}
                       >
-                        <div className="wiz-room-num">
-                          <input
-                            className="wiz-room-label-input"
-                            value={r.label}
-                            onChange={(e) =>
-                              updateRoom(r.id, { label: e.target.value })
-                            }
-                          />
-                          {pat?.price && (
-                            <div className="wiz-room-price-hint">
-                              {pat.price} ₪/شهر
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="wiz-room-status">
-                          {ROOM_STATUSES.filter(
-                            (s) => !s.doubleOnly || pat?.kind === "DOUBLE",
-                          ).map((s) => (
-                            <button
-                              key={s.id}
-                              type="button"
-                              className={`wiz-status-btn ${r.status === s.id ? "active" : ""}`}
-                              style={
-                                r.status === s.id
-                                  ? {
-                                      background: s.bg,
-                                      color: s.color,
-                                      borderColor: s.color,
-                                    }
-                                  : {}
-                              }
-                              onClick={() => updateRoom(r.id, { status: s.id })}
-                              title={
-                                s.id === "PARTIAL"
-                                  ? "سرير واحد محجوز، الثاني متاح"
-                                  : ""
-                              }
-                            >
-                              {s.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
+                        {r.features.includes(f) ? "✓ " : ""}
+                        {f}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="wiz-legend">
-                  <div className="wiz-legend-title">الملخص:</div>
-                  {patternStats.map(
-                    ({ pattern: p, total, freeBeds, totalBeds }) => (
-                      <div key={p.id} className="wiz-legend-row">
-                        <span
-                          className="wiz-legend-dot"
-                          style={{ background: p.color }}
-                        />
-                        <span className="wiz-legend-name">
-                          {p.name || "بلا اسم"}
-                        </span>
-                        <span className="wiz-legend-meta">
-                          {total} غرفة •{" "}
-                          {p.kind === "DOUBLE"
-                            ? `${freeBeds} سرير متاح من ${totalBeds}`
-                            : `${freeBeds} متاحة`}{" "}
-                          • {p.price ? `${p.price} ₪` : "بدون سعر"}
-                        </span>
-                      </div>
-                    ),
-                  )}
+                <div className="wiz-form-group">
+                  <label>الحالة</label>
+                  <div className="wiz-room-status">
+                    {ROOM_STATUSES.filter(
+                      (s) => !s.doubleOnly || isDouble,
+                    ).map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        disabled={locked}
+                        className={`wiz-status-btn ${r.status === s.id ? "active" : ""}`}
+                        style={
+                          r.status === s.id
+                            ? {
+                                background: s.bg,
+                                color: s.color,
+                                borderColor: s.color,
+                              }
+                            : {}
+                        }
+                        onClick={() => updateRoom(r.id, { status: s.id })}
+                        title={
+                          s.id === "PARTIAL"
+                            ? "سرير واحد محجوز، الثاني متاح"
+                            : ""
+                        }
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            )}
-          </>
-        )}
+            );
+          })}
+        </div>
       </div>
     );
   }
@@ -1027,77 +810,40 @@ export default function AddEditProperty() {
         </div>
 
         {!isStudio && (
-          <>
-            <div className="wiz-card">
-              <div className="wiz-card-title">
-                أنواع الغرف ({patterns.length})
-              </div>
-              {patternStats.map(
-                ({ pattern: p, total, freeBeds, totalBeds }) => (
-                  <div
-                    key={p.id}
-                    className="wiz-review-pattern"
-                    style={{ borderRightColor: p.color }}
-                  >
-                    <div className="wiz-review-pattern-head">
-                      <strong>{p.name}</strong>
-                      <span className="wiz-review-badge">
-                        {ROOM_KINDS.find((k) => k.id === p.kind)?.title}
-                      </span>
-                      <span className="wiz-review-badge">{total} غرف</span>
-                      <span className="wiz-review-badge available">
-                        {p.kind === "DOUBLE"
-                          ? `${freeBeds} سرير متاح من ${totalBeds}`
-                          : `${freeBeds} متاحة`}
-                      </span>
-                      <span className="wiz-review-price">
-                        {p.price || "—"} ₪
-                      </span>
-                      {p.area && (
-                        <span className="wiz-review-badge">{p.area} م²</span>
+          <div className="wiz-card">
+            <div className="wiz-card-title">الغرف ({rooms.length})</div>
+            <div className="wiz-review-rooms-grid">
+              {rooms.map((r, i) => {
+                const status = ROOM_STATUSES.find((s) => s.id === r.status);
+                const kindLabel = ROOM_KINDS.find((k) => k.id === r.kind)?.title;
+                return (
+                  <div key={r.id} className="wiz-review-room">
+                    <div className="wiz-review-room-label">الغرفة {i + 1}</div>
+                    <div className="wiz-review-room-meta">
+                      <span className="wiz-review-badge">{kindLabel}</span>
+                      <span className="wiz-review-badge">{r.price || "—"} ₪</span>
+                      {r.area && (
+                        <span className="wiz-review-badge">{r.area} م²</span>
                       )}
                     </div>
-                    {p.features.length > 0 && (
+                    {r.features.length > 0 && (
                       <div className="wiz-review-features">
-                        {p.features.join("، ")}
+                        {r.features.join("، ")}
+                      </div>
+                    )}
+                    {status && (
+                      <div
+                        className="wiz-review-room-status"
+                        style={{ background: status.bg, color: status.color }}
+                      >
+                        {status.label}
                       </div>
                     )}
                   </div>
-                ),
-              )}
+                );
+              })}
             </div>
-
-            <div className="wiz-card">
-              <div className="wiz-card-title">قائمة الغرف ({rooms.length})</div>
-              <div className="wiz-review-rooms-grid">
-                {rooms.map((r) => {
-                  const pat = patterns.find((p) => p.id === r.patternId);
-                  const status = ROOM_STATUSES.find((s) => s.id === r.status);
-                  return (
-                    <div
-                      key={r.id}
-                      className="wiz-review-room"
-                      style={{ borderColor: pat?.color || "#d1d5db" }}
-                    >
-                      <div className="wiz-review-room-label">{r.label}</div>
-                      <div
-                        className="wiz-review-room-pattern"
-                        style={{ color: pat?.color || "#999" }}
-                      >
-                        {pat?.name || "—"}
-                      </div>
-                      <div
-                        className="wiz-review-room-status"
-                        style={{ background: status?.bg, color: status?.color }}
-                      >
-                        {status?.label}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </>
+          </div>
         )}
 
         {isStudio && (
@@ -1114,24 +860,20 @@ export default function AddEditProperty() {
   }
 
   // ── Submit ──
-  function buildVariantPayloadFromRoom(r) {
-    const pat = patterns.find((p) => p.id === r.patternId);
-    const isDouble = pat?.kind === "DOUBLE";
-    const fullPrice = Number(pat?.price || 0);
+  function buildVariantPayloadFromRoom(r, index) {
+    const isDouble = r.kind === "DOUBLE";
+    const fullPrice = Number(r.price || 0);
     const halfPrice = isDouble ? Math.round(fullPrice / 2) : null;
-    const area = pat?.area && Number(pat.area) > 0 ? Number(pat.area) : null;
+    const area = r.area && Number(r.area) > 0 ? Number(r.area) : null;
     return {
-      name: r.label,
-      kind: pat?.kind || "SINGLE",
+      // Room labels are derived from position — owners can't rename them.
+      name: `الغرفة ${index + 1}`,
+      kind: r.kind || "SINGLE",
       capacity: isDouble ? 2 : 1,
       area,
       fullPrice,
       halfPrice,
-      services: pat?.features || [],
-      patternName: pat?.name || null,
-      patternColor: pat?.color || null,
-      isOccupied: r.status === "BOOKED",
-      partiallyOccupied: r.status === "PARTIAL",
+      services: r.features || [],
     };
   }
 
@@ -1193,11 +935,28 @@ export default function AddEditProperty() {
         // Apartment: handle each room
         if (isEdit) {
           const stillExistingDbIds = new Set();
-          for (const r of rooms) {
-            const payload = buildVariantPayloadFromRoom(r);
+          const manualStatusErrors = [];
+          for (let i = 0; i < rooms.length; i++) {
+            const r = rooms[i];
+            const payload = buildVariantPayloadFromRoom(r, i);
             if (r.dbId) {
               await api.properties.updateVariant(propertyId, r.dbId, payload);
               stillExistingDbIds.add(r.dbId);
+              // Manual occupancy must go through its own endpoint (security guard
+              // against double-booking). Only call if the owner actually flipped it.
+              if (r.originalStatus && r.status !== r.originalStatus) {
+                const apiStatus =
+                  r.status === "BOOKED"
+                    ? "OCCUPIED"
+                    : r.status === "PARTIAL"
+                      ? "PARTIAL"
+                      : "AVAILABLE";
+                try {
+                  await api.properties.setRoomManualStatus(propertyId, r.dbId, apiStatus);
+                } catch (statusErr) {
+                  manualStatusErrors.push(`${r.label}: ${statusErr.message}`);
+                }
+              }
             } else {
               const created = await api.properties.createVariant(
                 propertyId,
@@ -1217,10 +976,19 @@ export default function AddEditProperty() {
               }
             }
           }
+          // Surface any manual-status failures (e.g. room already booked in-app)
+          // without rolling back the rest of the save — the data updates went through.
+          if (manualStatusErrors.length > 0) {
+            setSubmitError(
+              `تم حفظ العقار، لكن لم يتم تحديث حالة بعض الغرف: ${manualStatusErrors.join("، ")}`,
+            );
+            setSaving(false);
+            return;
+          }
         } else {
           await api.properties.bulkCreateVariants(
             propertyId,
-            rooms.map(buildVariantPayloadFromRoom),
+            rooms.map((r, i) => buildVariantPayloadFromRoom(r, i)),
           );
         }
       }
@@ -1246,11 +1014,7 @@ export default function AddEditProperty() {
     }
     if (step === 3 && selectedKind?.needsRooms) {
       return (
-        roomsGenerated &&
-        setupConfirmed &&
-        patterns.length > 0 &&
-        rooms.every((r) => r.patternId !== null) &&
-        patterns.every((p) => p.name?.trim() && Number(p.price) > 0)
+        rooms.length > 0 && rooms.every((r) => Number(r.price) > 0)
       );
     }
     return true;
