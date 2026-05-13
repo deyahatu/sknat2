@@ -570,6 +570,17 @@ router.patch(
               throw err;
             }
 
+            // Reject if the booking's start date has already passed. A months-old
+            // PENDING request whose stay was supposed to begin in the past would
+            // retroactively occupy the room and skew refund/analytics windows.
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
+            if (booking.startDate < startOfToday) {
+              const err = new Error("لا يمكن قبول هذا الطلب: تاريخ بداية الحجز قد مضى. يرجى من الطالب إنشاء طلب جديد بتواريخ مناسبة.");
+              err.statusCode = 400;
+              throw err;
+            }
+
             isRenewal = !!booking.parentBookingId;
 
             // Renewal becomes orphaned if its parent was cancelled/rejected/completed.
@@ -982,6 +993,18 @@ router.patch(
           .json({ error: "يمكن إكمال الحجوزات المدفوعة فقط." });
       }
 
+      // The booking can only be marked COMPLETED after its stay window has
+      // actually ended. Otherwise an owner could close out a booking on day 1
+      // and immediately leave a damaging student rating for a stay that never
+      // happened (or downgrade analytics on a still-active room).
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      if (booking.endDate > startOfToday) {
+        return res
+          .status(400)
+          .json({ error: "لا يمكن إكمال الحجز قبل انتهاء مدته." });
+      }
+
       const updated = await prisma.$transaction(async (tx) => {
         const updatedBooking = await tx.booking.update({
           where: { id: booking.id },
@@ -1045,13 +1068,24 @@ router.get("/:id/cancellation-policy", authenticate, async (req, res, next) => {
     const booking = await prisma.booking.findUnique({
       where: { id: req.params.id },
       include: {
-        property: { select: { policy: true, title: true } },
+        property: { select: { policy: true, title: true, ownerId: true } },
         payment: { select: { createdAt: true, amount: true } },
       },
     });
 
     if (!booking) {
       return res.status(404).json({ error: "الحجز غير موجود." });
+    }
+
+    // Only the booking's student, the property owner, or an admin may read the
+    // policy + refund amount. Otherwise anyone could enumerate /:id and harvest
+    // payment amounts (and the property's pricing strategy) across the platform.
+    const isStudent = booking.studentId === req.user.id;
+    const isOwner = booking.property.ownerId === req.user.id;
+    const isAdmin = req.user.role === "ADMIN";
+
+    if (!isStudent && !isOwner && !isAdmin) {
+      return res.status(403).json({ error: "لا يمكنك الوصول لهذه المعلومات." });
     }
 
     let refundPercentage = 0;

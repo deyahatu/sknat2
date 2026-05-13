@@ -24,6 +24,7 @@ router.post("/", authenticate, requireActive, authorize("STUDENT"), async (req, 
           select: { id: true, kind: true, fullPrice: true, halfPrice: true },
         },
         payment: true,
+        parentBooking: { select: { status: true } },
       },
     });
 
@@ -47,6 +48,18 @@ router.post("/", authenticate, requireActive, authorize("STUDENT"), async (req, 
       return res
         .status(400)
         .json({ error: "تم دفع هذا الحجز مسبقاً." });
+    }
+
+    // For renewals, the parent booking must still be active. Without this check
+    // a student could pay a renewal after the original booking was cancelled,
+    // leaving the renewal "PAID" but orphaned from any valid stay history.
+    if (booking.parentBookingId && booking.parentBooking) {
+      const validParentStates = ["APPROVED", "PAID", "COMPLETED"];
+      if (!validParentStates.includes(booking.parentBooking.status)) {
+        return res.status(400).json({
+          error: "لا يمكن دفع هذا التجديد: الحجز الأصلي لم يعد نشطاً.",
+        });
+      }
     }
 
     // Prevent paying when student already has another PAID booking overlapping these dates.

@@ -238,7 +238,7 @@ router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res, next) =
 
     const target = await prisma.user.findUnique({
       where: { id },
-      select: { id: true, name: true, role: true },
+      select: { id: true, name: true, role: true, email: true, phone: true, idNumber: true },
     });
     if (!target) {
       return res.status(404).json({ error: 'المستخدم غير موجود.' });
@@ -325,7 +325,20 @@ router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res, next) =
       }
     }
 
-    await prisma.user.delete({ where: { id } });
+    // Record the identity on the blocklist BEFORE deleting so the same person
+    // can't immediately re-register with the same email/phone/idNumber.
+    await prisma.$transaction([
+      prisma.blockedIdentity.create({
+        data: {
+          email: target.email || null,
+          phone: target.phone || null,
+          idNumber: target.idNumber || null,
+          reason: 'تم حذف الحساب من قبل الإدارة',
+          blockedBy: req.user.id,
+        },
+      }),
+      prisma.user.delete({ where: { id } }),
+    ]);
     logAudit({ action: 'DELETE', entity: 'USER', entityId: id, user: req.user, details: null });
     res.json({ message: 'تم حذف المستخدم بنجاح' });
   } catch (err) {

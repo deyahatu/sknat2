@@ -20,13 +20,19 @@ const TABS = [
   { id: 'reports', label: 'البلاغات والشكاوى', icon: <FiFlag /> },
 ];
 
+// Neutralise CSV formula-injection: when Excel sees a cell starting with =, +, -, @,
+// tab or CR it evaluates the contents as a formula. Prefixing with ' makes Excel
+// treat the entire cell as a literal string.
+function escapeCsvCell(raw) {
+  let v = typeof raw === 'object' && raw !== null ? JSON.stringify(raw) : String(raw ?? '');
+  if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+  return `"${v.replace(/"/g, '""')}"`;
+}
+
 function exportCSV(data, filename) {
   if (!data || data.length === 0) return;
   const keys = Object.keys(data[0]);
-  const csv = [keys.join(','), ...data.map(row => keys.map(k => {
-    const v = typeof row[k] === 'object' ? JSON.stringify(row[k]) : String(row[k] ?? '');
-    return `"${v.replace(/"/g, '""')}"`;
-  }).join(','))].join('\n');
+  const csv = [keys.join(','), ...data.map(row => keys.map(k => escapeCsvCell(row[k])).join(','))].join('\n');
   const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);

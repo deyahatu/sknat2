@@ -49,6 +49,7 @@ const propertySelect = {
   area: true,
   images: true,
   available: true,
+  disabledByAdmin: true,
   studioPrice: true,
   ownerId: true,
   createdAt: true,
@@ -63,6 +64,15 @@ function asRequiredString(value) {
 function asOptionalString(value) {
   const trimmed = asRequiredString(value);
   return trimmed || null;
+}
+
+// Reject text that opens with characters Excel/Sheets treat as formula triggers
+// (=, +, -, @, tab, CR). This keeps CSV exports of these fields safe even if a
+// future viewer forgets to escape on the way out.
+function assertNoFormula(value, fieldName) {
+  if (typeof value === 'string' && /^[=+\-@\t\r]/.test(value)) {
+    throw new Error(`لا يمكن أن يبدأ ${fieldName} بالرموز = أو + أو - أو @`);
+  }
 }
 
 function asPositiveInteger(value, fieldName) {
@@ -167,6 +177,14 @@ function buildCreateData(body, ownerId) {
     throw new Error('يرجى تعبئة اسم السكن والحي.');
   }
 
+  assertNoFormula(title, 'اسم السكن');
+  assertNoFormula(city, 'الحي');
+  assertNoFormula(description, 'الوصف');
+  assertNoFormula(policy, 'السياسة');
+  assertNoFormula(address, 'العنوان');
+  assertNoFormula(otherServices, 'الخدمات الإضافية');
+  assertNoFormula(campus, 'الحرم الجامعي');
+
   if (!VALID_GENDERS.includes(targetGender)) {
     throw new Error('الجنس المستهدف يجب أن يكون MALE أو FEMALE.');
   }
@@ -218,6 +236,7 @@ function buildUpdateData(body) {
   if (body.title !== undefined || body.name !== undefined) {
     const title = asRequiredString(body.title || body.name);
     if (!title) throw new Error('اسم السكن لا يمكن أن يكون فارغاً.');
+    assertNoFormula(title, 'اسم السكن');
     data.title = title;
   }
 
@@ -232,13 +251,26 @@ function buildUpdateData(body) {
   if (body.city !== undefined) {
     const city = asRequiredString(body.city);
     if (!city) throw new Error('الحي لا يمكن أن يكون فارغاً.');
+    assertNoFormula(city, 'الحي');
     data.city = city;
   }
 
-  if (body.address !== undefined) data.address = asOptionalString(body.address);
-  if (body.description !== undefined) data.description = asOptionalString(body.description);
-  if (body.policy !== undefined) data.policy = asOptionalString(body.policy);
-  if (body.campus !== undefined) data.campus = asOptionalString(body.campus);
+  if (body.address !== undefined) {
+    data.address = asOptionalString(body.address);
+    assertNoFormula(data.address, 'العنوان');
+  }
+  if (body.description !== undefined) {
+    data.description = asOptionalString(body.description);
+    assertNoFormula(data.description, 'الوصف');
+  }
+  if (body.policy !== undefined) {
+    data.policy = asOptionalString(body.policy);
+    assertNoFormula(data.policy, 'السياسة');
+  }
+  if (body.campus !== undefined) {
+    data.campus = asOptionalString(body.campus);
+    assertNoFormula(data.campus, 'الحرم الجامعي');
+  }
 
   if (body.distance !== undefined) {
     data.distance = body.distance === null || body.distance === ''
@@ -269,6 +301,7 @@ function buildUpdateData(body) {
 
   if (body.otherServices !== undefined) {
     data.otherServices = asOptionalString(body.otherServices);
+    assertNoFormula(data.otherServices, 'الخدمات الإضافية');
   }
 
   if (body.images !== undefined) {
@@ -411,7 +444,10 @@ router.get('/', async (req, res, next) => {
       where,
       select: {
         ...propertySelect,
-        owner: { select: { id: true, name: true, phone: true, email: true, isActive: true } },
+        // The list endpoint is unauthenticated. We expose only the owner's
+        // display fields; phone/email are reserved for the detail endpoint so
+        // scrapers can't harvest every owner's contact info in a single call.
+        owner: { select: { id: true, name: true, isActive: true } },
         reviews: { select: { rating: true } },
         _count: { select: { reviews: true } },
         bookings: userRole === 'ADMIN'
@@ -702,6 +738,15 @@ router.patch('/:id/availability', authenticate, requireActive, async (req, res, 
 
     const nextAvailable = asBoolean(req.body.available);
 
+    // If an admin previously disabled this listing, the owner can't bring it
+    // back online — they must contact support. Prevents the workflow where an
+    // owner bypasses moderation by simply toggling the flag back themselves.
+    if (!isAdmin && existing.disabledByAdmin && nextAvailable) {
+      return res.status(403).json({
+        error: 'تم تعطيل هذا السكن من قبل الإدارة. لا يمكنك إعادة تفعيله. تواصل مع الدعم.',
+      });
+    }
+
     // Refuse to mark unavailable while students still have confirmed bookings —
     // that would silently strand paying tenants. Admins bypass since they may
     // need to disable a problematic listing despite active bookings.
@@ -719,9 +764,15 @@ router.patch('/:id/availability', authenticate, requireActive, async (req, res, 
       }
     }
 
+    // Admin actions stamp/clear the moderation flag; owner actions don't touch it.
+    const updateData = { available: nextAvailable };
+    if (isAdmin) {
+      updateData.disabledByAdmin = !nextAvailable;
+    }
+
     const property = await prisma.property.update({
       where: { id: existing.id },
-      data: { available: nextAvailable },
+      data: updateData,
       select: propertySelect,
     });
 
@@ -767,6 +818,13 @@ router.delete('/:id', authenticate, requireActive, async (req, res, next) => {
 
     if (!existing) {
       return res.status(404).json({ error: 'السكن غير موجود.' });
+    }
+
+    // Owners can't escape an admin disable by deleting + re-adding the listing.
+    if (!isAdmin && existing.disabledByAdmin) {
+      return res.status(403).json({
+        error: 'تم تعطيل هذا السكن من قبل الإدارة. لا يمكنك حذفه. تواصل مع الدعم.',
+      });
     }
 
     const activeBookings = await prisma.booking.count({
@@ -835,12 +893,21 @@ function buildVariantData(body) {
   };
 }
 
+// Maximum rooms per property. Kept here (not exposed to clients) to avoid
+// signalling the exact cap; the rejection message stays generic by design.
+const MAX_ROOMS_PER_PROPERTY = 5;
+
 // Add room variant to property
 router.post('/:id/variants', authenticate, requireActive, authorize('OWNER'), async (req, res, next) => {
   try {
     const property = await findOwnerProperty(req.params.id, req.user.id);
     if (!property) {
       return res.status(404).json({ error: 'السكن غير موجود.' });
+    }
+
+    const existingCount = await prisma.roomVariant.count({ where: { propertyId: property.id } });
+    if (existingCount >= MAX_ROOMS_PER_PROPERTY) {
+      return res.status(400).json({ error: 'لا يمكن إضافة المزيد من الغرف لهذا السكن.' });
     }
 
     const variant = await prisma.roomVariant.create({
@@ -871,6 +938,11 @@ router.post('/:id/variants/bulk', authenticate, requireActive, authorize('OWNER'
     const list = Array.isArray(req.body.variants) ? req.body.variants : [];
     if (list.length === 0) {
       return res.status(400).json({ error: 'لا توجد غرف لإضافتها.' });
+    }
+
+    const existingCount = await prisma.roomVariant.count({ where: { propertyId: property.id } });
+    if (existingCount + list.length > MAX_ROOMS_PER_PROPERTY) {
+      return res.status(400).json({ error: 'لا يمكن إضافة المزيد من الغرف لهذا السكن.' });
     }
 
     const dataList = list.map((v) => ({ ...buildVariantData(v), propertyId: property.id }));

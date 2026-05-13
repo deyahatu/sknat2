@@ -122,6 +122,12 @@ export default function OwnerProperties() {
                   </span>
                 </div>
 
+                {p.disabledByAdmin && (
+                  <div className="owner-property-admin-block">
+                    تم تعطيل هذا السكن من قبل الإدارة. لا يمكنك حذفه أو إعادة تفعيله. تواصل مع الدعم.
+                  </div>
+                )}
+
                 <div className="owner-property-tag-row">
                   <span className="owner-property-tag">
                     <FiMapPin />
@@ -158,14 +164,16 @@ export default function OwnerProperties() {
                       <FiEdit2 />
                       <span>تعديل</span>
                     </button>
-                    <button
-                      className="owner-property-tool owner-property-tool-danger"
-                      disabled={deleting === p.id}
-                      onClick={() => handleDelete(p.id, p.title)}
-                    >
-                      <FiTrash2 />
-                      <span>{deleting === p.id ? "جاري الحذف..." : "حذف"}</span>
-                    </button>
+                    {!p.disabledByAdmin && (
+                      <button
+                        className="owner-property-tool owner-property-tool-danger"
+                        disabled={deleting === p.id}
+                        onClick={() => handleDelete(p.id, p.title)}
+                      >
+                        <FiTrash2 />
+                        <span>{deleting === p.id ? "جاري الحذف..." : "حذف"}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </article>

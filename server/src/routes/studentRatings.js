@@ -104,6 +104,15 @@ router.post('/', authenticate, requireActive, authorize('OWNER'), async (req, re
       return res.status(400).json({ error: 'يمكن تقييم الحجوزات المكتملة فقط.' });
     }
 
+    // Defense in depth: even if a booking somehow reached COMPLETED before its
+    // endDate (legacy data, manual DB edit), refuse the rating until the stay
+    // window has actually ended.
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    if (booking.endDate > startOfToday) {
+      return res.status(400).json({ error: 'لا يمكن تقييم الحجز قبل انتهاء فترة الإقامة.' });
+    }
+
     if (booking.student.role !== 'STUDENT') {
       return res.status(400).json({ error: 'يمكن تقييم الطلاب فقط.' });
     }

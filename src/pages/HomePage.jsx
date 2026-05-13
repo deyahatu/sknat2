@@ -22,10 +22,6 @@ function HomePage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const { user } = useAuth();
-  // Admins never see the marketing landing — drop them into the dashboard.
-  if (user?.role === "ADMIN") {
-    return <Navigate to="/admin" replace />;
-  }
   const isStudent = user?.role === "STUDENT";
   const firstName = user?.name?.split(" ")[0] || "";
   const [properties, setProperties] = useState([]);
@@ -39,6 +35,11 @@ function HomePage() {
       .catch(() => {})
       .finally(() => setLoadingProps(false));
   }, [isStudent]);
+
+  // Admins never see the marketing landing — drop them into the dashboard.
+  if (user?.role === "ADMIN") {
+    return <Navigate to="/admin" replace />;
+  }
 
   const handleSearch = (e) => {
     e.preventDefault();

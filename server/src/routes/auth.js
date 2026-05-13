@@ -17,6 +17,7 @@ import {
   verifyEmailLimiter,
   resendCodeLimiter,
   registerLimiter,
+  resetPasswordLimiter,
 } from "../middleware/rateLimit.js";
 
 const router = Router();
@@ -147,6 +148,24 @@ router.post("/register", registerLimiter, async (req, res) => {
         error: isOwner
           ? "رقم الهوية هذا مسجّل مسبقاً."
           : "الرقم الجامعي هذا مرتبط بحساب آخر.",
+      });
+    }
+
+    // After admin deletes a user, their identity (email/phone/idNumber) is
+    // recorded in BlockedIdentity. Reject re-registration so a deleted abuser
+    // can't just sign up again with the same credentials.
+    const blockedIdentity = await prisma.blockedIdentity.findFirst({
+      where: {
+        OR: [
+          { email },
+          { phone },
+          { idNumber },
+        ],
+      },
+    });
+    if (blockedIdentity) {
+      return res.status(403).json({
+        error: "لا يمكن إنشاء حساب جديد بهذه البيانات. للاستفسار، يرجى التواصل مع الدعم.",
       });
     }
 
@@ -328,6 +347,24 @@ router.post("/verify-email", verifyEmailLimiter, async (req, res, next) => {
       const remaining = MAX_VERIFICATION_ATTEMPTS - (pending.attempts + 1);
       return res.status(400).json({
         error: `رمز التحقق غير صحيح. المحاولات المتبقية: ${remaining}.`,
+      });
+    }
+
+    // Re-check the blocklist at verification time too: an admin may have
+    // deleted a user (and blocked the identity) between register and verify.
+    const blockedIdentity = await prisma.blockedIdentity.findFirst({
+      where: {
+        OR: [
+          { email: pending.email },
+          { phone: pending.phone },
+          { idNumber: pending.idNumber },
+        ],
+      },
+    });
+    if (blockedIdentity) {
+      await prisma.emailVerification.delete({ where: { email } });
+      return res.status(403).json({
+        error: "لا يمكن إنشاء حساب جديد بهذه البيانات. للاستفسار، يرجى التواصل مع الدعم.",
       });
     }
 
@@ -547,7 +584,7 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res, next) =>
   }
 });
 
-router.post("/reset-password", async (req, res, next) => {
+router.post("/reset-password", resetPasswordLimiter, async (req, res, next) => {
   try {
     const { token, password } = req.body;
 
