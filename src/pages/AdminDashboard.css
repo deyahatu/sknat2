@@ -20,12 +20,23 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  overflow-y: auto;
+  /* Sidebar must paint above .admin-main so the NotificationBell dropdown
+     (which extends into the main content area) is not covered by stat
+     cards or other content that follows in DOM order. */
+  z-index: 100;
 }
+
 
 .admin-sidebar-header {
   padding: 24px 20px 16px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.admin-sidebar-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .admin-sidebar-header h2 {
@@ -40,12 +51,48 @@
   margin: 0;
 }
 
+/* NotificationBell sits on dark sidebar — invert icon colour */
+.admin-sidebar-header-top .nb-btn {
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 8px;
+}
+.admin-sidebar-header-top .nb-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+/* Header sits above the nav so its absolutely-positioned dropdown is not
+   covered by the active sidebar item (which paints later in DOM order with
+   a semi-transparent purple background). */
+.admin-sidebar-header {
+  position: relative;
+  z-index: 100;
+}
+
+/* Bell lives at the left edge of the right-anchored sidebar. The default
+   dropdown opens rightward (off-screen / clipped by sidebar). Flip it so its
+   right edge aligns roughly with the sidebar's left edge and the dropdown
+   extends fully into the main content area where there's room. */
+.admin-sidebar-header-top .nb-wrap {
+  position: relative;
+  z-index: 2000;
+}
+.admin-sidebar-header-top .nb-wrap .nb-dropdown {
+  left: auto;
+  right: calc(100% - 8px);
+  top: calc(100% + 8px);
+  width: 340px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
 .admin-sidebar-nav {
   flex: 1;
   padding: 12px 10px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  overflow-y: auto;
 }
 
 .admin-sidebar-item {
@@ -1078,7 +1125,8 @@
   .admin-sidebar-header {
     display: none;
   }
-  .admin-sidebar-footer {
+  .admin-sidebar-footer,
+  .admin-sidebar-logout {
     display: none;
   }
   .admin-sidebar-nav {
@@ -1554,4 +1602,48 @@
   gap: 10px;
   padding-top: 16px;
   border-top: 1px solid #e2e8f0;
+}
+
+.ad-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 12px;
+  flex-wrap: wrap;
+}
+
+.ad-page-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: #fff;
+  color: var(--text-primary, #1f2937);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.ad-page-btn:hover:not(:disabled) {
+  background: var(--bg-secondary, #f3f4f6);
+}
+
+.ad-page-btn.active {
+  background: var(--primary, #4f46e5);
+  color: #fff;
+  border-color: var(--primary, #4f46e5);
+}
+
+.ad-page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ad-page-gap {
+  padding: 0 6px;
+  color: var(--text-secondary, #6b7280);
+  user-select: none;
 }

@@ -6,6 +6,7 @@ import ConfirmModal from '../components/shared/ConfirmModal';
 import Skeleton from '../components/shared/Skeleton';
 import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText, FiFlag, FiLogOut } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import NotificationBell from '../components/shared/NotificationBell';
 import './AdminDashboard.css';
 
 const TABS = [
@@ -27,6 +28,55 @@ function escapeCsvCell(raw) {
   let v = typeof raw === 'object' && raw !== null ? JSON.stringify(raw) : String(raw ?? '');
   if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
   return `"${v.replace(/"/g, '""')}"`;
+}
+
+const PAGE_SIZE = 10;
+
+function Pagination({ page, totalPages, onChange }) {
+  if (totalPages <= 1) return null;
+  const window = 2;
+  const pages = [];
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= page - window && i <= page + window)) {
+      pages.push(i);
+    } else if (pages[pages.length - 1] !== '…') {
+      pages.push('…');
+    }
+  }
+  return (
+    <div className="ad-pagination">
+      <button
+        type="button"
+        className="ad-page-btn"
+        disabled={page === 1}
+        onClick={() => onChange(page - 1)}
+      >
+        السابق
+      </button>
+      {pages.map((p, idx) =>
+        p === '…' ? (
+          <span key={`gap-${idx}`} className="ad-page-gap">…</span>
+        ) : (
+          <button
+            key={p}
+            type="button"
+            className={`ad-page-btn ${p === page ? 'active' : ''}`}
+            onClick={() => onChange(p)}
+          >
+            {p}
+          </button>
+        ),
+      )}
+      <button
+        type="button"
+        className="ad-page-btn"
+        disabled={page === totalPages}
+        onClick={() => onChange(page + 1)}
+      >
+        التالي
+      </button>
+    </div>
+  );
 }
 
 function exportCSV(data, filename) {
@@ -62,8 +112,13 @@ export default function AdminDashboard() {
       <div className="admin-layout">
         <aside className="admin-sidebar">
           <div className="admin-sidebar-header">
-            <h2>لوحة التحكم</h2>
-            <p>إدارة النظام</p>
+            <div className="admin-sidebar-header-top">
+              <div>
+                <h2>لوحة التحكم</h2>
+                <p>إدارة النظام</p>
+              </div>
+              <NotificationBell />
+            </div>
           </div>
           <nav className="admin-sidebar-nav">
             {TABS.map((tab) => {
@@ -81,16 +136,16 @@ export default function AdminDashboard() {
               );
             })}
           </nav>
+          <button
+            type="button"
+            className="admin-sidebar-logout"
+            onClick={() => logout()}
+          >
+            <FiLogOut />
+            <span>تسجيل الخروج</span>
+          </button>
           <div className="admin-sidebar-footer">
             <span>مدير النظام</span>
-            <button
-              type="button"
-              className="admin-sidebar-logout"
-              onClick={() => logout()}
-            >
-              <FiLogOut />
-              <span>تسجيل الخروج</span>
-            </button>
           </div>
         </aside>
 
@@ -118,6 +173,7 @@ function UsersTab({ currentUser }) {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(false);
   const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
@@ -142,6 +198,12 @@ function UsersTab({ currentUser }) {
     const handle = setTimeout(fetchUsers, 300);
     return () => clearTimeout(handle);
   }, [search, roleFilter]);
+
+  useEffect(() => { setPage(1); }, [search, roleFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedUsers = users.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const handleDelete = (id, name) => {
     if (id === currentUser.id) return;
@@ -274,7 +336,7 @@ function UsersTab({ currentUser }) {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
+              {paginatedUsers.map((user) => (
                 <tr key={user.id} className={user.isActive === false ? 'at-user-opacity' : ''}>
                   <td>
                     <div className="user-cell-info" onClick={() => viewUser(user.id)}>
@@ -326,6 +388,7 @@ function UsersTab({ currentUser }) {
               )}
             </tbody>
           </table>
+          <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
         </div>
       )}
       <ConfirmModal
@@ -441,6 +504,7 @@ function PropertiesTab() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
 
   useEffect(() => {
@@ -449,6 +513,12 @@ function PropertiesTab() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [search]);
+
+  useEffect(() => { setPage(1); }, [search]);
+
+  const totalPages = Math.max(1, Math.ceil(properties.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedProperties = properties.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const handleDelete = (id, title) => {
     setConfirmState({
@@ -525,7 +595,7 @@ function PropertiesTab() {
             </tr>
           </thead>
           <tbody>
-            {properties.map((p) => {
+            {paginatedProperties.map((p) => {
               const activeBookings = p.activeBookingsCount ?? p._count?.bookings ?? 0;
               return (
                 <tr key={p.id}>
@@ -573,6 +643,7 @@ function PropertiesTab() {
             )}
           </tbody>
         </table>
+        <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
       </div>
       <ConfirmModal
         open={confirmState.open}
@@ -593,6 +664,8 @@ function RatingsTab() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
+  const [selectedReview, setSelectedReview] = useState(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     api.reviews.adminList()
@@ -600,6 +673,10 @@ function RatingsTab() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const totalPages = Math.max(1, Math.ceil(reviews.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedReviews = reviews.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const handleDelete = (id) => {
     setConfirmState({
@@ -610,6 +687,7 @@ function RatingsTab() {
         try {
           await api.reviews.adminDelete(id);
           setReviews(reviews.filter((r) => r.id !== id));
+          setSelectedReview(null);
         } catch (err) {
           toast.error(err.message || 'فشل الحذف');
         }
@@ -644,8 +722,12 @@ function RatingsTab() {
             </tr>
           </thead>
           <tbody>
-            {reviews.map((r) => (
-              <tr key={r.id}>
+            {paginatedReviews.map((r) => (
+              <tr
+                key={r.id}
+                className="report-row-clickable"
+                onClick={() => setSelectedReview(r)}
+              >
                 <td>{r.student?.name || '—'}</td>
                 <td>{r.property?.title || '—'}</td>
                 <td>{'⭐'.repeat(r.rating)}</td>
@@ -653,7 +735,7 @@ function RatingsTab() {
                   {r.comment || '—'}
                 </td>
                 <td>{new Date(r.createdAt).toLocaleDateString('ar-EG')}</td>
-                <td>
+                <td onClick={(e) => e.stopPropagation()}>
                   <button className="action-btn delete-btn" onClick={() => handleDelete(r.id)} title="حذف">
                     <FiTrash2 />
                   </button>
@@ -665,7 +747,72 @@ function RatingsTab() {
             )}
           </tbody>
         </table>
+        <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
       </div>
+
+      {selectedReview && (
+        <div className="ad-modal-overlay" onClick={() => setSelectedReview(null)}>
+          <div className="ad-modal-box report-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="report-detail-header">
+              <h3>تفاصيل التقييم</h3>
+              <button
+                className="ad-modal-close"
+                onClick={() => setSelectedReview(null)}
+                aria-label="إغلاق"
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <div className="report-detail-grid">
+              <div className="report-detail-item">
+                <span className="report-detail-label">الطالب</span>
+                <span className="report-detail-value">{selectedReview.student?.name || '—'}</span>
+              </div>
+              <div className="report-detail-item">
+                <span className="report-detail-label">العقار</span>
+                <span className="report-detail-value">{selectedReview.property?.title || '—'}</span>
+              </div>
+              <div className="report-detail-item">
+                <span className="report-detail-label">التقييم</span>
+                <span className="report-detail-value">{'⭐'.repeat(selectedReview.rating)} ({selectedReview.rating}/5)</span>
+              </div>
+              <div className="report-detail-item">
+                <span className="report-detail-label">التاريخ</span>
+                <span className="report-detail-value">{new Date(selectedReview.createdAt).toLocaleString('ar-EG')}</span>
+              </div>
+            </div>
+
+            <div className="report-detail-section">
+              <h4>التعليق</h4>
+              <div className="report-detail-content">
+                <p className={`report-detail-text ${!selectedReview.comment ? 'muted' : ''}`}>
+                  {selectedReview.comment || 'لا يوجد تعليق'}
+                </p>
+              </div>
+            </div>
+
+            <div className="report-detail-actions">
+              <button
+                type="button"
+                className="ad-block-modal-btn ghost"
+                onClick={() => setSelectedReview(null)}
+              >
+                إغلاق
+              </button>
+              <button
+                type="button"
+                className="ad-block-modal-btn danger"
+                onClick={() => handleDelete(selectedReview.id)}
+              >
+                <FiTrash2 style={{ marginLeft: 6 }} />
+                حذف التقييم
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ConfirmModal
         open={confirmState.open}
         title={confirmState.title}
@@ -686,6 +833,7 @@ function RefundsTab() {
   const [refunds, setRefunds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [page, setPage] = useState(1);
   const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
   const [promptState, setPromptState] = useState({ open: false, action: null });
 
@@ -698,6 +846,11 @@ function RefundsTab() {
   };
 
   useEffect(() => { fetchRefunds(); }, [filter]);
+  useEffect(() => { setPage(1); }, [filter]);
+
+  const totalPages = Math.max(1, Math.ceil(refunds.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedRefunds = refunds.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const handleApprove = (id) => {
     setConfirmState({
@@ -759,7 +912,7 @@ function RefundsTab() {
             </tr>
           </thead>
           <tbody>
-            {refunds.map((r) => (
+            {paginatedRefunds.map((r) => (
               <tr key={r.id}>
                 <td>{r.student?.name || '—'}</td>
                 <td>{Number(r.originalAmount).toLocaleString('en-US')} ₪</td>
@@ -786,6 +939,7 @@ function RefundsTab() {
             )}
           </tbody>
         </table>
+        <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
       </div>
       <ConfirmModal
         open={confirmState.open}
@@ -816,6 +970,7 @@ function WithdrawalsTab() {
   const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [page, setPage] = useState(1);
   const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
   const [promptState, setPromptState] = useState({ open: false, action: null });
 
@@ -828,6 +983,11 @@ function WithdrawalsTab() {
   };
 
   useEffect(() => { fetchWithdrawals(); }, [filter]);
+  useEffect(() => { setPage(1); }, [filter]);
+
+  const totalPages = Math.max(1, Math.ceil(withdrawals.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedWithdrawals = withdrawals.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const handleApprove = (id) => {
     setConfirmState({
@@ -889,7 +1049,7 @@ function WithdrawalsTab() {
             </tr>
           </thead>
           <tbody>
-            {withdrawals.map((w) => (
+            {paginatedWithdrawals.map((w) => (
               <tr key={w.id}>
                 <td>{w.owner?.name || '—'}</td>
                 <td>{Number(w.amount).toLocaleString('en-US')} ₪</td>
@@ -916,6 +1076,7 @@ function WithdrawalsTab() {
             )}
           </tbody>
         </table>
+        <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
       </div>
       <ConfirmModal
         open={confirmState.open}
@@ -945,6 +1106,8 @@ function AuditTab() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [entityFilter, setEntityFilter] = useState('');
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [page, setPage] = useState(1);
 
   const fetchLogs = () => {
     setLoading(true);
@@ -957,6 +1120,11 @@ function AuditTab() {
   };
 
   useEffect(() => { fetchLogs(); }, [entityFilter]);
+  useEffect(() => { setPage(1); }, [entityFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(logs.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedLogs = logs.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const actionLabels = {
     ACCEPT: 'قبول',
@@ -966,6 +1134,7 @@ function AuditTab() {
     CREATE: 'إنشاء',
     DELETE: 'حذف',
     TOGGLE_ACTIVE: 'تغيير الحالة',
+    RENEW_REQUEST: 'طلب تجديد',
   };
 
   const entityLabels = {
@@ -999,8 +1168,12 @@ function AuditTab() {
             </tr>
           </thead>
           <tbody>
-            {logs.map((log) => (
-              <tr key={log.id}>
+            {paginatedLogs.map((log) => (
+              <tr
+                key={log.id}
+                className="report-row-clickable"
+                onClick={() => setSelectedLog(log)}
+              >
                 <td>{log.userName}</td>
                 <td><span className="role-badge">{actionLabels[log.action] || log.action}</span></td>
                 <td>{entityLabels[log.entity] || log.entity}</td>
@@ -1015,7 +1188,63 @@ function AuditTab() {
             )}
           </tbody>
         </table>
+        <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
       </div>
+
+      {selectedLog && (
+        <div className="ad-modal-overlay" onClick={() => setSelectedLog(null)}>
+          <div className="ad-modal-box report-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="report-detail-header">
+              <h3>تفاصيل السجل</h3>
+              <button
+                className="ad-modal-close"
+                onClick={() => setSelectedLog(null)}
+                aria-label="إغلاق"
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <div className="report-detail-grid">
+              <div className="report-detail-item">
+                <span className="report-detail-label">المستخدم</span>
+                <span className="report-detail-value">{selectedLog.userName || '—'}</span>
+              </div>
+              <div className="report-detail-item">
+                <span className="report-detail-label">الإجراء</span>
+                <span className="report-detail-value">{actionLabels[selectedLog.action] || selectedLog.action}</span>
+              </div>
+              <div className="report-detail-item">
+                <span className="report-detail-label">النوع</span>
+                <span className="report-detail-value">{entityLabels[selectedLog.entity] || selectedLog.entity}</span>
+              </div>
+              <div className="report-detail-item">
+                <span className="report-detail-label">التاريخ</span>
+                <span className="report-detail-value">{new Date(selectedLog.createdAt).toLocaleString('ar-EG')}</span>
+              </div>
+            </div>
+
+            <div className="report-detail-section">
+              <h4>التفاصيل</h4>
+              <div className="report-detail-content">
+                <p className={`report-detail-text ${!selectedLog.details ? 'muted' : ''}`}>
+                  {selectedLog.details || 'لا يوجد تفاصيل إضافية'}
+                </p>
+              </div>
+            </div>
+
+            <div className="report-detail-actions">
+              <button
+                type="button"
+                className="ad-block-modal-btn ghost"
+                onClick={() => setSelectedLog(null)}
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -1228,6 +1457,7 @@ function ReportsTab() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [page, setPage] = useState(1);
   const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
   const [detailReport, setDetailReport] = useState(null);
 
@@ -1250,6 +1480,11 @@ function ReportsTab() {
   };
 
   useEffect(() => { fetchReports(); }, [filter]);
+  useEffect(() => { setPage(1); }, [filter]);
+
+  const totalPages = Math.max(1, Math.ceil(reports.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedReports = reports.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const handleDeleteTarget = (id) => {
     setConfirmState({
@@ -1311,7 +1546,7 @@ function ReportsTab() {
             </tr>
           </thead>
           <tbody>
-            {reports.map((r) => {
+            {paginatedReports.map((r) => {
               const targetText = r.type === 'MESSAGE'
                 ? (r.message
                     ? `رسالة من ${r.message.sender?.name || 'مرسل'} → ${r.message.receiver?.name || 'مستلم'}: ${r.message.content || ''}`
@@ -1354,6 +1589,7 @@ function ReportsTab() {
             )}
           </tbody>
         </table>
+        <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
       </div>
       <ConfirmModal
         open={confirmState.open}
@@ -1483,6 +1719,7 @@ function AppealsTab() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('PENDING');
   const [resolving, setResolving] = useState(null);
+  const [page, setPage] = useState(1);
 
   const load = async () => {
     setLoading(true);
@@ -1497,6 +1734,11 @@ function AppealsTab() {
   };
 
   useEffect(() => { load(); }, [filter]);
+  useEffect(() => { setPage(1); }, [filter]);
+
+  const totalPages = Math.max(1, Math.ceil(appeals.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedAppeals = appeals.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const handleResolve = async (id, decision) => {
     const note = decision === 'REJECTED'
@@ -1537,7 +1779,7 @@ function AppealsTab() {
         <div className="admin-empty-state">لا يوجد اعتراضات.</div>
       ) : (
         <div className="appeals-list">
-          {appeals.map((a) => (
+          {paginatedAppeals.map((a) => (
             <div key={a.id} className={`appeal-card appeal-${a.status.toLowerCase()}`}>
               <div className="appeal-header">
                 <div>
@@ -1593,6 +1835,7 @@ function AppealsTab() {
               </div>
             </div>
           ))}
+          <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
         </div>
       )}
     </>

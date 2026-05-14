@@ -354,7 +354,7 @@ router.post('/:id/renew', authenticate, requireActive, authorize('STUDENT'), asy
       '/admin',
     ).catch(() => {});
 
-    logAudit({ action: 'RENEW_REQUEST', entity: 'BOOKING', entityId: renewal.id, user: req.user, details: `طلب تجديد للحجز ${parent.id}` });
+    logAudit({ action: 'RENEW_REQUEST', entity: 'BOOKING', entityId: renewal.id, user: req.user, details: `طلب تجديد لحجز ${parent.property.title}` });
 
     res.status(201).json({
       message: 'تم إرسال طلب التجديد بنجاح. بانتظار موافقة المالك.',

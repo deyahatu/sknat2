@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import { ToastProvider } from './components/shared/Toast';
@@ -52,9 +52,12 @@ function ProtectedRoute({ children, roles }) {
 
 function PublicLayout() {
   const { user } = useAuth();
+  const location = useLocation();
   if (user?.role === 'OWNER') return <Navigate to="/owner" replace />;
-  if (user?.role === 'ADMIN') return <Navigate to="/admin" replace />;
-  const isAdmin = false;
+  if (user?.role === 'ADMIN' && location.pathname !== '/notifications') {
+    return <Navigate to="/admin" replace />;
+  }
+  const isAdmin = user?.role === 'ADMIN';
   return (
     <>
       <Navbar />
