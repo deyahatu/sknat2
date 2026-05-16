@@ -1,21 +1,49 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import ErrorBoundary from './components/shared/ErrorBoundary';
+import { ToastProvider } from './components/shared/Toast';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import BlockedBanner from './components/shared/BlockedBanner';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import SearchPage from './pages/SearchPage';
 import PropertyDetailsPage from './pages/PropertyDetailsPage';
 import AdminDashboard from './pages/AdminDashboard';
-import ProfilePage from './pages/ProfilePage';
+import ProfilePage from './pages/student/ProfilePage';
+import MyBookings from './pages/student/MyBookings';
+import PaymentPage from './pages/student/PaymentPage';
+import RateAccommodation from './pages/student/RateAccommodation';
+import MyRatings from './pages/student/MyRatings';
+import Favorites from './pages/student/Favorites';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import OwnerLayout from './pages/owner/OwnerLayout';
+import OwnerDashboard from './pages/owner/OwnerDashboard';
+import OwnerProperties from './pages/owner/OwnerProperties';
+import AddEditProperty from './pages/owner/AddEditProperty';
+import OwnerBookings from './pages/owner/OwnerBookings';
+import OwnerRatings from './pages/owner/OwnerRatings';
+import RateStudents from './pages/owner/RateStudents';
+import BankAccount from './pages/owner/BankAccount';
+import Withdrawals from './pages/owner/Withdrawals';
+import ManageProfile from './pages/owner/ManageProfile';
+import StudentMessages from './pages/student/Messages';
+import StudentComplaints from './pages/student/Complaints';
+import OwnerMessages from './pages/owner/OwnerMessages';
+import OwnerComplaints from './pages/owner/OwnerComplaints';
+import Notifications from './pages/Notifications';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
+import NotFound from './pages/NotFound';
+import ScrollToTop from './components/shared/ScrollToTop';
 
 function GuestRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return null;
-  return user ? <Navigate to="/" replace /> : children;
+  if (user) return <Navigate to={user.role === 'OWNER' ? '/owner' : '/'} replace />;
+  return children;
 }
 
 function ProtectedRoute({ children, roles }) {
@@ -26,25 +54,93 @@ function ProtectedRoute({ children, roles }) {
   return children;
 }
 
+// Force a fresh mount on every path change (/properties/add vs /properties/:id/edit
+// vs editing a different property). Without the key, React Router reuses the
+// component instance and stale form state from a previous edit leaks into the
+// next route.
+function AddEditPropertyRoute() {
+  const location = useLocation();
+  return <AddEditProperty key={location.pathname} />;
+}
+
+function PublicLayout() {
+  const { user } = useAuth();
+  const location = useLocation();
+  if (user?.role === 'OWNER') return <Navigate to="/owner" replace />;
+  if (user?.role === 'ADMIN' && location.pathname !== '/notifications') {
+    return <Navigate to="/admin" replace />;
+  }
+  const isAdmin = user?.role === 'ADMIN';
+  return (
+    <>
+      <Navbar />
+      <BlockedBanner />
+      <Outlet />
+      {!isAdmin && <Footer />}
+    </>
+  );
+}
+
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <Navbar />
+    <ErrorBoundary>
+      <ToastProvider>
+        <Router>
+          <AuthProvider>
+        <ScrollToTop />
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-          <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
-          <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
-          <Route path="/reset-password/:token" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/property/:id" element={<PropertyDetailsPage />} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          {/* Owner section — uses its own layout (no global Navbar/Footer) */}
+          <Route
+            path="/owner"
+            element={
+              <ProtectedRoute roles={['OWNER']}>
+                <OwnerLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<OwnerDashboard />} />
+            <Route path="properties" element={<OwnerProperties />} />
+            <Route path="properties/add" element={<AddEditPropertyRoute />} />
+            <Route path="properties/:id/edit" element={<AddEditPropertyRoute />} />
+            <Route path="bookings" element={<OwnerBookings />} />
+            <Route path="ratings" element={<OwnerRatings />} />
+            <Route path="rate-students" element={<RateStudents />} />
+            <Route path="bank-account" element={<BankAccount />} />
+            <Route path="withdrawals" element={<Withdrawals />} />
+            <Route path="manage-profile" element={<ManageProfile />} />
+            <Route path="messages" element={<OwnerMessages />} />
+            <Route path="complaints" element={<OwnerComplaints />} />
+            <Route path="notifications" element={<Notifications />} />
+          </Route>
+
+          {/* Public + student/admin routes — global Navbar/Footer layout */}
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+            <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+            <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+            <Route path="/reset-password/:token" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/property/:id" element={<PropertyDetailsPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/profile" element={<ProtectedRoute roles={['STUDENT']}><ProfilePage /></ProtectedRoute>} />
+            <Route path="/bookings" element={<ProtectedRoute roles={['STUDENT']}><MyBookings /></ProtectedRoute>} />
+            <Route path="/payment/:bookingId" element={<ProtectedRoute roles={['STUDENT']}><PaymentPage /></ProtectedRoute>} />
+            <Route path="/rate/:bookingId" element={<ProtectedRoute roles={['STUDENT']}><RateAccommodation /></ProtectedRoute>} />
+            <Route path="/my-ratings" element={<ProtectedRoute roles={['STUDENT']}><MyRatings /></ProtectedRoute>} />
+            <Route path="/favorites" element={<ProtectedRoute roles={['STUDENT']}><Favorites /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute roles={['STUDENT']}><StudentMessages /></ProtectedRoute>} />
+            <Route path="/complaints" element={<ProtectedRoute roles={['STUDENT']}><StudentComplaints /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute roles={['STUDENT', 'OWNER', 'ADMIN']}><Notifications /></ProtectedRoute>} />
+          </Route>
           <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
-        <Footer />
-      </AuthProvider>
-    </Router>
+          </AuthProvider>
+        </Router>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

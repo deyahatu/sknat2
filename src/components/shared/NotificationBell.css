@@ -1,0 +1,126 @@
+.nb-wrap {
+  position: relative;
+}
+
+.nb-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  font-size: 20px;
+  color: #374151;
+  padding: 8px;
+}
+
+.nb-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+}
+
+.nb-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 320px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e5e7eb;
+  z-index: 1000;
+  direction: rtl;
+  overflow: hidden;
+}
+
+.nb-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.nb-dropdown-header-title {
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.nb-read-all-btn {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.nb-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.nb-empty {
+  padding: 30px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.nb-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f9fafb;
+  background: #fff;
+  transition: background 0.1s;
+}
+
+.nb-item.nb-item-unread {
+  background: #f0f4ff;
+}
+
+.nb-item:hover {
+  background: #f9fafb;
+}
+
+.nb-item.nb-item-unread:hover {
+  background: #f9fafb;
+}
+
+.nb-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 2px;
+}
+
+.nb-item-body {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.nb-item-time {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+.nb-view-all {
+  width: 100%;
+  padding: 12px;
+  background: #f9fafb;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4f46e5;
+  font-family: inherit;
+}

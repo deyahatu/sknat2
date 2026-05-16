@@ -1,45 +1,112 @@
-import { useState, useMemo } from 'react';
-import { FiSearch, FiFilter, FiX } from 'react-icons/fi';
-import PropertyCard from '../components/property/PropertyCard';
-import { properties, cities, propertyTypes } from '../data/properties';
-import './SearchPage.css';
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { FiSearch, FiFilter, FiX, FiGrid, FiList, FiCheck } from "react-icons/fi";
+import PropertyCard from "../components/property/PropertyCard";
+import {
+  PROPERTY_LEVEL_SERVICES,
+  TARGET_GENDERS,
+  PROPERTY_KINDS,
+  ROOM_KINDS,
+  CAMPUSES,
+  SERVICE_ICONS,
+} from "../constants/property";
+import { api } from "../utils/api";
+import { useAuth } from "../context/AuthContext";
+import "./SearchPage.css";
 
-// TODO: connect API — replace mock data with real search endpoint
+const EMPTY_FILTERS = {
+  searchQuery: "",
+  city: "",
+  minPrice: "",
+  maxPrice: "",
+  targetGender: "",
+  kind: "",
+  campus: "",
+  roomKind: "",
+  maxDistance: "",
+  services: [],
+};
+
 function SearchPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
-  const [selectedType, setSelectedType] = useState('');
-  const [priceRange, setPriceRange] = useState({ min: '', max: '' });
+  const [searchParams] = useSearchParams();
+  const initialQuery = searchParams.get("q") || "";
+  const { user } = useAuth();
+  const isStudent = user?.role === "STUDENT";
+  const lockedGender = isStudent && user?.gender ? user.gender : null;
+
+  const [filters, setFilters] = useState({
+    ...EMPTY_FILTERS,
+    searchQuery: initialQuery,
+    targetGender: lockedGender || "",
+  });
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('searchView') || 'grid');
 
-  const filteredProperties = useMemo(() => {
-    return properties.filter((property) => {
-      const matchesSearch =
-        !searchQuery ||
-        property.title.includes(searchQuery) ||
-        property.district.includes(searchQuery) ||
-        property.city.includes(searchQuery);
+  // Sync gender lock when auth resolves after first render
+  useEffect(() => {
+    if (lockedGender) {
+      setFilters((prev) =>
+        prev.targetGender === lockedGender ? prev : { ...prev, targetGender: lockedGender }
+      );
+    }
+  }, [lockedGender]);
 
-      const matchesCity = !selectedCity || property.city === selectedCity;
-      const matchesType = !selectedType || property.type === selectedType;
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-      const matchesMinPrice =
-        !priceRange.min || property.price >= Number(priceRange.min);
-      const matchesMaxPrice =
-        !priceRange.max || property.price <= Number(priceRange.max);
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setLoading(true);
+      setError(null);
+      api.properties
+        .list({
+          q: filters.searchQuery,
+          city: filters.city,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+          targetGender: filters.targetGender,
+          kind: filters.kind,
+          campus: filters.campus,
+          roomKind: filters.roomKind,
+          maxDistance: filters.maxDistance,
+          services: filters.services,
+        })
+        .then((data) => setProperties(data.properties || []))
+        .catch((err) => setError(err.message || "تعذر تحميل العقارات"))
+        .finally(() => setLoading(false));
+    }, 300);
 
-      return matchesSearch && matchesCity && matchesType && matchesMinPrice && matchesMaxPrice;
-    });
-  }, [searchQuery, selectedCity, selectedType, priceRange]);
+    return () => clearTimeout(handle);
+  }, [filters]);
 
-  const clearFilters = () => {
-    setSearchQuery('');
-    setSelectedCity('');
-    setSelectedType('');
-    setPriceRange({ min: '', max: '' });
+  const setField = (name, value) =>
+    setFilters((prev) => ({ ...prev, [name]: value }));
+
+  const toggleService = (s) => {
+    setFilters((prev) => ({
+      ...prev,
+      services: prev.services.includes(s)
+        ? prev.services.filter((x) => x !== s)
+        : [...prev.services, s],
+    }));
   };
 
-  const hasActiveFilters = searchQuery || selectedCity || selectedType || priceRange.min || priceRange.max;
+  const clearFilters = () => {
+    setFilters({ ...EMPTY_FILTERS, targetGender: lockedGender || "" });
+  };
+
+  const hasActiveFilters =
+    filters.searchQuery ||
+    filters.city ||
+    filters.minPrice ||
+    filters.maxPrice ||
+    (!lockedGender && filters.targetGender) ||
+    filters.kind ||
+    filters.campus ||
+    filters.roomKind ||
+    filters.maxDistance ||
+    filters.services.length > 0;
 
   return (
     <div className="page search-page">
@@ -54,9 +121,9 @@ function SearchPage() {
             <FiSearch className="search-bar-icon" />
             <input
               type="text"
-              placeholder="ابحث بالمدينة، الحي، أو اسم العقار..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="ابحث عن اسم العقار او حي/المنطقة"
+              value={filters.searchQuery}
+              onChange={(e) => setField("searchQuery", e.target.value)}
             />
           </div>
           <button
@@ -66,37 +133,78 @@ function SearchPage() {
             <FiFilter />
             <span>فلترة</span>
           </button>
+          <div className="view-toggle">
+            <button className={viewMode === 'grid' ? 'active' : ''} onClick={() => { setViewMode('grid'); localStorage.setItem('searchView', 'grid'); }}><FiGrid /></button>
+            <button className={viewMode === 'list' ? 'active' : ''} onClick={() => { setViewMode('list'); localStorage.setItem('searchView', 'list'); }}><FiList /></button>
+          </div>
         </div>
 
         {showFilters && (
           <div className="filters-panel">
             <div className="filter-group">
-              <label>المدينة</label>
-              <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)}>
-                <option value="">جميع المدن</option>
-                {cities.map((city) => (
-                  <option key={city} value={city}>{city}</option>
+              <label>الحي/المنطقة</label>
+              <input
+                type="text"
+                placeholder="مثلاً: رفيديا"
+                value={filters.city}
+                onChange={(e) => setField("city", e.target.value)}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>نوع العقار</label>
+              <select
+                value={filters.kind}
+                onChange={(e) => setField("kind", e.target.value)}
+              >
+                <option value="">الكل</option>
+                {PROPERTY_KINDS.map((k) => (
+                  <option key={k.id} value={k.id}>
+                    {k.icon} {k.title}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div className="filter-group">
-              <label>نوع السكن</label>
-              <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
-                <option value="">جميع الأنواع</option>
-                {propertyTypes.map((type) => (
-                  <option key={type} value={type}>{type}</option>
+              <label>الحرم الأقرب</label>
+              <select
+                value={filters.campus}
+                onChange={(e) => setField("campus", e.target.value)}
+              >
+                <option value="">الكل</option>
+                {CAMPUSES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
                 ))}
               </select>
+            </div>
+
+            <div className="filter-group">
+              <label>أقصى مسافة عن الحرم (دقائق)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="مثلاً: 15"
+                value={filters.maxDistance}
+                onChange={(e) =>
+                  setField("maxDistance", e.target.value.replace(/[^\d]/g, ""))
+                }
+                dir="ltr"
+              />
             </div>
 
             <div className="filter-group">
               <label>السعر الأدنى (₪)</label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 placeholder="0"
-                value={priceRange.min}
-                onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
+                value={filters.minPrice}
+                onChange={(e) =>
+                  setField("minPrice", e.target.value.replace(/[^\d]/g, ""))
+                }
                 dir="ltr"
               />
             </div>
@@ -104,16 +212,80 @@ function SearchPage() {
             <div className="filter-group">
               <label>السعر الأعلى (₪)</label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 placeholder="5000"
-                value={priceRange.max}
-                onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
+                value={filters.maxPrice}
+                onChange={(e) =>
+                  setField("maxPrice", e.target.value.replace(/[^\d]/g, ""))
+                }
                 dir="ltr"
               />
             </div>
 
+            {!lockedGender && (
+              <div className="filter-group">
+                <label>الجنس المستهدف</label>
+                <select
+                  value={filters.targetGender}
+                  onChange={(e) => setField("targetGender", e.target.value)}
+                >
+                  <option value="">الكل</option>
+                  {TARGET_GENDERS.map((g) => (
+                    <option key={g.value} value={g.value}>
+                      {g.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="filter-group">
+              <label>نوع الغرفة</label>
+              <select
+                value={filters.roomKind}
+                onChange={(e) => setField("roomKind", e.target.value)}
+                disabled={filters.kind === "STUDIO"}
+              >
+                <option value="">الكل</option>
+                {ROOM_KINDS.map((rk) => (
+                  <option key={rk.id} value={rk.id}>
+                    {rk.icon} {rk.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group filter-group-services">
+              <label>الخدمات</label>
+              <div className="filter-services-grid">
+                {PROPERTY_LEVEL_SERVICES.map((s) => {
+                  const Icon = SERVICE_ICONS[s];
+                  const checked = filters.services.includes(s);
+                  return (
+                    <label
+                      key={s}
+                      className={`filter-service-pill ${checked ? "is-checked" : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleService(s)}
+                      />
+                      {Icon && <Icon className="filter-service-pill__icon" />}
+                      <span className="filter-service-pill__label">{s}</span>
+                      {checked && <FiCheck className="filter-service-pill__check" />}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
             {hasActiveFilters && (
-              <button className="btn btn-sm clear-filters" onClick={clearFilters}>
+              <button
+                className="btn btn-sm clear-filters"
+                onClick={clearFilters}
+              >
                 <FiX />
                 مسح الفلاتر
               </button>
@@ -122,23 +294,46 @@ function SearchPage() {
         )}
 
         <div className="search-results-info">
-          <span>تم العثور على <strong>{filteredProperties.length}</strong> نتيجة</span>
+          <span>
+            {loading ? (
+              "جاري التحميل..."
+            ) : (
+              <>
+                تم العثور على <strong>{properties.length}</strong> نتيجة
+              </>
+            )}
+          </span>
         </div>
 
-        {filteredProperties.length > 0 ? (
-          <div className="search-results-grid">
-            {filteredProperties.map((property) => (
+        {error ? (
+          <div className="no-results">
+            <span className="no-results-icon">⚠️</span>
+            <h3>تعذر تحميل النتائج</h3>
+            <p>{error}</p>
+          </div>
+        ) : loading ? (
+          <div className="no-results">
+            <span className="no-results-icon">⏳</span>
+            <p>جاري البحث عن السكنات المتاحة...</p>
+          </div>
+        ) : properties.length > 0 ? (
+          <div className={`search-results-grid ${viewMode}`}>
+            {properties.map((property) => (
               <PropertyCard key={property.id} property={property} />
             ))}
           </div>
         ) : (
-          <div className="no-results">
-            <span className="no-results-icon">🔍</span>
-            <h3>لا توجد نتائج</h3>
-            <p>حاول تعديل معايير البحث أو مسح الفلاتر</p>
-            <button className="btn btn-primary" onClick={clearFilters}>
-              مسح الفلاتر
-            </button>
+          <div className="search-empty-body">
+            <div className="search-empty-icon">
+              <FiSearch size={36} color="#d1d5db" />
+            </div>
+            <h3 className="search-empty-title">لم يتم العثور على نتائج</h3>
+            <p className="search-empty-desc">جرب معايير بحث مختلفة</p>
+            {hasActiveFilters && (
+              <button className="btn btn-primary" onClick={clearFilters}>
+                مسح الفلاتر
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -51,11 +51,11 @@ function ResetPasswordPage() {
           {error && <div className="auth-error">{error}</div>}
 
           {success ? (
-            <div className="auth-success" style={{ textAlign: 'center', padding: '2rem 0' }}>
+            <div className="auth-success auth-success-centered">
               <h3>تم تغيير كلمة المرور بنجاح</h3>
-              <div className="auth-footer" style={{ marginTop: '1rem' }}>
+              <div className="auth-footer">
                 <p>
-                  <Link to="/login" className="btn btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>تسجيل الدخول</Link>
+                  <Link to="/login" className="btn btn-primary">تسجيل الدخول</Link>
                 </p>
               </div>
             </div>
@@ -69,7 +69,7 @@ function ResetPasswordPage() {
                     id="password"
                     type="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => setPassword(e.target.value.replace(/[؀-ۿ]/g, ''))}
                     required
                     dir="ltr"
                   />
@@ -84,7 +84,7 @@ function ResetPasswordPage() {
                     id="confirmPassword"
                     type="password"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => setConfirmPassword(e.target.value.replace(/[؀-ۿ]/g, ''))}
                     required
                     dir="ltr"
                   />

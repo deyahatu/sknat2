@@ -3,3 +3,10 @@ node_modules
 .env
 
 /src/generated/prisma
+
+# Prisma Studio temp logs
+.tmp/
+
+# Uploaded files (except placeholders)
+uploads/*
+!uploads/placeholder-*.jpg

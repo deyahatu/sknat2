@@ -1,0 +1,407 @@
+/* ============================================
+   ProfilePage.css — Premium Student Profile
+   ============================================ */
+
+.profile-page {
+  padding: 40px 0 72px;
+  background: var(--bg-secondary);
+  min-height: calc(100vh - 160px);
+}
+
+.profile-container {
+  max-width: 1120px;
+}
+
+/* ---- Loading / Feedback States ---- */
+.profile-loading,
+.profile-form-error,
+.profile-form-success {
+  padding: 16px 20px;
+  border-radius: var(--radius-lg, 14px);
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.profile-loading {
+  background: var(--bg-primary, #ffffff);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md, 0 14px 32px rgba(15, 32, 64, 0.08));
+}
+
+.profile-form-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  margin-bottom: 20px;
+}
+
+.profile-form-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  margin-bottom: 20px;
+}
+
+/* ---- Profile Hero Section ---- */
+.student-profile-hero {
+  position: relative;
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+}
+
+.student-profile-hero::before {
+  content: none;
+}
+
+.student-profile-hero-main {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- Avatar with Gradient Border ---- */
+.student-profile-hero-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.student-profile-hero-avatar {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  overflow: hidden;
+}
+
+.student-profile-hero-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-profile-avatar-btn {
+  position: absolute;
+  bottom: -2px;
+  inset-inline-start: -2px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-primary, #ffffff);
+  color: var(--primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--primary);
+  box-shadow: var(--shadow-md, 0 6px 14px rgba(15, 32, 64, 0.18));
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  font-size: 0.95rem;
+}
+
+.student-profile-avatar-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--shadow-lg, 0 10px 18px rgba(15, 32, 64, 0.22));
+}
+
+.student-profile-avatar-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.student-profile-avatar-btn-remove {
+  inset-inline-start: auto;
+  inset-inline-end: -2px;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.student-profile-avatar-status {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.student-profile-avatar-status-success {
+  background: rgba(220, 252, 231, 0.18);
+  color: #ecfdf5;
+  border: 1px solid rgba(187, 247, 208, 0.4);
+}
+
+.student-profile-avatar-status-error {
+  background: rgba(254, 226, 226, 0.18);
+  color: #fee2e2;
+  border: 1px solid rgba(252, 165, 165, 0.4);
+}
+
+/* ---- Hero Name & Meta ---- */
+.student-profile-hero-name {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 0 0 10px;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.student-profile-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.student-profile-hero-joined,
+.student-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.student-profile-hero-joined {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(4px);
+}
+
+.student-badge.approved {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.student-profile-hero .student-badge.approved {
+  background: rgba(220, 252, 231, 0.18);
+  color: #ecfdf5;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+/* ---- Profile Grid ---- */
+.student-profile-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.student-profile-col {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Card Groups ---- */
+.student-card {
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.student-card-header {
+  padding: 18px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.student-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.student-profile-card-body {
+  padding: 24px;
+  background: var(--bg-primary, #ffffff);
+}
+
+.student-profile-card-gap {
+  margin-top: 24px;
+}
+
+/* ---- Edit Form: Aligned Labels + Inputs ---- */
+.student-form-group {
+  margin-bottom: 16px;
+}
+
+.student-form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #475569;
+}
+
+.student-form-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: var(--radius-md, 10px);
+  border: 1.5px solid var(--border);
+  background: var(--bg-primary, #ffffff);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.student-form-input:focus {
+  border-color: var(--primary);
+  background: var(--bg-primary, #ffffff);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+.student-form-input-locked,
+.student-form-input-locked:focus {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  border-color: var(--border-light);
+  box-shadow: none;
+}
+
+.student-form-hint {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ---- Save / Submit Button ---- */
+.student-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  padding-inline: 24px;
+  border-radius: var(--radius-lg, 14px);
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.student-btn-primary {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.student-btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.student-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ---- Info Rows (Read-only display) ---- */
+.student-profile-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.student-profile-info-row:last-of-type {
+  border-bottom: none;
+}
+
+.student-profile-info-label {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.student-profile-info-value {
+  font-size: 0.94rem;
+  color: var(--text-primary);
+  font-weight: 700;
+  text-align: end;
+  word-break: break-word;
+}
+
+/* ---- Inline Icon Helper ---- */
+.pp-icon {
+  margin-left: 6px;
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+.pp-icon-lg {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 900px) {
+  .student-profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-page {
+    padding: 24px 0 48px;
+  }
+
+  .student-profile-hero {
+    padding: 26px 22px;
+    border-radius: var(--radius-xl, 20px);
+  }
+
+  .student-profile-hero-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .student-profile-hero-name {
+    font-size: 1.45rem;
+  }
+
+  .student-profile-card-body {
+    padding: 18px;
+  }
+
+  .student-form-group {
+    padding: 14px;
+  }
+
+  .student-profile-info-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+  }
+
+  .student-profile-info-value {
+    text-align: start;
+  }
+}

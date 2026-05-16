@@ -1,26 +1,40 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FiHome, FiSearch, FiLogIn, FiUserPlus, FiMenu, FiX, FiUser, FiLogOut, FiSettings } from 'react-icons/fi';
-import { useState } from 'react';
+import { FiHome, FiSearch, FiLogIn, FiUserPlus, FiMenu, FiX, FiUser, FiLogOut, FiSettings, FiCalendar, FiHeart, FiMessageSquare, FiStar, FiAlertOctagon } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from '../shared/NotificationBell';
 import './Navbar.css';
 
 function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
-  const { user, logout } = useAuth();
 
-  const navLinks = [
-    { path: '/', label: 'الرئيسية', icon: <FiHome /> },
-    { path: '/search', label: 'البحث عن سكن', icon: <FiSearch /> },
-  ];
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+  const { user, logout } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+
+  // Admins live entirely inside the dashboard sidebar — the top nav for them
+  // is just the logo + the notification bell. Logout moves to the sidebar.
+  const navLinks = [];
+  if (!isAdmin) {
+    navLinks.push({ path: '/', label: 'الرئيسية', icon: <FiHome /> });
+    navLinks.push({ path: '/search', label: 'البحث عن سكن', icon: <FiSearch /> });
+  }
 
   if (!user) {
     navLinks.push({ path: '/login', label: 'تسجيل الدخول', icon: <FiLogIn /> });
     navLinks.push({ path: '/register', label: 'إنشاء حساب', icon: <FiUserPlus /> });
-  } else {
-    if (user?.role === 'ADMIN') {
-      navLinks.push({ path: '/admin', label: 'لوحة التحكم', icon: <FiSettings /> });
-    }
+  } else if (user?.role === 'STUDENT') {
+    navLinks.push({ path: '/bookings', label: 'حجوزاتي', icon: <FiCalendar /> });
+    navLinks.push({ path: '/messages', label: 'الرسائل', icon: <FiMessageSquare /> });
+    navLinks.push({ path: '/favorites', label: 'المفضلة', icon: <FiHeart /> });
+    navLinks.push({ path: '/my-ratings', label: 'تقييماتي', icon: <FiStar /> });
+    navLinks.push({ path: '/complaints', label: 'الشكاوى', icon: <FiAlertOctagon /> });
     navLinks.push({ path: '/profile', label: 'الملف الشخصي', icon: <FiUser /> });
   }
 
@@ -32,7 +46,7 @@ function Navbar() {
   };
 
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${scrolled ? 'navbar-scrolled' : ''}`}>
       <div className="container navbar-container">
         <Link to="/" className="navbar-logo">
           <span className="logo-icon">🏠</span>
@@ -53,6 +67,11 @@ function Navbar() {
             </li>
           ))}
           {user && (
+            <li>
+              <NotificationBell />
+            </li>
+          )}
+          {user && !isAdmin && (
             <li>
               <button
                 className="navbar-link navbar-logout-btn"
