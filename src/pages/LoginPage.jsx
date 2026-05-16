@@ -47,6 +47,12 @@ function LoginPage() {
     setSuccessMessage(null);
     try {
       const data = await login(email, password);
+      // If the account was in the 30-day deletion grace period, the server
+      // restored it on this login. Tell the user explicitly so they don't
+      // assume their prior delete request is still pending.
+      if (data.restored) {
+        toast.success(data.message || 'تم استعادة حسابك. تم إلغاء طلب الحذف.');
+      }
       const role = data.user?.role;
       navigate(role === 'OWNER' ? '/owner' : role === 'ADMIN' ? '/admin' : '/');
     } catch (err) {

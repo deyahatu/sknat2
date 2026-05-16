@@ -254,7 +254,7 @@ router.post("/", authenticate, requireActive, authorize("OWNER"), async (req, re
     notifyAllAdmins(
       'طلب سحب جديد',
       `${req.user.name} طلب سحب ${withdrawAmount} ₪ — يحتاج مراجعة`,
-      '/admin',
+      '/admin?tab=withdrawals',
     ).catch(() => {});
 
     res.status(201).json({

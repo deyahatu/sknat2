@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FiHome, FiClock, FiCheckCircle, FiDollarSign, FiMapPin, FiCalendar, FiTrendingUp } from "react-icons/fi";
+import { FiHome, FiClock, FiCheckCircle, FiDollarSign, FiMapPin, FiCalendar, FiTrendingUp, FiStar } from "react-icons/fi";
 import { api } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 import AnimatedCounter from "../../components/shared/AnimatedCounter";
@@ -232,13 +232,12 @@ export default function OwnerDashboard() {
               recentRatings.map((r) => (
                 <div key={r.id} className="owner-list-item">
                   <div className="owner-list-avatar">
-                    {(r.student?.name || "؟").trim().charAt(0)}
+                    <FiStar />
                   </div>
                   <div className="owner-list-item-info">
                     <p className="owner-list-item-title">
                       {r.property?.title || "—"}
                     </p>
-                    <p className="owner-list-item-sub">{r.student?.name}</p>
                   </div>
                   <Stars rating={r.rating} />
                 </div>

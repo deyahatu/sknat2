@@ -506,7 +506,7 @@ router.post('/', authenticate, requireActive, authorize('OWNER'), async (req, re
     notifyAllAdmins(
       'عقار جديد',
       `${req.user.name} أضاف عقار: ${property.title}`,
-      '/admin',
+      '/admin?tab=properties',
     ).catch(() => {});
 
     res.status(201).json({

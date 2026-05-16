@@ -9,6 +9,21 @@ import ReportModal from './ReportModal';
 import Skeleton from './Skeleton';
 import './MessagesChat.css';
 
+// Mirrors server-side rule in routes/messages.js. Keep them in sync — the server
+// is authoritative; this is just for instant feedback before a round-trip.
+const MAX_DIGITS = 4;
+const DIGIT_RE = /[\d٠-٩۰-۹]/g;
+const URL_RE = /\b(?:https?:\/\/|www\.)\S+|[A-Za-z0-9-]+\.(?:com|net|org|io|me|co|info|app|dev|tk|sa|jo|ps|eg|ae|qa)(?:\/\S*)?/i;
+
+function chatContentViolation(text) {
+  const digitCount = (text.match(DIGIT_RE) || []).length;
+  if (digitCount > MAX_DIGITS) {
+    return `لا يُسمح بإرسال أكثر من ${MAX_DIGITS} أرقام في الرسالة الواحدة (لمنع تبادل أرقام الهواتف).`;
+  }
+  if (URL_RE.test(text)) return 'لا يُسمح بإرسال الروابط في المحادثة.';
+  return null;
+}
+
 export default function MessagesChat() {
   const { user } = useAuth();
   const toast = useToast();
@@ -218,9 +233,12 @@ export default function MessagesChat() {
 
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!newMsg.trim() || !selectedUser) return;
+    const trimmed = newMsg.trim();
+    if (!trimmed || !selectedUser) return;
+    // Silently drop messages that violate the chat rules — no warning toast.
+    if (chatContentViolation(trimmed)) return;
     try {
-      const data = await api.messages.send({ receiverId: selectedUser, content: newMsg.trim() });
+      const data = await api.messages.send({ receiverId: selectedUser, content: trimmed });
       setMessages(prev => [...prev, data.message]);
       setNewMsg('');
       // Update conversation list
@@ -232,6 +250,10 @@ export default function MessagesChat() {
         return [{ userId: selectedUser, userName: otherUser?.name, userAvatar: otherUser?.avatar, userRole: otherUser?.role, lastMessage: newMsg.trim().slice(0, 50), lastMessageAt: new Date().toISOString(), unreadCount: 0 }, ...prev];
       });
     } catch (err) {
+      // Swallow the chat-content-rule errors too — client-side check above
+      // catches them first in normal flow, but if the regex ever drifts from
+      // the server's, we still don't want a warning shown to the user.
+      if (err.message?.startsWith('لا يُسمح')) return;
       toast.error(err.message);
     }
   };

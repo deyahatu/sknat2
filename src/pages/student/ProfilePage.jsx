@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { FiCamera, FiTrash2, FiUser, FiMail, FiPhone, FiLock, FiBook, FiHash, FiCalendar, FiShield } from "react-icons/fi";
 import { api } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
+import DeleteAccountSection from "../../components/shared/DeleteAccountSection";
 import "./ProfilePage.css";
 
 const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -516,6 +517,8 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
+
+            <DeleteAccountSection />
           </div>
         </div>
       </div>

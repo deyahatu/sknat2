@@ -112,14 +112,21 @@ router.get('/:userId', authenticate, async (req, res, next) => {
   }
 });
 
-// Detect phone numbers (incl. Arabic-Indic digits) and URLs in chat content.
-// Counts a "phone" as any run of 7+ digits — covers local & international forms,
-// dotted/spaced/dashed variants, and the Arabic-Indic digit range.
-const PHONE_RE = /(?:[\d٠-٩۰-۹][\s\-.()]?){7,}/;
+// Detect phone numbers and URLs in chat content. The platform wants to keep
+// communication on-platform, so any attempt to share contact info is blocked.
+// Phone heuristic: count all digits (Latin + Arabic-Indic + Persian) anywhere
+// in the message. Anything above MAX_DIGITS is treated as a phone-sharing
+// attempt — this catches spaced/dotted/dashed splits the old "7 in a row"
+// regex used to miss.
+const MAX_DIGITS = 4;
+const DIGIT_RE = /[\d٠-٩۰-۹]/g;
 const URL_RE = /\b(?:https?:\/\/|www\.)\S+|[A-Za-z0-9-]+\.(?:com|net|org|io|me|co|info|app|dev|tk|sa|jo|ps|eg|ae|qa)(?:\/\S*)?/i;
 
 function chatContentViolation(text) {
-  if (PHONE_RE.test(text)) return 'لا يُسمح بإرسال أرقام الهواتف في المحادثة.';
+  const digitCount = (text.match(DIGIT_RE) || []).length;
+  if (digitCount > MAX_DIGITS) {
+    return `لا يُسمح بإرسال أكثر من ${MAX_DIGITS} أرقام في الرسالة الواحدة (لمنع تبادل أرقام الهواتف).`;
+  }
   if (URL_RE.test(text)) return 'لا يُسمح بإرسال الروابط في المحادثة.';
   return null;
 }

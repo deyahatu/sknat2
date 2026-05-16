@@ -30,8 +30,12 @@ import BankAccount from './pages/owner/BankAccount';
 import Withdrawals from './pages/owner/Withdrawals';
 import ManageProfile from './pages/owner/ManageProfile';
 import StudentMessages from './pages/student/Messages';
+import StudentComplaints from './pages/student/Complaints';
 import OwnerMessages from './pages/owner/OwnerMessages';
+import OwnerComplaints from './pages/owner/OwnerComplaints';
 import Notifications from './pages/Notifications';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
 import NotFound from './pages/NotFound';
 import ScrollToTop from './components/shared/ScrollToTop';
 
@@ -48,6 +52,15 @@ function ProtectedRoute({ children, roles }) {
   if (!user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
   return children;
+}
+
+// Force a fresh mount on every path change (/properties/add vs /properties/:id/edit
+// vs editing a different property). Without the key, React Router reuses the
+// component instance and stale form state from a previous edit leaks into the
+// next route.
+function AddEditPropertyRoute() {
+  const location = useLocation();
+  return <AddEditProperty key={location.pathname} />;
 }
 
 function PublicLayout() {
@@ -87,8 +100,8 @@ function App() {
           >
             <Route index element={<OwnerDashboard />} />
             <Route path="properties" element={<OwnerProperties />} />
-            <Route path="properties/add" element={<AddEditProperty />} />
-            <Route path="properties/:id/edit" element={<AddEditProperty />} />
+            <Route path="properties/add" element={<AddEditPropertyRoute />} />
+            <Route path="properties/:id/edit" element={<AddEditPropertyRoute />} />
             <Route path="bookings" element={<OwnerBookings />} />
             <Route path="ratings" element={<OwnerRatings />} />
             <Route path="rate-students" element={<RateStudents />} />
@@ -96,6 +109,7 @@ function App() {
             <Route path="withdrawals" element={<Withdrawals />} />
             <Route path="manage-profile" element={<ManageProfile />} />
             <Route path="messages" element={<OwnerMessages />} />
+            <Route path="complaints" element={<OwnerComplaints />} />
             <Route path="notifications" element={<Notifications />} />
           </Route>
 
@@ -108,6 +122,8 @@ function App() {
             <Route path="/reset-password/:token" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/property/:id" element={<PropertyDetailsPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/profile" element={<ProtectedRoute roles={['STUDENT']}><ProfilePage /></ProtectedRoute>} />
             <Route path="/bookings" element={<ProtectedRoute roles={['STUDENT']}><MyBookings /></ProtectedRoute>} />
             <Route path="/payment/:bookingId" element={<ProtectedRoute roles={['STUDENT']}><PaymentPage /></ProtectedRoute>} />
@@ -115,6 +131,7 @@ function App() {
             <Route path="/my-ratings" element={<ProtectedRoute roles={['STUDENT']}><MyRatings /></ProtectedRoute>} />
             <Route path="/favorites" element={<ProtectedRoute roles={['STUDENT']}><Favorites /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute roles={['STUDENT']}><StudentMessages /></ProtectedRoute>} />
+            <Route path="/complaints" element={<ProtectedRoute roles={['STUDENT']}><StudentComplaints /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute roles={['STUDENT', 'OWNER', 'ADMIN']}><Notifications /></ProtectedRoute>} />
           </Route>
           <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />

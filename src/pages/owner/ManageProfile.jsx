@@ -4,6 +4,7 @@ import { FiCamera, FiLock, FiTrash2, FiUser } from "react-icons/fi";
 import { api } from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 import Skeleton from "../../components/shared/Skeleton";
+import DeleteAccountSection from "../../components/shared/DeleteAccountSection";
 
 const ROLE_LABELS = {
   OWNER: "مالك عقار",
@@ -526,6 +527,10 @@ export default function ManageProfile() {
                   طلبات السحب
                 </Link>
               </div>
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <DeleteAccountSection />
             </div>
           </div>
         </div>

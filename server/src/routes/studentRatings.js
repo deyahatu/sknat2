@@ -162,7 +162,7 @@ router.post('/', authenticate, requireActive, authorize('OWNER'), async (req, re
     notifyAllAdmins(
       'تقييم طالب جديد',
       `${req.user.name} قيّم الطالب على ${booking.property.title}`,
-      '/admin',
+      '/admin?tab=ratings',
     ).catch(() => {});
 
     res.status(201).json({

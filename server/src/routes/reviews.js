@@ -93,7 +93,7 @@ router.post('/', authenticate, requireActive, authorize('STUDENT'), async (req, 
     notifyAllAdmins(
       'تقييم سكن جديد',
       `${req.user.name} قيّم ${review.property.title} (${review.rating}⭐)`,
-      '/admin',
+      '/admin?tab=ratings',
     ).catch(() => {});
 
     res.status(201).json({

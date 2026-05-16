@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FiHome, FiSearch, FiLogIn, FiUserPlus, FiMenu, FiX, FiUser, FiLogOut, FiSettings, FiCalendar, FiHeart, FiMessageSquare, FiStar } from 'react-icons/fi';
+import { FiHome, FiSearch, FiLogIn, FiUserPlus, FiMenu, FiX, FiUser, FiLogOut, FiSettings, FiCalendar, FiHeart, FiMessageSquare, FiStar, FiAlertOctagon } from 'react-icons/fi';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import NotificationBell from '../shared/NotificationBell';
@@ -34,6 +34,7 @@ function Navbar() {
     navLinks.push({ path: '/messages', label: 'الرسائل', icon: <FiMessageSquare /> });
     navLinks.push({ path: '/favorites', label: 'المفضلة', icon: <FiHeart /> });
     navLinks.push({ path: '/my-ratings', label: 'تقييماتي', icon: <FiStar /> });
+    navLinks.push({ path: '/complaints', label: 'الشكاوى', icon: <FiAlertOctagon /> });
     navLinks.push({ path: '/profile', label: 'الملف الشخصي', icon: <FiUser /> });
   }
 

@@ -3,7 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import {
   FiGrid, FiHome, FiPlus, FiCalendar, FiStar, FiUser,
   FiCreditCard, FiDollarSign, FiMessageSquare,
-  FiSettings, FiLogOut, FiX,
+  FiSettings, FiLogOut, FiX, FiAlertOctagon,
 } from "react-icons/fi";
 
 const NAV_ITEMS = [
@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { to: "/owner/withdrawals", label: "طلبات السحب", icon: <FiDollarSign /> },
   { section: "التواصل" },
   { to: "/owner/messages", label: "الرسائل", icon: <FiMessageSquare /> },
+  { to: "/owner/complaints", label: "الشكاوى", icon: <FiAlertOctagon /> },
   { section: "الحساب" },
   { to: "/owner/manage-profile", label: "الملف الشخصي", icon: <FiSettings /> },
 ];

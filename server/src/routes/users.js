@@ -1,4 +1,6 @@
+// trigger reload
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import prisma from '../utils/prisma.js';
 import { authenticate, authorize, requireActive } from '../middleware/auth.js';
 import { logAudit } from '../utils/audit.js';
@@ -155,7 +157,7 @@ router.get('/:id', authenticate, authorize('ADMIN'), async (req, res, next) => {
 });
 
 // UC-28: Block / Unblock activities for a user.
-// When blocking, the admin must provide a reason (10-200 chars). The user is
+// When blocking, the admin must provide a reason (1-200 chars). The user is
 // notified by in-app notification + email and gets one shot at appealing.
 router.patch('/:id/toggle-active', authenticate, authorize('ADMIN'), async (req, res, next) => {
   try {
@@ -184,9 +186,9 @@ router.patch('/:id/toggle-active', authenticate, authorize('ADMIN'), async (req,
     let blockReason = null;
     if (isBlocking) {
       const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
-      if (reason.length < 10 || reason.length > 200) {
+      if (reason.length === 0 || reason.length > 200) {
         return res.status(400).json({
-          error: 'يجب إدخال سبب الحظر (10 إلى 200 حرف).',
+          error: 'يجب إدخال سبب الحظر (حتى 200 حرف).',
         });
       }
       blockReason = reason;
@@ -223,6 +225,159 @@ router.patch('/:id/toggle-active', authenticate, authorize('ADMIN'), async (req,
     res.json({
       message: isBlocking ? 'تم حظر أنشطة الحساب بنجاح.' : 'تم رفع الحظر عن الحساب بنجاح.',
       user: updated,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Self-delete (voluntary). Mirrors most of the admin delete logic but
+// requires password re-entry, and does NOT add the identity to BlockedIdentity
+// — a user who leaves on their own is free to come back later.
+router.delete('/me', authenticate, async (req, res, next) => {
+  try {
+    const { password } = req.body || {};
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ error: 'يرجى إدخال كلمة المرور لتأكيد الحذف.' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, name: true, email: true, role: true, password: true },
+    });
+    if (!user) return res.status(404).json({ error: 'المستخدم غير موجود.' });
+
+    // Admins can't self-delete — another admin must manage them.
+    if (user.role === 'ADMIN') {
+      return res.status(403).json({ error: 'لا يمكن حذف حساب مدير.' });
+    }
+
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) {
+      return res.status(401).json({ error: 'كلمة المرور غير صحيحة.' });
+    }
+
+    if (user.role === 'STUDENT') {
+      // Money is locked in the system — refuse and tell the user to wait it out.
+      const paidBookings = await prisma.booking.count({
+        where: { studentId: user.id, status: 'PAID' },
+      });
+      if (paidBookings > 0) {
+        return res.status(400).json({
+          error: 'لا يمكن حذف الحساب: لديك حجز مدفوع نشط. الرجاء إلغاء الحجز أو الانتظار حتى انتهائه.',
+        });
+      }
+
+      const pendingRefunds = await prisma.refundRequest.count({
+        where: { studentId: user.id, status: 'PENDING' },
+      });
+      if (pendingRefunds > 0) {
+        return res.status(400).json({
+          error: 'لا يمكن حذف الحساب: لديك طلب استرداد قيد المراجعة.',
+        });
+      }
+
+      // APPROVED bookings (no money yet) — cancel them and free the rooms so
+      // the cascade-delete doesn't leave the owner's queue in an odd state.
+      const approvedBookings = await prisma.booking.findMany({
+        where: { studentId: user.id, status: 'APPROVED' },
+        include: {
+          property: { select: { id: true, title: true, ownerId: true } },
+          roomVariant: { select: { id: true, kind: true } },
+        },
+      });
+
+      for (const b of approvedBookings) {
+        await prisma.$transaction(async (tx) => {
+          await tx.booking.update({
+            where: { id: b.id },
+            data: { status: 'CANCELLED' },
+          });
+          const otherActive = await tx.booking.count({
+            where: {
+              roomVariantId: b.roomVariantId,
+              id: { not: b.id },
+              status: { in: ['APPROVED', 'PAID'] },
+            },
+          });
+          const isDouble = b.roomVariant.kind === 'DOUBLE';
+          const newState = isDouble
+            ? { isOccupied: otherActive >= 2, partiallyOccupied: otherActive === 1 }
+            : { isOccupied: otherActive >= 1, partiallyOccupied: false };
+          await tx.roomVariant.update({
+            where: { id: b.roomVariantId },
+            data: newState,
+          });
+        });
+
+        notify(
+          b.property.ownerId,
+          'تم حذف حساب الطالب',
+          `قام الطالب "${user.name}" بحذف حسابه. حجزه على ${b.property.title} لم يعد متاحاً.`,
+          '/owner/bookings',
+        ).catch(() => {});
+      }
+    }
+
+    if (user.role === 'OWNER') {
+      // Active bookings on any property — students would lose their stay or money.
+      const blockingBookings = await prisma.booking.count({
+        where: {
+          property: { ownerId: user.id },
+          status: { in: ['APPROVED', 'PAID'] },
+        },
+      });
+      if (blockingBookings > 0) {
+        return res.status(400).json({
+          error: 'لا يمكن حذف الحساب: لديك حجوزات نشطة على عقاراتك.',
+        });
+      }
+
+      // Wallet still has money — tell them to withdraw first instead of
+      // silently nuking the balance.
+      const wallet = await prisma.wallet.findUnique({
+        where: { ownerId: user.id },
+        select: { balance: true },
+      });
+      if (wallet && Number(wallet.balance) > 0) {
+        return res.status(400).json({
+          error: 'لا يمكن حذف الحساب: لديك رصيد في المحفظة. الرجاء سحب الرصيد أولاً.',
+        });
+      }
+
+      const pendingWithdrawals = await prisma.withdrawRequest.count({
+        where: { ownerId: user.id, status: 'PENDING' },
+      });
+      if (pendingWithdrawals > 0) {
+        return res.status(400).json({
+          error: 'لا يمكن حذف الحساب: لديك طلب سحب قيد المراجعة.',
+        });
+      }
+    }
+
+    // Soft-delete: mark the account inactive and stamp the request time.
+    // A daily scheduler will hard-delete after the 30-day grace period
+    // (see startAccountDeletionScheduler). Logging in within the grace
+    // period clears these fields and restores the account.
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isActive: false,
+        deletionRequestedAt: new Date(),
+      },
+    });
+    logAudit({
+      action: 'REQUEST_DELETE_SELF',
+      entity: 'USER',
+      entityId: user.id,
+      user: { id: user.id, name: user.name },
+      details: 'طلب حذف الحساب بواسطة المستخدم نفسه — 30 يوم فترة سماح',
+    });
+
+    // Clear the auth cookie so the next request from this browser starts fresh.
+    res.clearCookie('token');
+    res.json({
+      message: 'تم جدولة حذف حسابك. لديك 30 يوماً للتراجع — يكفي تسجيل الدخول مرة أخرى خلال هذه المدة.',
     });
   } catch (err) {
     next(err);

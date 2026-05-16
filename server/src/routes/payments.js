@@ -155,7 +155,7 @@ router.post("/", authenticate, requireActive, authorize("STUDENT"), async (req, 
     notifyAllAdmins(
       'دفعة جديدة',
       `${req.user.name} دفع ${Number(result.payment.amount)} ₪ مقابل ${booking.property.title}`,
-      '/admin',
+      '/admin?tab=stats',
     ).catch(() => {});
 
     res.status(201).json({

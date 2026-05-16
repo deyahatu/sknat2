@@ -62,7 +62,7 @@ router.post('/', authenticate, async (req, res, next) => {
     notifyAllAdmins(
       'اعتراض حظر جديد',
       `${req.user.name} قدّم اعتراضاً على حظر حسابه`,
-      '/admin',
+      '/admin?tab=appeals',
     ).catch(() => {});
 
     res.status(201).json({

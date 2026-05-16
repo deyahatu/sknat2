@@ -30,7 +30,8 @@ function HomePage() {
   useEffect(() => {
     if (!isStudent) return;
     setLoadingProps(true);
-    api.properties.list({ limit: 12, sort: 'rating', targetGender: user?.gender })
+    api.properties
+      .list({ limit: 12, sort: "rating", targetGender: user?.gender })
       .then((data) => setProperties(data.properties || data))
       .catch(() => {})
       .finally(() => setLoadingProps(false));
@@ -132,7 +133,9 @@ function HomePage() {
                 ))}
               </div>
             ) : (
-              <p className="home-properties__empty">لا توجد عقارات متاحة حالياً</p>
+              <p className="home-properties__empty">
+                لا توجد عقارات متاحة حالياً
+              </p>
             )}
 
             <div className="home-properties__more">
@@ -148,10 +151,9 @@ function HomePage() {
       {!isStudent && (
         <section className="stats">
           <div className="stats__inner">
-            <span className="section-eyebrow">سكنات بالأرقام</span>
             <h2 className="section-title">إنجازاتنا التي نفتخر بها</h2>
             <p className="stats__subtitle">
-              منصة سكنات تجمع آلاف الطلاب مع أصحاب العقارات في فلسطين، ونعمل
+              منصة سكنات تجمع آلاف الطلاب مع أصحاب العقارات في نابلس، ونعمل
               يومياً على توفير تجربة سكن آمنة وموثوقة.
             </p>
           </div>
@@ -164,8 +166,18 @@ function HomePage() {
                 label: "طالب مسجّل",
                 icon: <FiCheckCircle />,
               },
-              { end: 1, suffix: "", label: "مدينة فلسطينية", icon: <FiShield /> },
-              { end: 1000, suffix: "+", label: "حجز ناجح", icon: <FiFileText /> },
+              {
+                end: 1,
+                suffix: "",
+                label: "مدينة فلسطينية",
+                icon: <FiShield />,
+              },
+              {
+                end: 1000,
+                suffix: "+",
+                label: "حجز ناجح",
+                icon: <FiFileText />,
+              },
             ].map((s, i) => (
               <div
                 className="stats__card"
@@ -248,13 +260,13 @@ function HomePage() {
                   num: "02",
                   icon: <FiFileText />,
                   title: "احجز",
-                  desc: "اختر الغرفة المناسبة وأرسل طلب حجز — المالك يقبل أو يرفض خلال ساعات",
+                  desc: "اختر الغرفة المناسبة وأرسل طلب حجز ، المالك يقبل أو يرفض خلال ساعات",
                 },
                 {
                   num: "03",
                   icon: <FiCheckCircle />,
                   title: "اسكن",
-                  desc: "أكمل الدفع واستلم غرفتك — فاتورة إلكترونية فورية",
+                  desc: "أكمل الدفع واستلم غرفتك فاتورة إلكترونية فورية",
                 },
               ].map((s, i) => (
                 <div className="steps__card" key={i}>

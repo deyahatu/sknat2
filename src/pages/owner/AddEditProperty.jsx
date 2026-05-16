@@ -940,6 +940,14 @@ export default function AddEditProperty() {
             const r = rooms[i];
             const payload = buildVariantPayloadFromRoom(r, i);
             if (r.dbId) {
+              // Rooms with an in-app APPROVED/PAID booking are read-only on the
+              // server too — calling updateVariant on them returns 400 and aborts
+              // the whole save. Keep them in the still-existing set so the delete
+              // pass below doesn't remove them, but don't touch them otherwise.
+              if (isRoomLocked(r)) {
+                stillExistingDbIds.add(r.dbId);
+                continue;
+              }
               await api.properties.updateVariant(propertyId, r.dbId, payload);
               stillExistingDbIds.add(r.dbId);
               // Manual occupancy must go through its own endpoint (security guard

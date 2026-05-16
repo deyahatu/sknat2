@@ -53,7 +53,6 @@ export default function OwnerRatings() {
               <thead>
                 <tr>
                   <th>العقار</th>
-                  <th>الطالب</th>
                   <th>التقييم</th>
                   <th>التعليق</th>
                   <th>التاريخ</th>
@@ -64,7 +63,6 @@ export default function OwnerRatings() {
                 {ratings.map((r) => (
                   <tr key={r.id}>
                     <td>{r.property?.title || '—'}</td>
-                    <td>{r.student?.name || '—'}</td>
                     <td><Stars rating={r.rating} /></td>
                     <td className="owner-comment-cell">
                       {r.comment || '—'}

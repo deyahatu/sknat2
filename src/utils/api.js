@@ -50,6 +50,7 @@ export const api = {
     list: (params) => request(`/users${buildQuery(params)}`),
     get: (id) => request(`/users/${id}`),
     delete: (id) => request(`/users/${id}`, { method: 'DELETE' }),
+    deleteMe: (password) => request('/users/me', { method: 'DELETE', body: JSON.stringify({ password }) }),
     toggleActive: (id, reason) => request(`/users/${id}/toggle-active`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
   },
   properties: {
@@ -141,6 +142,25 @@ export const api = {
     list: (status) => request(`/reports${status ? `?status=${status}` : ''}`),
     review: (id, body) => request(`/reports/${id}/review`, { method: 'PATCH', body: JSON.stringify(body) }),
   },
+  complaints: {
+    create: (body) => request('/complaints', { method: 'POST', body: JSON.stringify(body) }),
+    mine: () => request('/complaints/mine'),
+    list: (params) => request(`/complaints${buildQuery(params)}`),
+    review: (id, body) => request(`/complaints/${id}/review`, { method: 'PATCH', body: JSON.stringify(body) }),
+    uploadMedia: async ({ images = [], video = null }) => {
+      const formData = new FormData();
+      images.forEach((f) => formData.append('images', f));
+      if (video) formData.append('video', video);
+      const res = await fetch(`${API_URL}/complaints/upload`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'فشل رفع المرفقات');
+      return data;
+    },
+  },
   blockAppeals: {
     submit: (message) => request('/block-appeals', { method: 'POST', body: JSON.stringify({ message }) }),
     mine: () => request('/block-appeals/me'),
@@ -185,5 +205,6 @@ export const api = {
     approveWithdrawal: (id) => request(`/withdrawals/${id}/approve`, { method: 'PATCH' }),
     rejectWithdrawal: (id, reason) => request(`/withdrawals/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
     auditLog: (params) => request(`/audit-log${buildQuery(params)}`),
+    sendNotification: (body) => request('/admin/send-notification', { method: 'POST', body: JSON.stringify(body) }),
   },
 };

@@ -26,6 +26,14 @@ function Footer() {
         </div>
 
         <div className="footer-section">
+          <h4 className="footer-section-title">قانوني</h4>
+          <ul className="footer-links">
+            <li><Link to="/terms">شروط الاستخدام</Link></li>
+            <li><Link to="/privacy">سياسة الخصوصية</Link></li>
+          </ul>
+        </div>
+
+        <div className="footer-section">
           <h4 className="footer-section-title">تواصل معنا</h4>
           <ul className="footer-contact">
             <li>

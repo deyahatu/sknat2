@@ -32,6 +32,7 @@ function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const fileInputRef = useRef(null);
 
   const [step, setStep] = useState("form"); // "form" | "otp"
@@ -82,6 +83,10 @@ function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!agreedToTerms) {
+      setError("يجب الموافقة على شروط الاستخدام وسياسة الخصوصية للمتابعة");
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       setError("كلمات المرور غير متطابقة");
       return;
@@ -492,12 +497,32 @@ function RegisterPage() {
               </div>
             </div>
 
+            <div className="form-group auth-terms">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                />
+                <span>
+                  أوافق على{" "}
+                  <Link to="/terms" target="_blank" rel="noopener noreferrer">
+                    شروط الاستخدام
+                  </Link>{" "}
+                  و{" "}
+                  <Link to="/privacy" target="_blank" rel="noopener noreferrer">
+                    سياسة الخصوصية
+                  </Link>
+                </span>
+              </label>
+            </div>
+
             {error && <div className="auth-error">{error}</div>}
 
             <button
               type="submit"
               className="btn btn-primary btn-lg auth-submit"
-              disabled={loading}
+              disabled={loading || !agreedToTerms}
             >
               {loading ? "جاري إنشاء الحساب..." : "إنشاء حساب"}
             </button>

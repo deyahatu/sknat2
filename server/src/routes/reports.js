@@ -70,7 +70,7 @@ router.post('/', authenticate, requireActive, async (req, res, next) => {
     notifyAllAdmins(
       'بلاغ جديد',
       `${req.user.name} قدّم بلاغاً (${reason}) — يحتاج مراجعة`,
-      '/admin',
+      '/admin?tab=reports',
     ).catch(() => {});
 
     res.status(201).json({ message: 'تم إرسال البلاغ بنجاح.', report });

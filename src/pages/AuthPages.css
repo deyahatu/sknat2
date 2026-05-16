@@ -127,6 +127,27 @@
   accent-color: var(--primary);
 }
 
+.auth-terms {
+  margin-top: 4px;
+}
+.auth-terms .checkbox-label {
+  align-items: flex-start;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.auth-terms .checkbox-label input[type="checkbox"] {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.auth-terms .checkbox-label a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.auth-terms .checkbox-label a:hover {
+  text-decoration: underline;
+}
+
 .forgot-link { color: var(--primary); font-weight: 600; font-size: 0.85rem; }
 .forgot-link:hover { text-decoration: underline; }
 

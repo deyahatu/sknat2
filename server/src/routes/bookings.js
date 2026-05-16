@@ -11,6 +11,34 @@ const router = Router();
 const REFUND_FULL_DAYS = 3;
 const REFUND_HALF_DAYS = 7;
 
+// helpers لحجز بـ أشهر تقويمية كاملة (يطابق منطق الـ frontend)
+function daysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate();
+}
+function addMonths(date, n) {
+  const d = new Date(date);
+  const targetMonth = d.getMonth() + n;
+  const year = d.getFullYear() + Math.floor(targetMonth / 12);
+  const month = ((targetMonth % 12) + 12) % 12;
+  const maxDay = daysInMonth(year, month);
+  const day = Math.min(d.getDate(), maxDay);
+  return new Date(year, month, day);
+}
+// تتحقق إن endDate يساوي startDate + N أشهر تقويمية. ترجع N أو null.
+function monthsBetween(start, end) {
+  if (!start || !end) return null;
+  const s = new Date(start);
+  const e = new Date(end);
+  s.setHours(0, 0, 0, 0);
+  e.setHours(0, 0, 0, 0);
+  if (e <= s) return null;
+  for (let n = 1; n <= 24; n++) {
+    const candidate = addMonths(s, n);
+    if (candidate.getTime() === e.getTime()) return n;
+  }
+  return null;
+}
+
 function calcRefundPercentage(daysSincePayment) {
   if (daysSincePayment <= REFUND_FULL_DAYS) return 100;
   if (daysSincePayment <= REFUND_HALF_DAYS) return 50;
@@ -46,13 +74,13 @@ router.post("/", authenticate, requireActive, authorize("STUDENT"), async (req, 
         .json({ error: "تاريخ البداية لا يمكن أن يكون في الماضي." });
     }
 
-    // Minimum booking duration: 30 days (one month)
-    const durationMs = end.getTime() - start.getTime();
-    const durationDays = Math.round(durationMs / (1000 * 60 * 60 * 24));
-    if (durationDays < 30) {
-      return res
-        .status(400)
-        .json({ error: "يجب أن تكون فترة الحجز 30 يوم على الأقل (شهر)." });
+    // فترة الحجز لازم تكون أشهر تقويمية كاملة (شهر، شهرين، 3...).
+    // 31 يناير → 28 فبراير = شهر صحيح (clamp لآخر يوم في الشهر).
+    const bookingMonths = monthsBetween(start, end);
+    if (bookingMonths === null) {
+      return res.status(400).json({
+        error: "فترة الحجز يجب أن تكون أشهر كاملة (شهر، شهران، 3 أشهر...).",
+      });
     }
 
     // Check property exists and is available
@@ -136,19 +164,15 @@ router.post("/", authenticate, requireActive, authorize("STUDENT"), async (req, 
         .json({ error: "لديك حجز مؤكد بالفعل في هذا التاريخ." });
     }
 
-    // Calculate total price:
-    //  - DOUBLE → student takes one bed → use halfPrice (fallback to fullPrice / 2)
+    // السعر = سعر الشهر × عدد الأشهر التقويمية (بعد ما تأكدنا من المحاذاة فوق).
+    //  - DOUBLE → الطالب ياخد سرير واحد → halfPrice (أو fullPrice / 2)
     //  - SINGLE → fullPrice
-    // Months are pro-rated (30-day month) with a 1-month minimum.
-    const diffMs = end.getTime() - start.getTime();
-    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-    const months = Math.max(1, diffDays / 30);
     const monthlyPrice = isDouble
       ? (roomVariant.halfPrice
           ? Number(roomVariant.halfPrice)
           : Number(roomVariant.fullPrice) / 2)
       : Number(roomVariant.fullPrice);
-    const totalPrice = Math.round(monthlyPrice * months * 100) / 100;
+    const totalPrice = Math.round(monthlyPrice * bookingMonths * 100) / 100;
 
     const booking = await prisma.booking.create({
       data: {
@@ -185,7 +209,7 @@ router.post("/", authenticate, requireActive, authorize("STUDENT"), async (req, 
     notifyAllAdmins(
       'حجز جديد',
       `${req.user.name} طلب حجز ${property.title}`,
-      '/admin',
+      '/admin?tab=stats',
     ).catch(() => {});
 
     res.status(201).json({
@@ -215,9 +239,11 @@ router.post('/:id/renew', authenticate, requireActive, authorize('STUDENT'), asy
       return res.status(400).json({ error: 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية.' });
     }
 
-    const renewDurationDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    if (renewDurationDays < 30) {
-      return res.status(400).json({ error: 'يجب أن تكون فترة التجديد 30 يوم على الأقل (شهر).' });
+    const renewMonths = monthsBetween(start, end);
+    if (renewMonths === null) {
+      return res.status(400).json({
+        error: 'فترة التجديد يجب أن تكون أشهر كاملة (شهر، شهران، 3 أشهر...).',
+      });
     }
 
     const parent = await prisma.booking.findUnique({
@@ -313,16 +339,14 @@ router.post('/:id/renew', authenticate, requireActive, authorize('STUDENT'), asy
       });
     }
 
-    // Calculate price (same rules as a normal booking)
+    // السعر = سعر الشهر × عدد الأشهر التقويمية (نفس قواعد الحجز العادي)
     const isDouble = parent.roomVariant.kind === 'DOUBLE';
-    const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    const months = Math.max(1, diffDays / 30);
     const monthlyPrice = isDouble
       ? (parent.roomVariant.halfPrice
           ? Number(parent.roomVariant.halfPrice)
           : Number(parent.roomVariant.fullPrice) / 2)
       : Number(parent.roomVariant.fullPrice);
-    const totalPrice = Math.round(monthlyPrice * months * 100) / 100;
+    const totalPrice = Math.round(monthlyPrice * renewMonths * 100) / 100;
 
     const renewal = await prisma.booking.create({
       data: {
@@ -351,7 +375,7 @@ router.post('/:id/renew', authenticate, requireActive, authorize('STUDENT'), asy
     notifyAllAdmins(
       'طلب تجديد حجز',
       `${req.user.name} طلب تجديد حجز ${parent.property.title}`,
-      '/admin',
+      '/admin?tab=stats',
     ).catch(() => {});
 
     logAudit({ action: 'RENEW_REQUEST', entity: 'BOOKING', entityId: renewal.id, user: req.user, details: `طلب تجديد لحجز ${parent.property.title}` });
@@ -948,7 +972,7 @@ router.patch(
         booking.status === 'PAID' && refundAmount > 0
           ? `${req.user.name} ألغى حجز ${booking.property.title} — استرداد ${refundAmount} ₪ (${refundPercentage}%)`
           : `${req.user.name} ألغى حجز ${booking.property.title}`,
-        '/admin',
+        booking.status === 'PAID' && refundAmount > 0 ? '/admin?tab=refunds' : '/admin?tab=stats',
       ).catch(() => {});
 
       res.json({

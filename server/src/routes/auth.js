@@ -211,7 +211,7 @@ router.post("/register", registerLimiter, async (req, res) => {
       notifyAllAdmins(
         'مالك جديد سجّل',
         `تم تسجيل مالك جديد: ${user.name} (${user.email})`,
-        '/admin',
+        '/admin?tab=users',
       ).catch(() => {});
 
       return res.status(201).json({
@@ -390,7 +390,7 @@ router.post("/verify-email", verifyEmailLimiter, async (req, res, next) => {
     notifyAllAdmins(
       'طالب جديد سجّل',
       `تم تسجيل طالب جديد: ${user.name} (${user.email})`,
-      '/admin',
+      '/admin?tab=users',
     ).catch(() => {});
 
     return res.status(201).json({
@@ -507,6 +507,19 @@ router.post("/login", loginLimiter, async (req, res) => {
         .json({ error: "البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى." });
     }
 
+    // Account in the 30-day deletion grace period — logging in cancels the
+    // request and reactivates the account. (Admin-banned users have
+    // isActive=false too but no deletionRequestedAt, so we leave those alone.)
+    let restored = false;
+    if (!user.isActive && user.deletionRequestedAt) {
+      const updated = await prisma.user.update({
+        where: { id: user.id },
+        data: { isActive: true, deletionRequestedAt: null },
+      });
+      Object.assign(user, updated);
+      restored = true;
+    }
+
     // Note: we no longer block login for inactive users. They can sign in and
     // read their data, but state-changing endpoints are gated by `requireActive`.
 
@@ -520,7 +533,11 @@ router.post("/login", loginLimiter, async (req, res) => {
     });
 
     const { password: _, ...userWithoutPassword } = user;
-    res.json({ user: userWithoutPassword, token });
+    res.json({
+      user: userWithoutPassword,
+      token,
+      ...(restored ? { restored: true, message: 'تم استعادة حسابك. تم إلغاء طلب الحذف.' } : {}),
+    });
   } catch (err) {
     console.error("Login error:", err);
     return res

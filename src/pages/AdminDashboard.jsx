@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import { useToast } from '../components/shared/Toast';
 import ConfirmModal from '../components/shared/ConfirmModal';
 import Skeleton from '../components/shared/Skeleton';
-import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText, FiFlag, FiLogOut } from 'react-icons/fi';
+import { FiUsers, FiHome, FiShield, FiTrash2, FiAlertCircle, FiSearch, FiToggleLeft, FiToggleRight, FiStar, FiBarChart2, FiDollarSign, FiCreditCard, FiCheck, FiX, FiDownload, FiFileText, FiFlag, FiLogOut, FiAlertOctagon } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import NotificationBell from '../components/shared/NotificationBell';
 import './AdminDashboard.css';
@@ -18,7 +19,8 @@ const TABS = [
   { id: 'ratings', label: 'التقييمات', icon: <FiStar /> },
   { id: 'stats', label: 'الإحصائيات', icon: <FiBarChart2 /> },
   { id: 'audit', label: 'سجل النشاط', icon: <FiFileText /> },
-  { id: 'reports', label: 'البلاغات والشكاوى', icon: <FiFlag /> },
+  { id: 'reports', label: 'البلاغات', icon: <FiFlag /> },
+  { id: 'complaints', label: 'الشكاوى', icon: <FiAlertOctagon /> },
 ];
 
 // Neutralise CSV formula-injection: when Excel sees a cell starting with =, +, -, @,
@@ -90,10 +92,41 @@ function exportCSV(data, filename) {
   link.click();
 }
 
+// Tabs reachable from notifications via /admin?tab=<id>. Anything else falls
+// back to the default 'users' tab.
+const VALID_TABS = new Set([
+  'users', 'properties', 'refunds', 'withdrawals', 'appeals',
+  'ratings', 'stats', 'audit', 'reports', 'complaints',
+]);
+
 export default function AdminDashboard() {
   const { user: currentUser, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('users');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    tabFromUrl && VALID_TABS.has(tabFromUrl) ? tabFromUrl : 'users',
+  );
   const [pendingCounts, setPendingCounts] = useState({ refunds: 0, withdrawals: 0 });
+
+  // Keep tab in sync when the URL changes (e.g. clicking another notification
+  // while already on /admin). Without this, the second click is a no-op.
+  useEffect(() => {
+    if (tabFromUrl && VALID_TABS.has(tabFromUrl) && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabFromUrl]);
+
+  // When the user switches tabs via the sidebar, drop the ?tab=… from the URL
+  // so it doesn't get stale.
+  function selectTab(id) {
+    setActiveTab(id);
+    if (searchParams.has('tab')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('tab');
+      setSearchParams(next, { replace: true });
+    }
+  }
 
   useEffect(() => {
     api.admin.stats().then((s) => {
@@ -127,7 +160,7 @@ export default function AdminDashboard() {
                 <button
                   key={tab.id}
                   className={`admin-sidebar-item ${activeTab === tab.id ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => selectTab(tab.id)}
                 >
                   {tab.icon}
                   <span>{tab.label}</span>
@@ -158,6 +191,7 @@ export default function AdminDashboard() {
           {activeTab === 'stats' && <StatsTab />}
           {activeTab === 'audit' && <AuditTab />}
           {activeTab === 'reports' && <ReportsTab />}
+          {activeTab === 'complaints' && <ComplaintsTab />}
           {activeTab === 'appeals' && <AppealsTab />}
         </main>
       </div>
@@ -246,8 +280,8 @@ function UsersTab({ currentUser }) {
 
   const confirmBlock = async () => {
     const reason = blockReason.trim();
-    if (reason.length < 10 || reason.length > 200) {
-      toast.error('يجب إدخال سبب الحظر (10 إلى 200 حرف).');
+    if (reason.length === 0 || reason.length > 200) {
+      toast.error('يجب إدخال سبب الحظر (حتى 200 حرف).');
       return;
     }
     setBlockSaving(true);
@@ -406,16 +440,12 @@ function UsersTab({ currentUser }) {
         <div className="ad-modal-overlay" onClick={() => !blockSaving && setBlockModal({ open: false, userId: null, userName: '' })}>
           <div className="ad-modal-box ad-block-modal" onClick={(e) => e.stopPropagation()}>
             <h3 className="ad-block-modal-title">حظر أنشطة: {blockModal.userName}</h3>
-            <p className="ad-block-modal-sub">
-              سيتلقى المستخدم إشعاراً + بريداً إلكترونياً بسبب الحظر، ويمكنه تقديم اعتراض واحد.
-            </p>
-            <label className="ad-block-modal-label">سبب الحظر (10–200 حرف) — إجباري</label>
+            <label className="ad-block-modal-label">سبب</label>
             <textarea
               className="ad-block-modal-textarea"
               value={blockReason}
               onChange={(e) => setBlockReason(e.target.value.slice(0, 200))}
               rows={4}
-              placeholder="مثال: إساءة في الرسائل، بيانات هوية مزورة، انتهاك متكرر لسياسة المنصة..."
             />
             <div className="ad-block-modal-counter">
               {blockReason.length} / 200
@@ -431,7 +461,7 @@ function UsersTab({ currentUser }) {
               <button
                 className="ad-block-modal-btn danger"
                 onClick={confirmBlock}
-                disabled={blockSaving || blockReason.trim().length < 10}
+                disabled={blockSaving || blockReason.trim().length === 0}
               >
                 {blockSaving ? 'جاري الحفظ...' : 'حظر الأنشطة'}
               </button>
@@ -1135,6 +1165,12 @@ function AuditTab() {
     DELETE: 'حذف',
     TOGGLE_ACTIVE: 'تغيير الحالة',
     RENEW_REQUEST: 'طلب تجديد',
+    REQUEST_DELETE_SELF: 'طلب حذف الحساب',
+    DELETE_SELF: 'حذف الحساب',
+    CANCEL_DELETE_SELF: 'إلغاء طلب الحذف',
+    APPEAL_SUBMIT: 'تقديم اعتراض',
+    APPEAL_ACCEPT: 'قبول اعتراض',
+    APPEAL_REJECT: 'رفض اعتراض',
   };
 
   const entityLabels = {
@@ -1704,6 +1740,368 @@ function ReportsTab() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+
+// ── Complaints Tab ──
+// Distinct from ReportsTab: complaints are about a person's conduct between
+// student↔owner (backed by a real booking), with optional image/video evidence.
+function ComplaintsTab() {
+  const toast = useToast();
+  const [complaints, setComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [confirmState, setConfirmState] = useState({ open: false, action: null, title: '', message: '' });
+  const [detail, setDetail] = useState(null);
+  // Contact modal: which user the admin is messaging (complainant or target),
+  // plus the message body. Null = closed.
+  const [contactTarget, setContactTarget] = useState(null);
+  const [contactBody, setContactBody] = useState('');
+  const [contactSending, setContactSending] = useState(false);
+
+  const typeLabels = {
+    STUDENT_VS_OWNER: 'طالب ضد مالك',
+    OWNER_VS_STUDENT: 'مالك ضد طالب',
+  };
+  const statusLabels = { PENDING: 'معلقة', REVIEWED: 'تمت المراجعة', DISMISSED: 'مرفوضة' };
+  const statusClass = { PENDING: '', REVIEWED: 'active', DISMISSED: 'inactive' };
+
+  const fetchComplaints = () => {
+    setLoading(true);
+    api.complaints
+      .list({ status: statusFilter, type: typeFilter })
+      .then((data) => setComplaints(data.complaints || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchComplaints(); }, [statusFilter, typeFilter]);
+  useEffect(() => { setPage(1); }, [statusFilter, typeFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(complaints.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginated = complaints.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const doReview = (id, action, defaultMsg) => {
+    const note = window.prompt('ملاحظة المشرف (اختياري):', '') || '';
+    setConfirmState({
+      open: true,
+      title: defaultMsg,
+      message: `${defaultMsg}؟`,
+      action: async () => {
+        try {
+          await api.complaints.review(id, { action, adminNote: note });
+          fetchComplaints();
+          setDetail(null);
+        } catch (err) {
+          toast.error(err.message || 'فشل');
+        }
+      },
+    });
+  };
+
+  function openContact(user) {
+    setContactTarget(user);
+    setContactBody('');
+  }
+
+  async function sendContact() {
+    if (!contactTarget || !contactBody.trim() || contactSending) return;
+    setContactSending(true);
+    try {
+      await api.admin.sendNotification({
+        userId: contactTarget.id,
+        title: 'رسالة من الإدارة',
+        body: contactBody.trim(),
+        // Deep-link to the right complaints page based on the recipient's role.
+        url: contactTarget.role === 'OWNER' ? '/owner/complaints' : '/complaints',
+      });
+      toast.success(`تم إرسال الرسالة إلى ${contactTarget.name}.`);
+      setContactTarget(null);
+      setContactBody('');
+    } catch (err) {
+      toast.error(err.message || 'فشل إرسال الرسالة.');
+    } finally {
+      setContactSending(false);
+    }
+  }
+
+  if (loading) return <div className="loading-state">جاري التحميل...</div>;
+
+  return (
+    <>
+      <div className="admin-filters">
+        <select className="admin-role-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">كل الحالات</option>
+          <option value="PENDING">معلقة</option>
+          <option value="REVIEWED">تمت المراجعة</option>
+          <option value="DISMISSED">مرفوضة</option>
+        </select>
+        <select className="admin-role-filter" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <option value="">كل الأنواع</option>
+          <option value="STUDENT_VS_OWNER">طالب ضد مالك</option>
+          <option value="OWNER_VS_STUDENT">مالك ضد طالب</option>
+        </select>
+      </div>
+
+      <div className="users-table-container">
+        <table className="users-table">
+          <thead>
+            <tr>
+              <th>المُشتكي</th>
+              <th>ضد</th>
+              <th>النوع</th>
+              <th>العنوان</th>
+              <th>السكن</th>
+              <th>المرفقات</th>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginated.map((c) => {
+              const attachments = (c.images?.length || 0) + (c.videoUrl ? 1 : 0);
+              return (
+                <tr key={c.id} className="report-row-clickable" onClick={() => setDetail(c)}>
+                  <td>{c.complainant?.name || '—'}</td>
+                  <td>{c.target?.name || '—'}</td>
+                  <td>{typeLabels[c.type] || c.type}</td>
+                  <td className="at-truncate ad-cell--target">{c.subject}</td>
+                  <td>{c.booking?.property?.title || '—'}</td>
+                  <td>{attachments > 0 ? `${attachments} ملف` : '—'}</td>
+                  <td><span className={`status-badge ${statusClass[c.status] || ''}`}>{statusLabels[c.status] || c.status}</span></td>
+                  <td>{new Date(c.createdAt).toLocaleDateString('ar-EG')}</td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    {c.status === 'PENDING' && (
+                      <div className="action-buttons">
+                        <button className="action-btn" onClick={() => doReview(c.id, 'review', 'تأكيد المراجعة')} title="تأكيد المراجعة">
+                          <FiCheck />
+                        </button>
+                        <button className="action-btn ad-text-muted" onClick={() => doReview(c.id, 'dismiss', 'رفض الشكوى')} title="رفض الشكوى">
+                          <FiX />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {complaints.length === 0 && (
+              <tr><td colSpan="9" className="at-td-center">لا يوجد شكاوى</td></tr>
+            )}
+          </tbody>
+        </table>
+        <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
+      </div>
+
+      <ConfirmModal
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="تأكيد"
+        variant="danger"
+        onConfirm={async () => { await confirmState.action?.(); setConfirmState((s) => ({ ...s, open: false })); }}
+        onCancel={() => setConfirmState((s) => ({ ...s, open: false }))}
+      />
+
+      {detail && (
+        <div className="ad-modal-overlay" onClick={() => setDetail(null)}>
+          <div className="ad-modal-box report-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="report-detail-header">
+              <h3>تفاصيل الشكوى</h3>
+              <button type="button" className="bb-modal-close" onClick={() => setDetail(null)}>
+                <FiX />
+              </button>
+            </div>
+
+            <div className="report-detail-grid">
+              <div className="report-detail-item">
+                <span className="report-detail-label">المُشتكي</span>
+                <span className="report-detail-value">{detail.complainant?.name || '—'}</span>
+                {detail.complainant?.email && (
+                  <span className="report-detail-sub">{detail.complainant.email}</span>
+                )}
+              </div>
+              <div className="report-detail-item">
+                <span className="report-detail-label">ضد</span>
+                <span className="report-detail-value">{detail.target?.name || '—'}</span>
+                {detail.target?.email && (
+                  <span className="report-detail-sub">{detail.target.email}</span>
+                )}
+              </div>
+              <div className="report-detail-item">
+                <span className="report-detail-label">النوع</span>
+                <span className="report-detail-value">{typeLabels[detail.type] || detail.type}</span>
+              </div>
+              <div className="report-detail-item">
+                <span className="report-detail-label">السكن</span>
+                <span className="report-detail-value">{detail.booking?.property?.title || '—'}</span>
+              </div>
+              <div className="report-detail-item">
+                <span className="report-detail-label">الحالة</span>
+                <span className={`status-badge ${statusClass[detail.status] || ''}`}>
+                  {statusLabels[detail.status] || detail.status}
+                </span>
+              </div>
+              <div className="report-detail-item">
+                <span className="report-detail-label">تاريخ الشكوى</span>
+                <span className="report-detail-value">{new Date(detail.createdAt).toLocaleString('ar-EG')}</span>
+              </div>
+            </div>
+
+            <div className="report-detail-section">
+              <h4>عنوان الشكوى</h4>
+              <p className="report-detail-text">{detail.subject}</p>
+            </div>
+
+            <div className="report-detail-section">
+              <h4>تفاصيل الشكوى</h4>
+              <p className="report-detail-text" style={{ whiteSpace: 'pre-wrap' }}>{detail.description}</p>
+            </div>
+
+            {(detail.images?.length > 0 || detail.videoUrl) && (
+              <div className="report-detail-section">
+                <h4>المرفقات</h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {detail.images?.map((u, i) => (
+                    <a key={i} href={u} target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={u}
+                        alt={`دليل ${i + 1}`}
+                        style={{ width: 130, height: 100, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb' }}
+                      />
+                    </a>
+                  ))}
+                  {detail.videoUrl && (
+                    <video
+                      src={detail.videoUrl}
+                      controls
+                      preload="metadata"
+                      style={{ width: 220, height: 150, borderRadius: 8, background: '#000' }}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {detail.adminNote && (
+              <div className="report-detail-section">
+                <h4>ملاحظة المشرف</h4>
+                <p className="report-detail-text">{detail.adminNote}</p>
+              </div>
+            )}
+
+            <div className="report-detail-section">
+              <h4>التواصل مع الأطراف</h4>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {detail.complainant && (
+                  <button
+                    type="button"
+                    className="ad-block-modal-btn ghost"
+                    onClick={() => openContact(detail.complainant)}
+                  >
+                    ✉️ تواصل مع المُشتكي ({detail.complainant.name})
+                  </button>
+                )}
+                {detail.target && (
+                  <button
+                    type="button"
+                    className="ad-block-modal-btn ghost"
+                    onClick={() => openContact(detail.target)}
+                  >
+                    ✉️ تواصل مع المُشتكى عليه ({detail.target.name})
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {detail.status === 'PENDING' && (
+              <div className="report-detail-actions">
+                <button
+                  className="ad-block-modal-btn ghost"
+                  onClick={() => doReview(detail.id, 'dismiss', 'رفض الشكوى')}
+                >
+                  رفض الشكوى
+                </button>
+                <button
+                  className="ad-block-modal-btn success"
+                  onClick={() => doReview(detail.id, 'review', 'تأكيد المراجعة')}
+                >
+                  تأكيد المراجعة
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {contactTarget && (
+        <div
+          className="ad-modal-overlay"
+          onClick={() => !contactSending && setContactTarget(null)}
+        >
+          <div
+            className="ad-modal-box"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 480 }}
+          >
+            <div className="report-detail-header">
+              <h3>إرسال رسالة لـ {contactTarget.name}</h3>
+              <button
+                type="button"
+                className="bb-modal-close"
+                onClick={() => !contactSending && setContactTarget(null)}
+                disabled={contactSending}
+              >
+                <FiX />
+              </button>
+            </div>
+            <textarea
+              value={contactBody}
+              onChange={(e) => setContactBody(e.target.value)}
+              maxLength={1000}
+              rows={5}
+              placeholder="اكتب رسالتك هنا..."
+              disabled={contactSending}
+              style={{
+                width: '100%',
+                padding: 10,
+                border: '1px solid #d1d5db',
+                borderRadius: 8,
+                fontFamily: 'inherit',
+                fontSize: 14,
+                resize: 'vertical',
+              }}
+            />
+            <div style={{ textAlign: 'left', fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+              {contactBody.length}/1000
+            </div>
+            <div className="report-detail-actions">
+              <button
+                type="button"
+                className="ad-block-modal-btn ghost"
+                onClick={() => setContactTarget(null)}
+                disabled={contactSending}
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                className="ad-block-modal-btn success"
+                onClick={sendContact}
+                disabled={contactSending || !contactBody.trim()}
+              >
+                {contactSending ? 'جارٍ الإرسال…' : 'إرسال'}
+              </button>
+            </div>
           </div>
         </div>
       )}

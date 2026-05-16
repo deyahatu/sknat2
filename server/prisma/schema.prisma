@@ -77,6 +77,17 @@ enum ReportStatus {
   DISMISSED
 }
 
+enum ComplaintType {
+  STUDENT_VS_OWNER
+  OWNER_VS_STUDENT
+}
+
+enum ComplaintStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+}
+
                                                                                                                                                                                                
    
   model User {
@@ -99,6 +110,11 @@ enum ReportStatus {
     bankName            String?
     bankAccountHolder   String?
     bankAccountNumber   String?
+    // When the user requests voluntary account deletion. Account becomes
+    // inactive immediately; a scheduled job hard-deletes it after the
+    // grace period. Cleared when the user logs in within the grace
+    // period — that restores the account.
+    deletionRequestedAt DateTime?
     createdAt           DateTime  @default(now())
     updatedAt           DateTime  @updatedAt
 
@@ -118,6 +134,8 @@ enum ReportStatus {
     notifications Notification[]
     reports       Report[]
     blockAppeals  BlockAppeal[]
+    complaintsFiled    Complaint[] @relation("ComplaintsFiled")
+    complaintsAgainst  Complaint[] @relation("ComplaintsAgainst")
 
     @@map("users")
   }
@@ -216,6 +234,7 @@ enum ReportStatus {
 
     parentBooking Booking?  @relation("BookingRenewal", fields: [parentBookingId], references: [id], onDelete: SetNull)
     renewals      Booking[] @relation("BookingRenewal")
+    complaints    Complaint[]
 
     @@index([studentId])
     @@index([propertyId])
@@ -462,6 +481,37 @@ model Report {
   @@index([status])
   @@index([reporterId])
   @@map("reports")
+}
+
+// Long-form grievance between a student and an owner who have a booking
+// relationship (the booking row is the proof of the relationship — without
+// one, a complaint can't be filed). Distinct from Report (which targets a
+// single piece of content): a Complaint is about a person's conduct and
+// supports image/video evidence.
+model Complaint {
+  id            String          @id @default(uuid())
+  type          ComplaintType
+  complainantId String
+  targetUserId  String
+  bookingId     String?
+  subject       String          @db.VarChar(200)
+  description   String          @db.VarChar(2000)
+  images        String[]        @default([])
+  videoUrl      String?
+  status        ComplaintStatus @default(PENDING)
+  adminNote     String?         @db.VarChar(1000)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  complainant User     @relation("ComplaintsFiled", fields: [complainantId], references: [id], onDelete: Cascade)
+  target      User     @relation("ComplaintsAgainst", fields: [targetUserId], references: [id], onDelete: Cascade)
+  booking     Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([complainantId])
+  @@index([targetUserId])
+  @@index([bookingId])
+  @@map("complaints")
 }
 
 model BlockAppeal {

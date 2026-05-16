@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { notify } from '../utils/notify.js';
+import { logAudit } from '../utils/audit.js';
 
 const router = Router();
 
@@ -172,6 +174,58 @@ router.get('/export/:type', authenticate, authorize('ADMIN'), async (req, res, n
     }
 
     res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Send a one-way admin notification to any user. Lets the admin reach out about
+// a complaint, report, or any sensitive matter without going through the
+// normal student↔owner Messages flow (which needs an active booking and is
+// peer-to-peer). Stored as a regular Notification row so the user sees it in
+// their existing NotificationBell with no extra UI.
+router.post('/send-notification', authenticate, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const { userId, title, body, url } = req.body || {};
+
+    if (!userId || typeof userId !== 'string') {
+      return res.status(400).json({ error: 'يرجى تحديد المستخدم.' });
+    }
+    const bodyStr = String(body || '').trim();
+    if (!bodyStr) {
+      return res.status(400).json({ error: 'يرجى كتابة نص الرسالة.' });
+    }
+    if (bodyStr.length > 1000) {
+      return res.status(400).json({ error: 'الرسالة طويلة جداً (الحد الأقصى 1000 حرف).' });
+    }
+    const titleStr = (title && String(title).trim()) || 'رسالة من الإدارة';
+    if (titleStr.length > 120) {
+      return res.status(400).json({ error: 'العنوان طويل جداً.' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, role: true },
+    });
+    if (!user) return res.status(404).json({ error: 'المستخدم غير موجود.' });
+    // Don't let admins notify other admins via this endpoint — keep it focused
+    // on user-facing communication.
+    if (user.role === 'ADMIN') {
+      return res.status(400).json({ error: 'لا يمكن إرسال إشعار إلى مدير.' });
+    }
+
+    const safeUrl = typeof url === 'string' && url.startsWith('/') ? url : null;
+    await notify(user.id, titleStr, bodyStr, safeUrl);
+
+    logAudit({
+      action: 'ADMIN_NOTIFY',
+      entity: 'USER',
+      entityId: user.id,
+      user: req.user,
+      details: bodyStr.slice(0, 200),
+    });
+
+    res.json({ message: 'تم إرسال الرسالة.' });
   } catch (err) {
     next(err);
   }
