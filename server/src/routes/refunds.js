@@ -82,6 +82,9 @@ router.patch(
   authorize('ADMIN'),
   async (req, res, next) => {
     try {
+      let refundId;
+      let refundAmountVal;
+
       try {
         await prisma.$transaction(async (tx) => {
           const refund = await tx.refundRequest.findUnique({
@@ -108,12 +111,13 @@ router.patch(
             throw err;
           }
 
+          refundId = refund.id;
           const ownerId = refund.booking.property.ownerId;
-          const refundAmount = Math.max(0, Number(refund.refundAmount));
+          refundAmountVal = Math.max(0, Number(refund.refundAmount));
 
           const wallet = await tx.wallet.findUnique({ where: { ownerId } });
 
-          if (!wallet || Number(wallet.balance) < refundAmount) {
+          if (!wallet || Number(wallet.balance) < refundAmountVal) {
             const err = new Error('رصيد المالك غير كافٍ لإتمام الاسترداد.');
             err.statusCode = 400;
             throw err;
@@ -121,7 +125,7 @@ router.patch(
 
           await tx.wallet.update({
             where: { id: wallet.id },
-            data: { balance: { decrement: refundAmount } },
+            data: { balance: { decrement: refundAmountVal } },
           });
 
           if (refund.booking.payment) {
@@ -147,7 +151,7 @@ router.patch(
       }
 
       const updated = await prisma.refundRequest.findUnique({
-        where: { id: refund.id },
+        where: { id: refundId },
         include: {
           booking: {
             select: {
@@ -162,7 +166,7 @@ router.patch(
       notify(
         updated.studentId,
         'تمت الموافقة على طلب الاسترداد',
-        `تم استرداد مبلغ ${refundAmount} ₪ بنجاح.`,
+        `تم استرداد مبلغ ${refundAmountVal} ₪ بنجاح.`,
         '/bookings',
       ).catch(() => {});
 

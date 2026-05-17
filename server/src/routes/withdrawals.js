@@ -11,7 +11,7 @@ const MINIMUM_WITHDRAWAL = 10;
 // from withdrawal so a refund approval never fails for "insufficient funds".
 const REFUND_WINDOW_DAYS = 7;
 
-async function computeLockedAmount(ownerId) {
+async function computeLockedAmount(client, ownerId) {
   const cutoff = new Date(
     Date.now() - REFUND_WINDOW_DAYS * 24 * 60 * 60 * 1000,
   );
@@ -19,7 +19,7 @@ async function computeLockedAmount(ownerId) {
   // Sum payments to this owner that are still inside the refund window AND
   // haven't been refunded yet. These represent money that may need to be
   // returned to the student in the next few days.
-  const recent = await prisma.payment.findMany({
+  const recent = await client.payment.findMany({
     where: {
       status: "COMPLETED",
       createdAt: { gte: cutoff },
@@ -33,10 +33,10 @@ async function computeLockedAmount(ownerId) {
   return recent.reduce((sum, p) => sum + Number(p.amount), 0);
 }
 
-async function getWalletSnapshot(ownerId) {
-  const wallet = await prisma.wallet.findUnique({ where: { ownerId } });
+async function getWalletSnapshot(client, ownerId) {
+  const wallet = await client.wallet.findUnique({ where: { ownerId } });
   const balance = wallet ? Number(wallet.balance) : 0;
-  const lockedBalance = await computeLockedAmount(ownerId);
+  const lockedBalance = await computeLockedAmount(client, ownerId);
   // Available cannot go negative even in edge cases (e.g. legacy data).
   const availableBalance = Math.max(0, balance - lockedBalance);
   return { balance, lockedBalance, availableBalance };
@@ -204,7 +204,7 @@ router.post("/", authenticate, requireActive, authorize("OWNER"), async (req, re
     try {
       request = await prisma.$transaction(async (tx) => {
         const { availableBalance, lockedBalance } = await getWalletSnapshot(
-          req.user.id,
+          tx, req.user.id,
         );
 
         if (withdrawAmount > availableBalance) {
@@ -290,7 +290,7 @@ router.get("/", authenticate, async (req, res, next) => {
       return res.json({ withdrawals: requests });
     }
 
-    const snapshot = await getWalletSnapshot(req.user.id);
+    const snapshot = await getWalletSnapshot(prisma, req.user.id);
 
     res.json({
       wallet: snapshot,
@@ -304,14 +304,47 @@ router.get("/", authenticate, async (req, res, next) => {
 // UC-38: Admin approve withdrawal
 router.patch('/:id/approve', authenticate, authorize('ADMIN'), async (req, res, next) => {
   try {
-    const withdrawal = await prisma.withdrawRequest.findUnique({ where: { id: req.params.id } });
-    if (!withdrawal) return res.status(404).json({ error: 'طلب السحب غير موجود.' });
-    if (withdrawal.status !== 'PENDING') return res.status(400).json({ error: 'يمكن الموافقة على الطلبات المعلقة فقط.' });
+    let updated;
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        const withdrawal = await tx.withdrawRequest.findUnique({ where: { id: req.params.id } });
+        if (!withdrawal) {
+          const err = new Error('طلب السحب غير موجود.');
+          err.statusCode = 404;
+          throw err;
+        }
+        if (withdrawal.status !== 'PENDING') {
+          const err = new Error('يمكن الموافقة على الطلبات المعلقة فقط.');
+          err.statusCode = 400;
+          throw err;
+        }
 
-    const updated = await prisma.withdrawRequest.update({
-      where: { id: req.params.id },
-      data: { status: 'APPROVED', processedAt: new Date() },
-    });
+        const wallet = await tx.wallet.findUnique({ where: { ownerId: withdrawal.ownerId } });
+        if (!wallet || Number(wallet.balance) < Number(withdrawal.amount)) {
+          const err = new Error('رصيد المالك غير كافٍ لإتمام السحب.');
+          err.statusCode = 400;
+          throw err;
+        }
+
+        await tx.wallet.update({
+          where: { id: wallet.id },
+          data: { balance: { decrement: Number(withdrawal.amount) } },
+        });
+
+        return tx.withdrawRequest.update({
+          where: { id: withdrawal.id },
+          data: { status: 'APPROVED', processedAt: new Date() },
+        });
+      }, { isolationLevel: 'Serializable' });
+    } catch (txErr) {
+      if (txErr.statusCode) {
+        return res.status(txErr.statusCode).json({ error: txErr.message });
+      }
+      if (txErr.code === 'P2034' || txErr.message?.includes('40001')) {
+        return res.status(409).json({ error: 'حدث تعارض. يرجى المحاولة مرة أخرى.' });
+      }
+      throw txErr;
+    }
 
     res.json({ message: 'تم الموافقة على طلب السحب.', withdrawal: updated });
   } catch (err) {
