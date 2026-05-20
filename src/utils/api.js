@@ -84,7 +84,8 @@ export const api = {
     renew: (id, body) => request(`/bookings/${id}/renew`, { method: 'POST', body: JSON.stringify(body) }),
   },
   payments: {
-    pay: (bookingId) => request('/payments', { method: 'POST', body: JSON.stringify({ bookingId }) }),
+    checkout: (bookingId) => request('/payments', { method: 'POST', body: JSON.stringify({ bookingId }) }),
+    verifySession: (sessionId) => request(`/payments/verify/${sessionId}`),
     studentList: () => request('/payments/student'),
     ownerEarnings: () => request('/payments/owner/earnings'),
   },

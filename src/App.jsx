@@ -14,6 +14,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import ProfilePage from './pages/student/ProfilePage';
 import MyBookings from './pages/student/MyBookings';
 import PaymentPage from './pages/student/PaymentPage';
+import PaymentSuccess from './pages/student/PaymentSuccess';
+import PaymentCancel from './pages/student/PaymentCancel';
 import RateAccommodation from './pages/student/RateAccommodation';
 import MyRatings from './pages/student/MyRatings';
 import Favorites from './pages/student/Favorites';
@@ -127,6 +129,8 @@ function App() {
             <Route path="/profile" element={<ProtectedRoute roles={['STUDENT']}><ProfilePage /></ProtectedRoute>} />
             <Route path="/bookings" element={<ProtectedRoute roles={['STUDENT']}><MyBookings /></ProtectedRoute>} />
             <Route path="/payment/:bookingId" element={<ProtectedRoute roles={['STUDENT']}><PaymentPage /></ProtectedRoute>} />
+            <Route path="/payment/success" element={<ProtectedRoute roles={['STUDENT']}><PaymentSuccess /></ProtectedRoute>} />
+            <Route path="/payment/cancel" element={<ProtectedRoute roles={['STUDENT']}><PaymentCancel /></ProtectedRoute>} />
             <Route path="/rate/:bookingId" element={<ProtectedRoute roles={['STUDENT']}><RateAccommodation /></ProtectedRoute>} />
             <Route path="/my-ratings" element={<ProtectedRoute roles={['STUDENT']}><MyRatings /></ProtectedRoute>} />
             <Route path="/favorites" element={<ProtectedRoute roles={['STUDENT']}><Favorites /></ProtectedRoute>} />

@@ -11,7 +11,7 @@ import userRoutes from './routes/users.js';
 import propertyRoutes from './routes/properties.js';
 import studentRatingRoutes from './routes/studentRatings.js';
 import bookingRoutes from './routes/bookings.js';
-import paymentRoutes from './routes/payments.js';
+import paymentRoutes, { webhookHandler as stripeWebhookHandler } from './routes/payments.js';
 import withdrawalRoutes from './routes/withdrawals.js';
 import favoriteRoutes from './routes/favorites.js';
 import refundRoutes from './routes/refunds.js';
@@ -36,6 +36,11 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
 }));
+
+// Stripe webhook MUST be mounted with the raw body BEFORE express.json,
+// otherwise the signature verification (which hashes the raw bytes) fails.
+app.post('/api/payments/webhook', ...stripeWebhookHandler);
+
 app.use(express.json({ limit: '20mb' }));
 app.use(cookieParser());
 app.use('/uploads', express.static('uploads'));

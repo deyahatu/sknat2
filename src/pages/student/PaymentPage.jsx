@@ -19,7 +19,6 @@ function calculateTotal(booking) {
   if (!booking) return 0;
   const start = new Date(booking.startDate);
   const end = new Date(booking.endDate);
-  // Pro-rated months (30-day month), minimum 1 month — must match backend.
   const days = Math.round((end - start) / (1000 * 60 * 60 * 24));
   const months = Math.max(1, days / 30);
   const price = getMonthlyPrice(booking.roomVariant);
@@ -34,13 +33,6 @@ function PaymentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-
-  const [card, setCard] = useState({
-    name: '',
-    number: '',
-    expiry: '',
-    cvv: '',
-  });
 
   useEffect(() => {
     setLoading(true);
@@ -57,32 +49,15 @@ function PaymentPage() {
       .finally(() => setLoading(false));
   }, [bookingId]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleCheckout = async () => {
     setError(null);
-
-    if (!card.name.trim() || !card.number.trim() || !card.expiry.trim() || !card.cvv.trim()) {
-      setError('يرجى تعبئة جميع بيانات البطاقة.');
-      return;
-    }
-
-    if (!/^\d{16}$/.test(card.number.replace(/\s/g, ''))) {
-      setError('رقم البطاقة يجب أن يتكوّن من 16 رقماً.');
-      return;
-    }
-
-    if (!/^\d{3,4}$/.test(card.cvv)) {
-      setError('رمز CVV يجب أن يتكوّن من 3 أو 4 أرقام.');
-      return;
-    }
-
     setSubmitting(true);
     try {
-      await api.payments.pay(bookingId);
-      navigate('/bookings');
+      const { url } = await api.payments.checkout(bookingId);
+      if (!url) throw new Error('تعذر الحصول على رابط الدفع.');
+      window.location.href = url;
     } catch (err) {
-      setError(err.message || 'تعذر إتمام الدفع');
-    } finally {
+      setError(err.message || 'تعذر بدء عملية الدفع');
       setSubmitting(false);
     }
   };
@@ -126,84 +101,38 @@ function PaymentPage() {
               <h1>إتمام الدفع</h1>
             </div>
 
-            <form className="payment-form" onSubmit={handleSubmit}>
-              <div className="payment-form-group">
-                <label>الاسم على البطاقة</label>
-                <input
-                  type="text"
-                  value={card.name}
-                  onChange={(e) => setCard({ ...card, name: e.target.value })}
-                  placeholder="مثلاً: AHMAD ALI"
-                  required
-                />
-              </div>
+            <p style={{ color: '#475569', lineHeight: 1.8, marginBottom: '1.5rem' }}>
+              سيتم تحويلك إلى بوابة الدفع الآمنة Stripe لإكمال العملية.
+              بطاقات الاختبار: <strong dir="ltr" style={{ direction: 'ltr' }}>4242 4242 4242 4242</strong>
+            </p>
 
-              <div className="payment-form-group">
-                <label>رقم البطاقة</label>
-                <input
-                  type="text"
-                  value={card.number}
-                  onChange={(e) => setCard({ ...card, number: e.target.value.replace(/\D/g, '').slice(0, 16) })}
-                  placeholder="0000 0000 0000 0000"
-                  inputMode="numeric"
-                  dir="ltr"
-                  required
-                />
-              </div>
+            {error && <div className="payment-error">{error}</div>}
 
-              <div className="payment-form-row">
-                <div className="payment-form-group">
-                  <label>تاريخ الانتهاء</label>
-                  <input
-                    type="text"
-                    value={card.expiry}
-                    onChange={(e) => setCard({ ...card, expiry: e.target.value })}
-                    placeholder="MM/YY"
-                    dir="ltr"
-                    required
-                  />
-                </div>
-                <div className="payment-form-group">
-                  <label>CVV</label>
-                  <input
-                    type="text"
-                    value={card.cvv}
-                    onChange={(e) => setCard({ ...card, cvv: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                    placeholder="123"
-                    dir="ltr"
-                    inputMode="numeric"
-                    required
-                  />
-                </div>
-              </div>
-
-              {error && <div className="payment-error">{error}</div>}
-
-              <div className="payment-actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-lg payment-cancel"
-                  onClick={() => navigate('/bookings')}
-                  disabled={submitting}
-                >
-                  إلغاء الدفع
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-lg payment-submit"
-                  disabled={submitting}
-                >
-                  <FiLock />
-                  {submitting ? 'جاري المعالجة...' : `ادفع ${total.toLocaleString('en-US')} ₪`}
-                </button>
-              </div>
-
-              <p className="payment-secure-note">
-                <FiShield />
+            <div className="payment-actions">
+              <button
+                type="button"
+                className="btn btn-secondary btn-lg payment-cancel"
+                onClick={() => navigate('/bookings')}
+                disabled={submitting}
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-lg payment-submit"
+                onClick={handleCheckout}
+                disabled={submitting}
+              >
                 <FiLock />
-                جميع المعاملات مشفّرة ومؤمّنة
-              </p>
-            </form>
+                {submitting ? 'جاري التحويل...' : `ادفع ${total.toLocaleString('en-US')} ₪ عبر Stripe`}
+              </button>
+            </div>
+
+            <p className="payment-secure-note">
+              <FiShield />
+              <FiLock />
+              مدعوم من Stripe — جميع المعاملات مشفّرة
+            </p>
           </div>
 
           <div className="payment-summary-card">
