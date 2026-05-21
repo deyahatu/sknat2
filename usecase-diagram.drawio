@@ -1,0 +1,134 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36" version="29.6.6">
+  <diagram name="Use Case Diagram" id="usecase1">
+    <mxGraphModel dx="99844" dy="66305" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="sys1" parent="1" style="shape=mxgraph.sysml.package;whiteSpace=wrap;align=center;verticalAlign=top;spacingTop=5;fontSize=16;fontStyle=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Sakanat - Student Housing Platform" vertex="1">
+          <mxGeometry height="8600" width="11940" x="-12780" y="-7230" as="geometry" />
+        </mxCell>
+        <mxCell id="guest" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=13;fontStyle=1;" value="Guest&#xa;(زائر)" vertex="1">
+          <mxGeometry height="60" width="40" x="80" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="student" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=13;fontStyle=1;" value="Student&#xa;(طالب)" vertex="1">
+          <mxGeometry height="60" width="40" x="80" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="owner" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=13;fontStyle=1;" value="Owner&#xa;(صاحب عقار)" vertex="1">
+          <mxGeometry height="60" width="40" x="1450" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="admin" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=13;fontStyle=1;" value="Admin&#xa;(مدير)" vertex="1">
+          <mxGeometry height="60" width="40" x="1450" y="750" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_register" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" value="Register&#xa;(تسجيل حساب)" vertex="1">
+          <mxGeometry height="70" width="180" x="420" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_login" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" value="Login&#xa;(تسجيل دخول)" vertex="1">
+          <mxGeometry height="70" width="180" x="420" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_forgot" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" value="Forgot Password&#xa;(نسيت كلمة السر)" vertex="1">
+          <mxGeometry height="70" width="180" x="420" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_reset" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" value="Reset Password&#xa;(إعادة تعيين كلمة السر)" vertex="1">
+          <mxGeometry height="70" width="200" x="700" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_search" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#d5e8d4;strokeColor=#82b366;" value="Search Properties&#xa;(البحث عن سكن)" vertex="1">
+          <mxGeometry height="70" width="180" x="420" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_view" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#d5e8d4;strokeColor=#82b366;" value="View Property Details&#xa;(عرض تفاصيل العقار)" vertex="1">
+          <mxGeometry height="70" width="200" x="420" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_logout" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Logout&#xa;(تسجيل خروج)" vertex="1">
+          <mxGeometry height="70" width="180" x="700" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_edit_profile" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Edit Profile&#xa;(تعديل البروفايل)" vertex="1">
+          <mxGeometry height="70" width="180" x="700" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_change_pass" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Change Password&#xa;(تغيير كلمة السر)" vertex="1">
+          <mxGeometry height="70" width="200" x="960" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_book" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#d5e8d4;strokeColor=#82b366;" value="Book Property&#xa;(حجز سكن)" vertex="1">
+          <mxGeometry height="70" width="180" x="420" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_review" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#d5e8d4;strokeColor=#82b366;" value="Write Review&#xa;(كتابة تقييم)" vertex="1">
+          <mxGeometry height="70" width="180" x="420" y="670" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_manage_prop" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#f8cecc;strokeColor=#b85450;" value="Manage Properties&#xa;(إدارة العقارات)" vertex="1">
+          <mxGeometry height="70" width="200" x="960" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_view_bookings" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#f8cecc;strokeColor=#b85450;" value="View Bookings&#xa;(عرض الحجوزات)" vertex="1">
+          <mxGeometry height="70" width="200" x="960" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_view_users" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#f8cecc;strokeColor=#b85450;" value="View All Users&#xa;(عرض المستخدمين)" vertex="1">
+          <mxGeometry height="70" width="200" x="960" y="750" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_delete_user" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#f8cecc;strokeColor=#b85450;" value="Delete User&#xa;(حذف مستخدم)" vertex="1">
+          <mxGeometry height="70" width="200" x="960" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_dashboard" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;fillColor=#f8cecc;strokeColor=#b85450;" value="Admin Dashboard&#xa;(لوحة التحكم)" vertex="1">
+          <mxGeometry height="70" width="200" x="960" y="950" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="guest" style="endArrow=none;" target="uc_register" />
+        <mxCell id="e2" edge="1" parent="1" source="guest" style="endArrow=none;" target="uc_login" />
+        <mxCell id="e3" edge="1" parent="1" source="guest" style="endArrow=none;" target="uc_forgot" />
+        <mxCell id="e4" edge="1" parent="1" source="guest" style="endArrow=none;" target="uc_search" />
+        <mxCell id="e5" edge="1" parent="1" source="guest" style="endArrow=none;" target="uc_view" />
+        <mxCell id="e6" edge="1" parent="1" source="student" style="endArrow=none;" target="uc_logout" />
+        <mxCell id="e7" edge="1" parent="1" source="student" style="endArrow=none;" target="uc_edit_profile" />
+        <mxCell id="e8" edge="1" parent="1" source="student" style="endArrow=none;" target="uc_change_pass" />
+        <mxCell id="e9" edge="1" parent="1" source="student" style="endArrow=none;" target="uc_search" />
+        <mxCell id="e10" edge="1" parent="1" source="student" style="endArrow=none;" target="uc_view" />
+        <mxCell id="e11" edge="1" parent="1" source="student" style="endArrow=none;" target="uc_book" />
+        <mxCell id="e12" edge="1" parent="1" source="student" style="endArrow=none;" target="uc_review" />
+        <mxCell id="e13" edge="1" parent="1" source="owner" style="endArrow=none;" target="uc_logout" />
+        <mxCell id="e14" edge="1" parent="1" source="owner" style="endArrow=none;" target="uc_edit_profile" />
+        <mxCell id="e15" edge="1" parent="1" source="owner" style="endArrow=none;" target="uc_change_pass" />
+        <mxCell id="e16" edge="1" parent="1" source="owner" style="endArrow=none;" target="uc_manage_prop" />
+        <mxCell id="e17" edge="1" parent="1" source="owner" style="endArrow=none;" target="uc_view_bookings" />
+        <mxCell id="e18" edge="1" parent="1" source="admin" style="endArrow=none;" target="uc_logout" />
+        <mxCell id="e19" edge="1" parent="1" source="admin" style="endArrow=none;" target="uc_view_users" />
+        <mxCell id="e20" edge="1" parent="1" source="admin" style="endArrow=none;" target="uc_delete_user" />
+        <mxCell id="e21" edge="1" parent="1" source="admin" style="endArrow=none;" target="uc_dashboard" />
+        <mxCell id="r1" edge="1" parent="1" source="uc_forgot" style="endArrow=open;dashed=1;endSize=12;" target="uc_reset">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_label" connectable="0" parent="r1" style="edgeLabel;fontSize=11;fontStyle=2;" value="&lt;&lt;include&gt;&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r2" edge="1" parent="1" source="uc_view_users" style="endArrow=open;dashed=1;endSize=12;" target="uc_delete_user">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_label" connectable="0" parent="r2" style="edgeLabel;fontSize=11;fontStyle=2;" value="&lt;&lt;extend&gt;&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r3" edge="1" parent="1" source="uc_search" style="endArrow=open;dashed=1;endSize=12;" target="uc_view">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_label" connectable="0" parent="r3" style="edgeLabel;fontSize=11;fontStyle=2;" value="&lt;&lt;extend&gt;&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r4" edge="1" parent="1" source="uc_view" style="endArrow=open;dashed=1;endSize=12;" target="uc_book">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r4_label" connectable="0" parent="r4" style="edgeLabel;fontSize=11;fontStyle=2;" value="&lt;&lt;extend&gt;&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r5" edge="1" parent="1" source="uc_book" style="endArrow=open;dashed=1;endSize=12;" target="uc_review">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r5_label" connectable="0" parent="r5" style="edgeLabel;fontSize=11;fontStyle=2;" value="&lt;&lt;extend&gt;&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

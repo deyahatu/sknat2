@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>سكنات - مستند المتطلبات</title>
+<style>
+  body {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+    line-height: 1.8;
+    color: #222;
+  }
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    border-bottom: 3px solid #2563eb;
+    padding-bottom: 15px;
+    margin-bottom: 10px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 40px;
+    font-size: 16px;
+  }
+  h2 {
+    background: #2563eb;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 20px;
+    margin-top: 40px;
+  }
+  h3 {
+    color: #2563eb;
+    font-size: 18px;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 8px;
+    margin-top: 30px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+  }
+  th {
+    background: #f1f5f9;
+    padding: 10px 15px;
+    text-align: right;
+    border: 1px solid #d1d5db;
+    font-weight: bold;
+  }
+  td {
+    padding: 10px 15px;
+    border: 1px solid #d1d5db;
+  }
+  tr:nth-child(even) {
+    background: #f9fafb;
+  }
+  .section-desc {
+    color: #555;
+    margin: 10px 0 20px 0;
+  }
+  .project-info {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+  }
+  .project-info p {
+    margin: 8px 0;
+  }
+  .actors-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+    margin: 20px 0;
+  }
+  .actor-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+  }
+  .actor-card h4 {
+    color: #2563eb;
+    margin: 0 0 8px 0;
+  }
+  .actor-card p {
+    margin: 0;
+    font-size: 14px;
+    color: #555;
+  }
+</style>
+</head>
+<body>
+
+<h1>منصة سكنات - مستند المتطلبات</h1>
+<p class="subtitle">Software Requirements Specification (SRS)</p>
+
+<!-- ============================================ -->
+<h2>1. وصف المشروع</h2>
+<div class="project-info">
+  <p><strong>اسم المشروع:</strong> سكنات (Sakanat)</p>
+  <p><strong>الفكرة:</strong> منصة إلكترونية تساعد طلاب الجامعات الفلسطينية في البحث عن سكن مناسب بالقرب من جامعاتهم. تربط بين الطلاب الباحثين عن سكن وأصحاب العقارات، وتعمل بنظام الضمان المالي حيث يدفع الطالب للمنصة والمنصة تحول المبلغ للمالك بناءً على طلب سحب.</p>
+  <p><strong>التقنيات:</strong> React + Vite (واجهة أمامية) | Node.js + Express (خادم خلفي) | PostgreSQL + Prisma (قاعدة بيانات)</p>
+</div>
+
+<!-- ============================================ -->
+<h2>2. أنواع المستخدمين (Actors)</h2>
+<div class="actors-grid">
+  <div class="actor-card">
+    <h4>سوبر أدمن (Admin)</h4>
+    <p>يدير كامل المنصة - المستخدمين والعقارات والحجوزات وطلبات السحب</p>
+  </div>
+  <div class="actor-card">
+    <h4>مالك عقار (Owner)</h4>
+    <p>يضيف عقاراته على المنصة، يدير الحجوزات الواردة، يطلب سحب أرباحه</p>
+  </div>
+  <div class="actor-card">
+    <h4>طالب (Student)</h4>
+    <p>يبحث عن سكن، يحجز، يدفع، يكتب تقييمات</p>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<h2>3. المتطلبات الوظيفية (Functional Requirements)</h2>
+
+<h3>FR1 - إدارة الحسابات</h3>
+<table>
+  <tr><th>الرقم</th><th>المتطلب</th></tr>
+  <tr><td>FR1.1</td><td>تسجيل حساب جديد (طالب أو مالك عقار)</td></tr>
+  <tr><td>FR1.2</td><td>تسجيل دخول بالبريد الإلكتروني وكلمة السر</td></tr>
+  <tr><td>FR1.3</td><td>تسجيل خروج</td></tr>
+  <tr><td>FR1.4</td><td>استعادة كلمة السر عبر البريد الإلكتروني</td></tr>
+  <tr><td>FR1.5</td><td>تعديل الملف الشخصي (الاسم، الهاتف، الصورة الشخصية)</td></tr>
+  <tr><td>FR1.6</td><td>تغيير كلمة السر</td></tr>
+</table>
+
+<h3>FR2 - إدارة العقارات</h3>
+<table>
+  <tr><th>الرقم</th><th>المتطلب</th></tr>
+  <tr><td>FR2.1</td><td>المالك يضيف عقار جديد (العنوان، الوصف، السعر، الصور، عدد الغرف، المساحة)</td></tr>
+  <tr><td>FR2.2</td><td>المالك يعدل بيانات عقاراته</td></tr>
+  <tr><td>FR2.3</td><td>المالك يحذف عقاراته</td></tr>
+  <tr><td>FR2.4</td><td>عرض قائمة العقارات المتاحة</td></tr>
+  <tr><td>FR2.5</td><td>عرض تفاصيل عقار معين</td></tr>
+  <tr><td>FR2.6</td><td>البحث والفلترة (بالموقع، السعر، عدد الغرف)</td></tr>
+</table>
+
+<h3>FR3 - نظام الحجز</h3>
+<table>
+  <tr><th>الرقم</th><th>المتطلب</th></tr>
+  <tr><td>FR3.1</td><td>الطالب يطلب حجز عقار (تاريخ البداية والنهاية)</td></tr>
+  <tr><td>FR3.2</td><td>المالك يقبل أو يرفض طلب الحجز</td></tr>
+  <tr><td>FR3.3</td><td>الطالب يلغي الحجز</td></tr>
+  <tr><td>FR3.4</td><td>عرض حجوزات الطالب</td></tr>
+  <tr><td>FR3.5</td><td>عرض الحجوزات الواردة للمالك</td></tr>
+</table>
+
+<h3>FR4 - التقييمات</h3>
+<table>
+  <tr><th>الرقم</th><th>المتطلب</th></tr>
+  <tr><td>FR4.1</td><td>الطالب يكتب تقييم ويعطي نجوم (1-5) للعقار</td></tr>
+  <tr><td>FR4.2</td><td>عرض تقييمات عقار معين</td></tr>
+  <tr><td>FR4.3</td><td>حذف التقييم (بواسطة صاحبه أو الأدمن)</td></tr>
+  <tr><td>FR4.4</td><td>الطالب يقيّم نفس العقار مرة واحدة فقط</td></tr>
+</table>
+
+<h3>FR5 - نظام الدفع والضمان</h3>
+<table>
+  <tr><th>الرقم</th><th>المتطلب</th></tr>
+  <tr><td>FR5.1</td><td>الطالب يدفع مبلغ الحجز للمنصة (نظام ضمان)</td></tr>
+  <tr><td>FR5.2</td><td>المنصة تحتفظ بالمبلغ كضمان لحين قبول الحجز</td></tr>
+  <tr><td>FR5.3</td><td>المبلغ يُضاف لمحفظة المالك بعد قبول الحجز</td></tr>
+  <tr><td>FR5.4</td><td>استرجاع المبلغ للطالب عند إلغاء الحجز</td></tr>
+</table>
+
+<h3>FR6 - المحفظة وطلبات السحب</h3>
+<table>
+  <tr><th>الرقم</th><th>المتطلب</th></tr>
+  <tr><td>FR6.1</td><td>كل مالك عقار لديه محفظة إلكترونية برصيد</td></tr>
+  <tr><td>FR6.2</td><td>المالك يقدم طلب سحب للمبلغ المتوفر في محفظته</td></tr>
+  <tr><td>FR6.3</td><td>الأدمن يوافق أو يرفض طلب السحب</td></tr>
+  <tr><td>FR6.4</td><td>عرض سجل طلبات السحب للمالك</td></tr>
+</table>
+
+<h3>FR7 - لوحة تحكم السوبر أدمن</h3>
+<table>
+  <tr><th>الرقم</th><th>المتطلب</th></tr>
+  <tr><td>FR7.1</td><td>عرض جميع المستخدمين وإدارتهم</td></tr>
+  <tr><td>FR7.2</td><td>حذف مستخدمين مخالفين</td></tr>
+  <tr><td>FR7.3</td><td>عرض جميع العقارات</td></tr>
+  <tr><td>FR7.4</td><td>حذف عقارات مخالفة</td></tr>
+  <tr><td>FR7.5</td><td>إدارة طلبات السحب (قبول / رفض)</td></tr>
+  <tr><td>FR7.6</td><td>عرض إحصائيات المنصة (عدد المستخدمين، العقارات، الحجوزات)</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2>4. المتطلبات غير الوظيفية (Non-Functional Requirements)</h2>
+<table>
+  <tr><th>الرقم</th><th>الفئة</th><th>المتطلب</th></tr>
+  <tr><td>NFR1</td><td>الأمان</td><td>تشفير كلمات السر باستخدام bcrypt، وحفظ التوكنات في httpOnly cookies للحماية من XSS</td></tr>
+  <tr><td>NFR2</td><td>الأمان</td><td>نظام صلاحيات حسب الدور - كل مستخدم يصل فقط للوظائف المسموحة له</td></tr>
+  <tr><td>NFR3</td><td>الأداء</td><td>تحميل الصفحات خلال أقل من 3 ثوانٍ</td></tr>
+  <tr><td>NFR4</td><td>سهولة الاستخدام</td><td>واجهة عربية (RTL) بسيطة وسهلة التصفح</td></tr>
+  <tr><td>NFR5</td><td>التوافق</td><td>يعمل على المتصفحات الحديثة (كروم، فايرفوكس، سفاري) وعلى الأجهزة المحمولة</td></tr>
+  <tr><td>NFR6</td><td>الموثوقية</td><td>نظام الضمان المالي يحمي حقوق الطالب والمالك</td></tr>
+  <tr><td>NFR7</td><td>قابلية التوسع</td><td>بنية قابلة لإضافة ميزات مستقبلية (إشعارات، دردشة، خريطة)</td></tr>
+  <tr><td>NFR8</td><td>التوفر</td><td>النظام متاح للاستخدام على مدار الساعة 24/7</td></tr>
+  <tr><td>NFR9</td><td>الخصوصية</td><td>بيانات المستخدمين محمية ولا تُشارك مع أطراف خارجية</td></tr>
+</table>
+
+</body>
+</html>
