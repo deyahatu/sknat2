@@ -38,3 +38,8 @@ dist-ssr
 sknat2/
 *.crswap
 
+# Root-level screenshots (temp / dev artifacts)
+/*.png
+/*.jpg
+/*.jpeg
+
