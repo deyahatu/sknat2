@@ -19,16 +19,16 @@ export const TOOL_DEFS = [
   {
     name: 'search_properties',
     description:
-      "Search Sakanat student housing listings by filters. Use when user asks about available properties, prices, or locations. Returns up to 10 matching properties.",
+      "Search Sakanat (Nablus / An-Najah University) student housing listings. All listings are in Nablus by definition — DO NOT pass 'نابلس' or 'Nablus' as the neighborhood filter. The neighborhood field holds Nablus sub-areas like رفيديا (Rafidia), المساكن, خلة العامود, etc. Use 'campus' to filter by university campus (OLD = الحرم القديم, NEW = الحرم الجديد). Use propertyKind for apartment vs studio. Returns up to 10 listings.",
     access: 'public',
     input_schema: {
       type: 'object',
       properties: {
-        city: { type: 'string', description: 'City name (Arabic or English)' },
-        maxPrice: { type: 'number', description: 'Maximum monthly price in SAR' },
+        neighborhood: { type: 'string', description: 'Nablus neighborhood name (e.g., رفيديا, المساكن). Omit unless the user names a specific area.' },
+        maxPrice: { type: 'number', description: 'Maximum monthly price per person in ₪ (ILS shekels)' },
         propertyKind: { type: 'string', enum: ['APARTMENT', 'STUDIO'] },
-        targetGender: { type: 'string', enum: ['MALE', 'FEMALE'] },
-        nearCampus: { type: 'string', description: 'University/campus name to filter by proximity' },
+        targetGender: { type: 'string', enum: ['MALE', 'FEMALE'], description: 'Target audience: MALE = ذكور, FEMALE = إناث' },
+        campus: { type: 'string', enum: ['OLD', 'NEW'], description: 'An-Najah campus: OLD = الحرم القديم, NEW = الحرم الجديد' },
         limit: { type: 'integer', minimum: 1, maximum: 10, default: 5 },
       },
     },
@@ -110,10 +110,16 @@ const EXECUTORS = {
       disabledByAdmin: false,
       deletedAt: null,
     };
-    if (args.city) where.city = { contains: args.city, mode: 'insensitive' };
+    // Guard against the model passing "Nablus" / "نابلس" as a neighborhood — that's the
+    // city, not a sub-area, and would always return zero hits.
+    const nablusAliases = ['nablus', 'النابلس', 'نابلس'];
+    const neighborhood = args.neighborhood?.trim();
+    if (neighborhood && !nablusAliases.includes(neighborhood.toLowerCase())) {
+      where.city = { contains: neighborhood, mode: 'insensitive' };
+    }
     if (args.propertyKind) where.kind = args.propertyKind;
     if (args.targetGender) where.targetGender = args.targetGender;
-    if (args.nearCampus) where.campus = { contains: args.nearCampus, mode: 'insensitive' };
+    if (args.campus === 'OLD' || args.campus === 'NEW') where.campus = args.campus;
 
     const limit = Math.min(Math.max(args.limit || 5, 1), 10);
     const properties = await prisma.property.findMany({

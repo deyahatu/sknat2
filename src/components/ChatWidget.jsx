@@ -40,7 +40,9 @@ function Message({ msg }) {
               <div className="cw-card-body">
                 <div className="cw-card-title" dir="auto">{c.title}</div>
                 <div className="cw-card-meta" dir="auto">
-                  {c.city}{c.campus ? ` · ${c.campus}` : ''}
+                  {c.city}
+                  {c.campus === 'OLD' && ' · الحرم القديم'}
+                  {c.campus === 'NEW' && ' · الحرم الجديد'}
                 </div>
                 {c.minPrice != null && (
                   <div className="cw-card-price">{c.minPrice} ₪ / شهر</div>
