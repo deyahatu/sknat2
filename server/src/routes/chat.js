@@ -1,22 +1,35 @@
 import { Router } from 'express';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import prisma from '../utils/prisma.js';
 import { verifyToken } from '../utils/jwt.js';
 import { filterToolsByAccess, executeTool } from '../utils/chatTools.js';
 
 const router = Router();
 
-const MODEL = process.env.CHATBOT_MODEL || 'claude-haiku-4-5-20251001';
+const PROVIDER = process.env.CHATBOT_PROVIDER || 'deepseek';
+const MODEL = process.env.CHATBOT_MODEL || 'deepseek-chat';
 const MAX_TOKENS = Number(process.env.CHATBOT_MAX_TOKENS || 1024);
 const MAX_TOOL_HOPS = 5;
 const GUEST_HISTORY_CAP = 20;
 
-const anthropic = process.env.ANTHROPIC_API_KEY
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const PROVIDER_CONFIG = {
+  deepseek: {
+    baseURL: 'https://api.deepseek.com/v1',
+    apiKeyEnv: 'DEEPSEEK_API_KEY',
+  },
+  openai: {
+    baseURL: 'https://api.openai.com/v1',
+    apiKeyEnv: 'OPENAI_API_KEY',
+  },
+};
+
+const cfg = PROVIDER_CONFIG[PROVIDER] || PROVIDER_CONFIG.deepseek;
+const apiKey = process.env[cfg.apiKeyEnv];
+const client = apiKey
+  ? new OpenAI({ apiKey, baseURL: cfg.baseURL })
   : null;
 
-// Soft auth: resolve user if a JWT cookie is present, otherwise continue as guest.
 async function softAuth(req, _res, next) {
   try {
     const token =
@@ -33,7 +46,7 @@ async function softAuth(req, _res, next) {
       }
     }
   } catch {
-    // ignore — treat as guest
+    // treat as guest
   }
   next();
 }
@@ -91,8 +104,20 @@ Match the user's language (Arabic ⇄ English). Be concise. Use tool calls inste
 ${userBlock}`;
 }
 
+// Convert internal Anthropic-style tool defs to OpenAI function-calling format.
+function toOpenAITools(tools) {
+  return tools.map((t) => ({
+    type: 'function',
+    function: {
+      name: t.name,
+      description: t.description,
+      parameters: t.input_schema || { type: 'object', properties: {} },
+    },
+  }));
+}
+
 async function runConversation({ user, history, userMessage }) {
-  if (!anthropic) {
+  if (!client) {
     const err = new Error('AI_UNAVAILABLE');
     err.status = 503;
     throw err;
@@ -104,9 +129,11 @@ async function runConversation({ user, history, userMessage }) {
   });
   const system = buildSystemPrompt({ user });
 
-  // Build messages array from history + new user input.
-  // History items are { role: 'user'|'assistant', content: string | content_blocks }
-  const messages = [...history, { role: 'user', content: userMessage }];
+  const messages = [
+    { role: 'system', content: system },
+    ...history,
+    { role: 'user', content: userMessage },
+  ];
 
   const toolCallTrace = [];
   let totalTokensIn = 0;
@@ -114,62 +141,58 @@ async function runConversation({ user, history, userMessage }) {
   let finalText = '';
 
   for (let hop = 0; hop < MAX_TOOL_HOPS; hop++) {
-    const response = await anthropic.messages.create({
+    const response = await client.chat.completions.create({
       model: MODEL,
       max_tokens: MAX_TOKENS,
-      system,
-      tools,
       messages,
+      tools: toOpenAITools(tools),
     });
 
-    totalTokensIn += response.usage?.input_tokens || 0;
-    totalTokensOut += response.usage?.output_tokens || 0;
+    totalTokensIn += response.usage?.prompt_tokens || 0;
+    totalTokensOut += response.usage?.completion_tokens || 0;
 
-    // Append assistant response to history.
-    messages.push({ role: 'assistant', content: response.content });
+    const choice = response.choices?.[0];
+    const msg = choice?.message;
+    if (!msg) break;
 
-    if (response.stop_reason !== 'tool_use') {
-      finalText = response.content
-        .filter((c) => c.type === 'text')
-        .map((c) => c.text)
-        .join('\n')
-        .trim();
+    // Push assistant message as-is so tool_call_ids stay aligned for follow-ups.
+    messages.push(msg);
+
+    const toolCalls = msg.tool_calls;
+    if (!toolCalls || toolCalls.length === 0) {
+      finalText = (msg.content || '').trim();
       break;
     }
 
-    // Execute every tool_use block in this turn.
-    const toolUses = response.content.filter((c) => c.type === 'tool_use');
-    const toolResultBlocks = [];
-
-    for (const tu of toolUses) {
+    for (const tc of toolCalls) {
+      const name = tc.function?.name;
+      let args = {};
+      try {
+        args = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {};
+      } catch {
+        args = {};
+      }
       try {
         const result = await executeTool(
-          tu.name,
+          name,
           { userId: user?.id, userRole: user?.role },
-          tu.input || {},
+          args,
         );
-        toolCallTrace.push({ name: tu.name, input: tu.input, output: result });
-        toolResultBlocks.push({
-          type: 'tool_result',
-          tool_use_id: tu.id,
+        toolCallTrace.push({ name, input: args, output: result });
+        messages.push({
+          role: 'tool',
+          tool_call_id: tc.id,
           content: JSON.stringify(result),
         });
       } catch (e) {
-        toolCallTrace.push({
-          name: tu.name,
-          input: tu.input,
-          output: { error: e.message },
-        });
-        toolResultBlocks.push({
-          type: 'tool_result',
-          tool_use_id: tu.id,
+        toolCallTrace.push({ name, input: args, output: { error: e.message } });
+        messages.push({
+          role: 'tool',
+          tool_call_id: tc.id,
           content: JSON.stringify({ error: e.message }),
-          is_error: true,
         });
       }
     }
-
-    messages.push({ role: 'user', content: toolResultBlocks });
   }
 
   if (!finalText) {
@@ -202,7 +225,6 @@ router.post(
           .json({ error: 'الرسالة طويلة جداً. الحد الأقصى 2000 حرف.' });
       }
 
-      // Resolve / create session for authed users.
       let session = null;
       let history = [];
       if (req.user) {
@@ -227,7 +249,6 @@ router.post(
           });
         }
 
-        // Reconstruct Anthropic-compatible history from stored rows.
         history = session.messages
           .filter((m) => m.role === 'user' || m.role === 'assistant')
           .map((m) => ({
@@ -251,7 +272,6 @@ router.post(
         userMessage: content,
       });
 
-      // Persist for authed users only.
       if (session) {
         await prisma.chatMessage.create({
           data: { sessionId: session.id, role: 'user', content },
@@ -299,7 +319,6 @@ router.post(
   },
 );
 
-// GET /api/chat/sessions — authed list
 router.get('/sessions', softAuth, async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'غير مصرح' });
   try {
@@ -315,7 +334,6 @@ router.get('/sessions', softAuth, async (req, res, next) => {
   }
 });
 
-// GET /api/chat/sessions/:id — full history
 router.get('/sessions/:id', softAuth, async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'غير مصرح' });
   try {
@@ -340,7 +358,6 @@ router.get('/sessions/:id', softAuth, async (req, res, next) => {
   }
 });
 
-// DELETE /api/chat/sessions/:id
 router.delete('/sessions/:id', softAuth, async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'غير مصرح' });
   try {
