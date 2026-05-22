@@ -198,6 +198,12 @@ export const api = {
       return data;
     },
   },
+  chat: {
+    sendMessage: (body) => request('/chat/message', { method: 'POST', body: JSON.stringify(body) }),
+    listSessions: () => request('/chat/sessions'),
+    getSession: (id) => request(`/chat/sessions/${id}`),
+    deleteSession: (id) => request(`/chat/sessions/${id}`, { method: 'DELETE' }),
+  },
   admin: {
     stats: () => request('/admin/stats'),
     monthlyStats: () => request('/admin/stats/monthly'),

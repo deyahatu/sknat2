@@ -1,0 +1,34 @@
+{
+  "refund": {
+    "ar": "سياسة الاسترداد: تقدر تطلب استرداد المبلغ خلال 48 ساعة من الدفع إذا ما تم تأكيد الحجز من المالك. بعد التأكيد، الاسترداد يخضع لسياسة المالك. الإدارة تراجع الطلب خلال 3-5 أيام عمل.",
+    "en": "Refund policy: You can request a refund within 48 hours of payment if the booking hasn't been confirmed by the owner. After confirmation, refunds follow the owner's policy. Admin reviews within 3-5 business days."
+  },
+  "payment": {
+    "ar": "الدفع: ندعم بطاقات الائتمان/الخصم عبر Stripe. الدفع آمن ومشفر. تستلم فاتورة على بريدك بعد الدفع مباشرة. لا نخزن بيانات بطاقتك على خوادمنا.",
+    "en": "Payment: We accept credit/debit cards via Stripe. Payments are secure and encrypted. You receive an emailed invoice immediately. We do not store card data on our servers."
+  },
+  "withdrawal": {
+    "ar": "سحب الأرباح (للملاك): تقدم طلب سحب من المحفظة، يتم تحويل المبلغ خلال 3-7 أيام عمل لحسابك البنكي المسجل. الحد الأدنى للسحب: 100 ريال.",
+    "en": "Withdrawals (owners): Submit a withdrawal request from your wallet; funds transfer to your registered bank account within 3-7 business days. Minimum withdrawal: 100 SAR."
+  },
+  "booking_process": {
+    "ar": "خطوات الحجز: 1) ابحث عن العقار 2) اضغط 'احجز' وحدد التواريخ والغرفة 3) أكمل الدفع عبر Stripe 4) انتظر تأكيد المالك (عادة خلال 24 ساعة) 5) تستلم تفاصيل الإقامة على بريدك.",
+    "en": "Booking steps: 1) Search for a property 2) Click 'Book' and select dates/room 3) Pay via Stripe 4) Wait for owner confirmation (usually within 24h) 5) Receive stay details by email."
+  },
+  "property_listing": {
+    "ar": "إضافة عقار (للملاك): سجل كمالك، روح للوحة التحكم > إضافة عقار، عبّي البيانات والصور (حد أقصى 10)، حدد الأسعار والغرف، انشر. الإدارة قد تراجع الإعلان قبل ظهوره.",
+    "en": "Listing a property (owners): Register as owner, go to dashboard > add property, fill details and upload up to 10 images, set prices and rooms, publish. Admin may review before listing goes live."
+  },
+  "account": {
+    "ar": "إدارة الحساب: تقدر تعدل بياناتك من 'الإعدادات'، تغير كلمة المرور، تضيف صورة شخصية، أو تطلب حذف الحساب (فترة سماح 14 يوم).",
+    "en": "Account management: Edit your profile from 'Settings', change password, upload avatar, or request account deletion (14-day grace period)."
+  },
+  "support": {
+    "ar": "الدعم الفني: لو في مشكلة، استخدم نموذج 'الشكاوى' داخل الموقع، أو راسلنا عبر البريد المدعوم في صفحة 'تواصل معنا'. الرد عادة خلال 24 ساعة.",
+    "en": "Support: For issues, use the 'Complaints' form in the site or email us via the Contact page. Response usually within 24 hours."
+  },
+  "fees": {
+    "ar": "الرسوم: المنصة تأخذ نسبة 5% من قيمة الحجز كرسوم خدمة. هذه النسبة محتسبة ضمن السعر النهائي الظاهر للطالب، فلا توجد رسوم خفية.",
+    "en": "Fees: The platform charges 5% of the booking value as a service fee. This is included in the final price shown to students — no hidden fees."
+  }
+}

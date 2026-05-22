@@ -25,6 +25,7 @@ import notificationRoutes from './routes/notifications.js';
 import reportRoutes from './routes/reports.js';
 import complaintRoutes from './routes/complaints.js';
 import blockAppealRoutes from './routes/blockAppeals.js';
+import chatRoutes from './routes/chat.js';
 import { startRenewalScheduler } from './utils/renewalScheduler.js';
 import { startAccountDeletionScheduler } from './utils/accountDeletionScheduler.js';
 
@@ -69,6 +70,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/block-appeals', blockAppealRoutes);
+app.use('/api/chat', chatRoutes);
 
 // File upload endpoint
 import { authenticate } from './middleware/auth.js';

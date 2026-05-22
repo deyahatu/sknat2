@@ -40,6 +40,7 @@ import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import NotFound from './pages/NotFound';
 import ScrollToTop from './components/shared/ScrollToTop';
+import ChatWidget from './components/ChatWidget';
 
 function GuestRoute({ children }) {
   const { user, loading } = useAuth();
@@ -141,6 +142,7 @@ function App() {
           <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <ChatWidget />
           </AuthProvider>
         </Router>
       </ToastProvider>
