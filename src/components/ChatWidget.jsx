@@ -10,7 +10,7 @@ const GUEST_CAP = 20;
 
 const SUGGESTIONS = [
   'كيف أحجز عقار؟',
-  'ابغى شقة في الرياض',
+  'بدي شقة قريبة من جامعة النجاح',
   'سياسة الاسترداد؟',
   'كيف أسحب أرباحي؟',
 ];
@@ -43,7 +43,7 @@ function Message({ msg }) {
                   {c.city}{c.campus ? ` · ${c.campus}` : ''}
                 </div>
                 {c.minPrice != null && (
-                  <div className="cw-card-price">{c.minPrice} ر.س / شهر</div>
+                  <div className="cw-card-price">{c.minPrice} ₪ / شهر</div>
                 )}
               </div>
             </a>

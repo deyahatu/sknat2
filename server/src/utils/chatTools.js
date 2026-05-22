@@ -68,7 +68,7 @@ export const TOOL_DEFS = [
   {
     name: 'get_faq',
     description:
-      "Look up Sakanat FAQ or policy text by topic key. Topics: refund, payment, withdrawal, booking_process, property_listing, account, support, fees.",
+      "Look up Sakanat FAQ or policy text by topic key. Topics: refund, payment, withdrawal, booking_process, property_listing, account, support, fees, about.",
     access: 'public',
     input_schema: {
       type: 'object',
@@ -84,6 +84,7 @@ export const TOOL_DEFS = [
             'account',
             'support',
             'fees',
+            'about',
           ],
         },
       },
@@ -130,7 +131,7 @@ const EXECUTORS = {
         studioPrice: true,
         images: true,
         roomVariants: {
-          select: { kind: true, price: true, availableCount: true },
+          select: { kind: true, fullPrice: true, halfPrice: true, isOccupied: true },
         },
       },
     });
@@ -140,7 +141,9 @@ const EXECUTORS = {
         const prices = [];
         if (p.studioPrice) prices.push(Number(p.studioPrice));
         for (const v of p.roomVariants || []) {
-          if (v.availableCount > 0) prices.push(Number(v.price));
+          if (v.isOccupied) continue;
+          const perPerson = v.kind === 'DOUBLE' && v.halfPrice != null ? v.halfPrice : v.fullPrice;
+          if (perPerson != null) prices.push(Number(perPerson));
         }
         const minPrice = prices.length ? Math.min(...prices) : null;
         return { ...p, minPrice };

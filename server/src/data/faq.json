@@ -8,8 +8,8 @@
     "en": "Payment: We accept credit/debit cards via Stripe. Payments are secure and encrypted. You receive an emailed invoice immediately. We do not store card data on our servers."
   },
   "withdrawal": {
-    "ar": "سحب الأرباح (للملاك): تقدم طلب سحب من المحفظة، يتم تحويل المبلغ خلال 3-7 أيام عمل لحسابك البنكي المسجل. الحد الأدنى للسحب: 100 ريال.",
-    "en": "Withdrawals (owners): Submit a withdrawal request from your wallet; funds transfer to your registered bank account within 3-7 business days. Minimum withdrawal: 100 SAR."
+    "ar": "سحب الأرباح (للملاك): تقدم طلب سحب من المحفظة، يتم تحويل المبلغ خلال 3-7 أيام عمل لحسابك البنكي المسجل. الحد الأدنى للسحب 100 شيكل.",
+    "en": "Withdrawals (owners): Submit a withdrawal request from your wallet; funds transfer to your registered bank account within 3-7 business days. Minimum withdrawal: 100 ILS."
   },
   "booking_process": {
     "ar": "خطوات الحجز: 1) ابحث عن العقار 2) اضغط 'احجز' وحدد التواريخ والغرفة 3) أكمل الدفع عبر Stripe 4) انتظر تأكيد المالك (عادة خلال 24 ساعة) 5) تستلم تفاصيل الإقامة على بريدك.",
@@ -30,5 +30,9 @@
   "fees": {
     "ar": "الرسوم: المنصة تأخذ نسبة 5% من قيمة الحجز كرسوم خدمة. هذه النسبة محتسبة ضمن السعر النهائي الظاهر للطالب، فلا توجد رسوم خفية.",
     "en": "Fees: The platform charges 5% of the booking value as a service fee. This is included in the final price shown to students — no hidden fees."
+  },
+  "about": {
+    "ar": "منصة سكنات: منصة فلسطينية مخصصة لطلاب جامعة النجاح الوطنية في نابلس. تربط طلاب الجامعة بأصحاب العقارات في نابلس بالقرب من الحرم الجامعي. العملة: الشيكل (₪). حالياً نخدم نابلس فقط.",
+    "en": "About Sakanat: A Palestinian platform exclusively for An-Najah National University students in Nablus. Connects students with property owners in Nablus near the university. Currency: Israeli Shekel (₪). Currently serves Nablus only."
   }
 }
