@@ -278,10 +278,20 @@ router.post(
         usage: result.usage,
       });
     } catch (err) {
-      if (err.message === 'AI_UNAVAILABLE') {
+      if (err.message === 'AI_UNAVAILABLE' || err?.status === 401 || err?.status === 402) {
         return res.status(503).json({
-          error:
-            'خدمة المساعد غير متاحة حالياً. حاول لاحقاً.',
+          error: 'خدمة المساعد غير متاحة حالياً. حاول لاحقاً.',
+        });
+      }
+      if (err?.status === 429) {
+        return res.status(429).json({
+          error: 'الخدمة مزدحمة. حاول مجدداً بعد لحظات.',
+        });
+      }
+      if (err?.status >= 400 && err?.status < 500) {
+        console.error('[chat] upstream error:', err.message);
+        return res.status(502).json({
+          error: 'تعذّر معالجة طلبك حالياً.',
         });
       }
       next(err);
