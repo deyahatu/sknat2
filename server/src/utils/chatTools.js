@@ -172,7 +172,7 @@ const EXECUTORS = {
         targetGender: p.targetGender,
         minPrice: p.minPrice,
         image: p.images?.[0] || null,
-        url: `/properties/${p.id}`,
+        url: `/property/${p.id}`,
       })),
     };
   },
@@ -206,7 +206,7 @@ const EXECUTORS = {
         endDate: b.endDate,
         monthlyPrice: b.monthlyPrice != null ? Number(b.monthlyPrice) : null,
         property: b.property,
-        url: `/bookings/${b.id}`,
+        url: `/bookings`,
       })),
     };
   },
@@ -241,7 +241,7 @@ const EXECUTORS = {
             : 'unavailable',
         bookingsCount: p._count.bookings,
         reviewsCount: p._count.reviews,
-        url: `/properties/${p.id}`,
+        url: `/property/${p.id}`,
       })),
     };
   },

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { FiMessageCircle, FiX, FiSend, FiRefreshCw } from 'react-icons/fi';
+import { FiMessageCircle, FiX, FiSend, FiRefreshCw, FiHome } from 'react-icons/fi';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import './ChatWidget.css';
@@ -22,21 +22,39 @@ function extractPropertyCards(toolCalls) {
   return last.output?.properties || [];
 }
 
+function stripMarkdown(text) {
+  if (!text) return '';
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/__(.+?)__/g, '$1')
+    .replace(/`([^`]+?)`/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^---+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n');
+}
+
 function Message({ msg }) {
   if (msg.role === 'error') {
     return <div className="cw-msg cw-msg-error">{msg.content}</div>;
   }
   const cls = msg.role === 'user' ? 'cw-msg-user' : 'cw-msg-assistant';
+  const content = msg.role === 'assistant' ? stripMarkdown(msg.content) : msg.content;
   return (
     <div>
       <div className={`cw-msg ${cls}`} dir="auto">
-        {msg.content}
+        {content}
       </div>
       {msg.cards && msg.cards.length > 0 && (
         <div className="cw-cards">
           {msg.cards.map((c) => (
             <a key={c.id} href={c.url} className="cw-card">
-              {c.image && <img src={c.image} alt={c.title} className="cw-card-img" />}
+              {c.image ? (
+                <img src={c.image} alt={c.title} className="cw-card-img" />
+              ) : (
+                <div className="cw-card-img cw-card-img-fallback"><FiHome /></div>
+              )}
               <div className="cw-card-body">
                 <div className="cw-card-title" dir="auto">{c.title}</div>
                 <div className="cw-card-meta" dir="auto">

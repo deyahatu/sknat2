@@ -20,6 +20,10 @@
 .cw-fab:hover { transform: scale(1.06); }
 .cw-fab[data-open="true"] { background: #4f46e5; }
 
+@media (max-width: 480px) {
+  .cw-fab[data-open="true"] { display: none; }
+}
+
 .cw-panel {
   position: fixed;
   bottom: 96px;
@@ -212,6 +216,14 @@
   background: #e5e7eb;
   object-fit: cover;
   flex-shrink: 0;
+}
+.cw-card-img-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #eef2ff, #ede9fe);
+  color: #6366f1;
+  font-size: 22px;
 }
 .cw-card-body { flex: 1; min-width: 0; }
 .cw-card-title { font-weight: 600; font-size: 13px; color: #111827; margin-bottom: 2px; }
