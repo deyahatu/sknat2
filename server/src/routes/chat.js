@@ -99,16 +99,16 @@ const guestLimiter = guestMessageLimiter();
 // raises the bar so a casual user can't trivially escape the scope by typing
 // "ignore previous instructions". Real defense is the limited tool surface.
 const INJECTION_PATTERNS = [
-  /ignore (all |previous |above )?(instructions|rules|prompt)/i,
-  /disregard (all |previous |above )?(instructions|rules|prompt)/i,
-  /forget (all |previous |above )?(instructions|rules|prompt)/i,
-  /system prompt/i,
-  /you are now/i,
-  /pretend (to be|you are)/i,
+  /\b(ignore|disregard|forget)\b[\s\S]{0,40}\b(instructions?|rules?|prompt|system)\b/i,
+  /system\s+prompt/i,
+  /you\s+are\s+now\b/i,
+  /act\s+as\s+(?:a|an)\s+/i,
+  /pretend\s+(?:to\s+be|you\s+are)\b/i,
   /\bjailbreak\b/i,
-  /تجاهل (التعليمات|السابق|كل)/,
-  /انس (التعليمات|كل)/,
-  /(تظاهر|تخيل) (انك|أنك)/,
+  /\bDAN\b.*mode/i,
+  /تجاهل[\s\S]{0,30}(التعليمات|التوجيهات|السابق|الأوامر)/,
+  /انس[\s\S]{0,30}(التعليمات|التوجيهات|السابق|كل\s+شي)/,
+  /(تظاهر|تخيل)[\s\S]{0,10}(انك|أنك)/,
 ];
 
 function looksLikeInjection(text) {

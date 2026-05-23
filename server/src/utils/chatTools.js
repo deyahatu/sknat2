@@ -263,7 +263,7 @@ const EXECUTORS = {
 
     return {
       balance: wallet ? Number(wallet.balance) : 0,
-      currency: 'SAR',
+      currency: 'ILS',
       walletApplies: ctx.userRole === 'OWNER',
       recentPayments: payments.map((p) => ({
         id: p.id,
