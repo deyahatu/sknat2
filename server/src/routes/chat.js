@@ -4,6 +4,9 @@ import OpenAI from 'openai';
 import prisma from '../utils/prisma.js';
 import { verifyToken } from '../utils/jwt.js';
 import { filterToolsByAccess, executeTool } from '../utils/chatTools.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 
 const router = Router();
 
@@ -12,6 +15,65 @@ const MODEL = process.env.CHATBOT_MODEL || 'deepseek-chat';
 const MAX_TOKENS = Number(process.env.CHATBOT_MAX_TOKENS || 1024);
 const MAX_TOOL_HOPS = 5;
 const GUEST_HISTORY_CAP = 20;
+
+// Tools whose output renders as cards in the widget — so we trim duplicate
+// enumeration from the assistant's plain-text reply.
+const CARD_RENDERED_TOOLS = new Set(['search_properties', 'get_my_properties']);
+
+// FAQ fast-path: short, clearly-FAQ messages skip the LLM and return the
+// canned topic text directly. Cuts latency from ~6s → ~50ms and saves the
+// API call. Patterns intentionally strict — anything ambiguous still goes
+// through the LLM so it can use tools or judge context.
+const __fileDir = dirname(fileURLToPath(import.meta.url));
+const FAQ_DATA = JSON.parse(readFileSync(resolve(__fileDir, '../data/faq.json'), 'utf8'));
+
+const FAQ_INTENT_RULES = [
+  { topic: 'refund',           re: /(الاسترداد|استرداد|ارجاع|إرجاع|refund)/i },
+  { topic: 'fees',             re: /(الرسوم|عمولة|fees|كم نسبة)/i },
+  { topic: 'withdrawal',       re: /(سحب الأرباح|سحب أرباح|withdraw|كيف أسحب|كيف اسحب)/i },
+  { topic: 'payment',          re: /(طرق الدفع|كيف الدفع|payment methods|stripe)/i },
+  { topic: 'booking_process',  re: /(كيف احجز|كيف أحجز|خطوات الحجز|how do i book|how to book)/i },
+  { topic: 'property_listing', re: /(كيف اضيف عقار|كيف أضيف عقار|اضافة عقار|إضافة عقار|how to list)/i },
+  { topic: 'account',          re: /(تعديل الحساب|حذف الحساب|كلمة المرور|change password)/i },
+  { topic: 'support',          re: /(تواصل معكم|الدعم الفني|كيف اشكي|support contact)/i },
+  { topic: 'about',            re: /(وش منصة سكنات|شو منصة سكنات|عن سكنات|about sakanat|what is sakanat)/i },
+];
+
+// Detect Arabic vs English by checking for Arabic letters anywhere in the text.
+function detectLang(text) {
+  return /[؀-ۿ]/.test(text) ? 'ar' : 'en';
+}
+
+function tryFaqFastPath(content) {
+  if (!content || content.length > 80) return null;
+  const matched = FAQ_INTENT_RULES.find((r) => r.re.test(content));
+  if (!matched) return null;
+  const entry = FAQ_DATA[matched.topic];
+  if (!entry) return null;
+  const lang = detectLang(content);
+  return {
+    topic: matched.topic,
+    text: entry[lang] || entry.ar || entry.en,
+  };
+}
+
+// When cards are rendered below the message, keep only the lead-in line(s)
+// from the assistant. Anything after the first bullet/numbered item / blank
+// line is dropped to avoid duplicating what the cards already show.
+function trimTextWhenCards(text) {
+  if (!text) return text;
+  const lines = text.split('\n');
+  const out = [];
+  for (const raw of lines) {
+    const line = raw.trim();
+    // Stop at first list item, dash bullet, numbered item, or blank line
+    // following actual content.
+    if (/^([-*•]|\d+[.)])\s/.test(line)) break;
+    if (line === '' && out.length > 0) break;
+    out.push(raw);
+  }
+  return out.join('\n').trim() || text;
+}
 // Soft token budget for prior chat history fed back into the model.
 // 1 token ≈ 3-4 characters for Arabic, so 12k chars ≈ ~3k tokens.
 const HISTORY_CHAR_BUDGET = 12000;
@@ -314,6 +376,22 @@ router.post(
         });
       }
 
+      // FAQ fast-path: matches strict patterns, returns canned text without
+      // calling the LLM. Bypasses session persistence too — these aren't
+      // worth keeping in chat history.
+      const fastFaq = tryFaqFastPath(content);
+      if (fastFaq) {
+        console.log(
+          `[chat] FAST-PATH user=${req.user?.id || 'guest'} topic=${fastFaq.topic}`,
+        );
+        return res.json({
+          sessionId: null,
+          message: fastFaq.text,
+          toolCalls: [{ name: 'get_faq', input: { topic: fastFaq.topic }, output: fastFaq, fastPath: true }],
+          usage: { tokensIn: 0, tokensOut: 0 },
+        });
+      }
+
       let session = null;
       let history = [];
       if (req.user) {
@@ -376,6 +454,14 @@ router.post(
           where: { id: session.id },
           data: { updatedAt: new Date() },
         });
+      }
+
+      // If a card-rendering tool was used, trim the duplicated enumeration
+      // from the assistant text so the user doesn't see the same listing in
+      // both prose and cards.
+      const hasCardTool = result.toolCalls.some((t) => CARD_RENDERED_TOOLS.has(t.name));
+      if (hasCardTool) {
+        result.text = trimTextWhenCards(result.text);
       }
 
       // Lightweight usage log so the operator can spot cost outliers.

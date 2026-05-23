@@ -222,27 +222,48 @@ const EXECUTORS = {
         id: true,
         title: true,
         city: true,
+        campus: true,
+        kind: true,
+        targetGender: true,
+        images: true,
+        studioPrice: true,
         available: true,
         disabledByAdmin: true,
+        roomVariants: { select: { kind: true, fullPrice: true, halfPrice: true, isOccupied: true } },
         _count: { select: { bookings: true, reviews: true } },
       },
     });
 
     return {
       count: properties.length,
-      properties: properties.map((p) => ({
-        id: p.id,
-        title: p.title,
-        city: p.city,
-        status: p.disabledByAdmin
-          ? 'disabled_by_admin'
-          : p.available
-            ? 'active'
-            : 'unavailable',
-        bookingsCount: p._count.bookings,
-        reviewsCount: p._count.reviews,
-        url: `/property/${p.id}`,
-      })),
+      properties: properties.map((p) => {
+        const prices = [];
+        if (p.studioPrice) prices.push(Number(p.studioPrice));
+        for (const v of p.roomVariants || []) {
+          if (v.isOccupied) continue;
+          const perPerson = v.kind === 'DOUBLE' && v.halfPrice != null ? v.halfPrice : v.fullPrice;
+          if (perPerson != null) prices.push(Number(perPerson));
+        }
+        const minPrice = prices.length ? Math.min(...prices) : null;
+        return {
+          id: p.id,
+          title: p.title,
+          city: p.city,
+          campus: p.campus,
+          kind: p.kind,
+          targetGender: p.targetGender,
+          minPrice,
+          image: p.images?.[0] || null,
+          status: p.disabledByAdmin
+            ? 'disabled_by_admin'
+            : p.available
+              ? 'active'
+              : 'unavailable',
+          bookingsCount: p._count.bookings,
+          reviewsCount: p._count.reviews,
+          url: `/property/${p.id}`,
+        };
+      }),
     };
   },
 

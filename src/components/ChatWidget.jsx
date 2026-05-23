@@ -40,7 +40,9 @@ const SUGGESTIONS_BY_ROLE = {
 
 function extractPropertyCards(toolCalls) {
   if (!Array.isArray(toolCalls)) return [];
-  const last = [...toolCalls].reverse().find((c) => c.name === 'search_properties');
+  const last = [...toolCalls]
+    .reverse()
+    .find((c) => c.name === 'search_properties' || c.name === 'get_my_properties');
   if (!last) return [];
   return last.output?.properties || [];
 }
