@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../utils/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { notify } from '../utils/notify.js';
+import { stripe, toMinorUnits } from '../utils/stripe.js';
 
 const router = Router();
 
@@ -82,11 +83,66 @@ router.patch(
   authorize('ADMIN'),
   async (req, res, next) => {
     try {
+      // Pre-flight: validate the refund + Stripe payment_intent BEFORE touching
+      // the DB. We call Stripe first so that if Stripe rejects (e.g., charge
+      // already fully refunded, intent missing), the wallet stays untouched.
+      const refundRow = await prisma.refundRequest.findUnique({
+        where: { id: req.params.id },
+        include: {
+          booking: {
+            include: {
+              property: { select: { ownerId: true } },
+              payment: true,
+            },
+          },
+        },
+      });
+
+      if (!refundRow) return res.status(404).json({ error: 'طلب الاسترداد غير موجود.' });
+      if (refundRow.status !== 'PENDING')
+        return res.status(400).json({ error: 'يمكن الموافقة على الطلبات المعلقة فقط.' });
+
+      const refundAmountVal = Math.max(0, Number(refundRow.refundAmount));
+      const payment = refundRow.booking.payment;
+      if (!payment) return res.status(400).json({ error: 'لا توجد عملية دفع مرتبطة بهذا الحجز.' });
+      if (payment.status === 'REFUNDED')
+        return res.status(409).json({ error: 'تم استرداد هذه الدفعة مسبقاً.' });
+      if (!payment.stripePaymentIntentId)
+        return res.status(400).json({
+          error: 'لا يوجد معرّف Stripe PaymentIntent — لا يمكن الاسترداد الآلي.',
+        });
+
+      // Call Stripe with an idempotency key tied to the refund request id, so
+      // retries from the admin UI never double-refund.
+      let stripeRefund;
+      try {
+        stripeRefund = await stripe.refunds.create(
+          {
+            payment_intent: payment.stripePaymentIntentId,
+            amount: toMinorUnits(refundAmountVal),
+            reason: 'requested_by_customer',
+            metadata: {
+              refundRequestId: refundRow.id,
+              bookingId: refundRow.booking.id,
+              studentId: refundRow.studentId,
+            },
+          },
+          { idempotencyKey: `refund-${refundRow.id}` },
+        );
+      } catch (stripeErr) {
+        console.error('[refunds] Stripe refund failed:', stripeErr.message);
+        return res.status(502).json({
+          error: 'تعذّر تنفيذ الاسترداد عبر Stripe. لم يتم خصم الرصيد.',
+          stripeError: stripeErr.message,
+        });
+      }
+
       let refundId;
-      let refundAmountVal;
 
       try {
         await prisma.$transaction(async (tx) => {
+          // Re-fetch inside the transaction so wallet/state checks see the
+          // latest values, not the snapshot from the pre-flight read.
           const refund = await tx.refundRequest.findUnique({
             where: { id: req.params.id },
             include: {
@@ -99,22 +155,14 @@ router.patch(
             },
           });
 
-          if (!refund) {
-            const err = new Error('طلب الاسترداد غير موجود.');
-            err.statusCode = 404;
-            throw err;
-          }
-
-          if (refund.status !== 'PENDING') {
-            const err = new Error('يمكن الموافقة على الطلبات المعلقة فقط.');
-            err.statusCode = 400;
-            throw err;
+          if (!refund || refund.status !== 'PENDING') {
+            // Another approver beat us to it — Stripe call was idempotent so
+            // the money still moved at most once. Treat as success/no-op.
+            return;
           }
 
           refundId = refund.id;
           const ownerId = refund.booking.property.ownerId;
-          refundAmountVal = Math.max(0, Number(refund.refundAmount));
-
           const wallet = await tx.wallet.findUnique({ where: { ownerId } });
 
           if (!wallet || Number(wallet.balance) < refundAmountVal) {
@@ -128,12 +176,10 @@ router.patch(
             data: { balance: { decrement: refundAmountVal } },
           });
 
-          if (refund.booking.payment) {
-            await tx.payment.update({
-              where: { id: refund.booking.payment.id },
-              data: { status: 'REFUNDED' },
-            });
-          }
+          await tx.payment.update({
+            where: { id: refund.booking.payment.id },
+            data: { status: 'REFUNDED' },
+          });
 
           await tx.refundRequest.update({
             where: { id: refund.id },
@@ -142,13 +188,24 @@ router.patch(
         }, { isolationLevel: "Serializable" });
       } catch (txErr) {
         if (txErr.statusCode) {
-          return res.status(txErr.statusCode).json({ error: txErr.message });
+          // Stripe already refunded the student. Owner wallet still has the
+          // funds — surface it loudly so an operator can manually reconcile.
+          console.error(
+            `[refunds] CRITICAL: Stripe refunded ${stripeRefund.id} but DB tx failed: ${txErr.message}`,
+          );
+          return res.status(500).json({
+            error:
+              'تم الاسترداد عبر Stripe لكن فشل تحديث الرصيد. تواصل مع التقنية فوراً.',
+            stripeRefundId: stripeRefund.id,
+          });
         }
         if (txErr.code === "P2034" || txErr.message?.includes("40001")) {
           return res.status(409).json({ error: "حدث تعارض. يرجى المحاولة مرة أخرى." });
         }
         throw txErr;
       }
+
+      if (!refundId) refundId = refundRow.id;
 
       const updated = await prisma.refundRequest.findUnique({
         where: { id: refundId },
