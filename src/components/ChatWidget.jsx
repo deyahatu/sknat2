@@ -1,5 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { FiMessageCircle, FiX, FiSend, FiRefreshCw, FiHome } from 'react-icons/fi';
+import {
+  FiMessageCircle,
+  FiX,
+  FiSend,
+  FiRefreshCw,
+  FiHome,
+  FiMic,
+  FiMicOff,
+} from 'react-icons/fi';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import './ChatWidget.css';
@@ -8,12 +16,27 @@ const GUEST_STORAGE_KEY = 'sakanat_chat_guest_history';
 const SESSION_STORAGE_KEY = 'sakanat_chat_session_id';
 const GUEST_CAP = 20;
 
-const SUGGESTIONS = [
-  'كيف أحجز عقار؟',
-  'بدي شقة قريبة من جامعة النجاح',
-  'سياسة الاسترداد؟',
-  'كيف أسحب أرباحي؟',
-];
+const SUGGESTIONS_BY_ROLE = {
+  GUEST: [
+    'بدي شقة قريبة من النجاح',
+    'كيف بحجز عقار؟',
+    'وش منصة سكنات؟',
+    'سياسة الاسترداد؟',
+  ],
+  STUDENT: [
+    'شو الشقق المتوفرة هلأ؟',
+    'بدي استوديو للحرم الجديد',
+    'وين حجوزاتي؟',
+    'سياسة الاسترداد؟',
+  ],
+  OWNER: [
+    'وش عقاراتي المسجلة؟',
+    'كيف أسحب أرباحي؟',
+    'كيف أعدل سعر غرفة؟',
+    'كيف أضيف عقار جديد؟',
+  ],
+  ADMIN: ['وش منصة سكنات؟', 'سياسة الاسترداد؟'],
+};
 
 function extractPropertyCards(toolCalls) {
   if (!Array.isArray(toolCalls)) return [];
@@ -74,6 +97,11 @@ function Message({ msg }) {
   );
 }
 
+// Web Speech API availability — quietly disabled in unsupported browsers.
+const SpeechRecognition =
+  typeof window !== 'undefined' &&
+  (window.SpeechRecognition || window.webkitSpeechRecognition);
+
 export default function ChatWidget() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -81,8 +109,14 @@ export default function ChatWidget() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [sessionId, setSessionId] = useState(null);
+  const [lastFailed, setLastFailed] = useState(null);
+  const [unread, setUnread] = useState(0);
+  const [listening, setListening] = useState(false);
   const bodyRef = useRef(null);
   const inputRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  const suggestions = SUGGESTIONS_BY_ROLE[user?.role || 'GUEST'] || SUGGESTIONS_BY_ROLE.GUEST;
 
   // Load persisted state on mount and when auth changes.
   useEffect(() => {
@@ -152,6 +186,7 @@ export default function ChatWidget() {
       const content = (text ?? input).trim();
       if (!content || sending) return;
       setInput('');
+      setLastFailed(null);
       const userMsg = { role: 'user', content };
       setMessages((prev) => [...prev, userMsg]);
       setSending(true);
@@ -175,17 +210,57 @@ export default function ChatWidget() {
           ...prev,
           { role: 'assistant', content: res.message, cards },
         ]);
+        if (!open) setUnread((u) => u + 1);
       } catch (err) {
         setMessages((prev) => [
           ...prev,
           { role: 'error', content: err.message || 'تعذّر إرسال الرسالة' },
         ]);
+        setLastFailed(content);
       } finally {
         setSending(false);
       }
     },
-    [input, sending, user, sessionId, messages],
+    [input, sending, user, sessionId, messages, open],
   );
+
+  const retry = useCallback(() => {
+    if (!lastFailed || sending) return;
+    // Pop trailing error + last user message so we don't duplicate.
+    setMessages((prev) => {
+      const next = [...prev];
+      while (next.length && next[next.length - 1].role !== 'user') next.pop();
+      if (next.length) next.pop();
+      return next;
+    });
+    send(lastFailed);
+  }, [lastFailed, sending, send]);
+
+  // Clear unread badge when panel is opened.
+  useEffect(() => {
+    if (open) setUnread(0);
+  }, [open]);
+
+  const toggleListen = useCallback(() => {
+    if (!SpeechRecognition) return;
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const rec = new SpeechRecognition();
+    rec.lang = 'ar-PS';
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.onresult = (e) => {
+      const transcript = e.results[0]?.[0]?.transcript || '';
+      if (transcript) setInput((v) => (v ? `${v} ${transcript}` : transcript));
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recognitionRef.current = rec;
+    setListening(true);
+    rec.start();
+  }, [listening]);
 
   const handleKey = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -203,6 +278,11 @@ export default function ChatWidget() {
         aria-label={open ? 'إغلاق المساعد' : 'فتح المساعد'}
       >
         {open ? <FiX /> : <FiMessageCircle />}
+        {!open && unread > 0 && (
+          <span className="cw-fab-badge" aria-label={`${unread} رسائل جديدة`}>
+            {unread > 9 ? '9+' : unread}
+          </span>
+        )}
       </button>
 
       {open && (
@@ -226,13 +306,13 @@ export default function ChatWidget() {
             </div>
           </div>
 
-          <div className="cw-body" ref={bodyRef}>
+          <div className="cw-body" ref={bodyRef} role="log" aria-live="polite" aria-relevant="additions">
             {messages.length === 0 ? (
               <div className="cw-empty">
                 <h4>مرحباً بك في مساعد سكنات</h4>
                 <p>أقدر أساعدك بالحجز، البحث عن عقار، الدفع، وأسئلتك عن المنصة.</p>
                 <div className="cw-suggest">
-                  {SUGGESTIONS.map((s) => (
+                  {suggestions.map((s) => (
                     <button key={s} onClick={() => send(s)}>
                       {s}
                     </button>
@@ -242,8 +322,13 @@ export default function ChatWidget() {
             ) : (
               messages.map((m, i) => <Message key={i} msg={m} />)
             )}
+            {lastFailed && !sending && (
+              <button className="cw-retry" onClick={retry} aria-label="إعادة المحاولة">
+                <FiRefreshCw /> إعادة المحاولة
+              </button>
+            )}
             {sending && (
-              <div className="cw-typing">
+              <div className="cw-typing" aria-label="جاري الكتابة">
                 <span />
                 <span />
                 <span />
@@ -262,7 +347,19 @@ export default function ChatWidget() {
               onKeyDown={handleKey}
               disabled={sending}
               dir="auto"
+              aria-label="نص الرسالة"
             />
+            {SpeechRecognition && (
+              <button
+                className={`cw-send cw-mic${listening ? ' cw-mic-on' : ''}`}
+                onClick={toggleListen}
+                aria-label={listening ? 'إيقاف التسجيل' : 'تسجيل صوتي'}
+                title="تسجيل صوتي"
+                type="button"
+              >
+                {listening ? <FiMicOff /> : <FiMic />}
+              </button>
+            )}
             <button
               className="cw-send"
               onClick={() => send()}

@@ -12,6 +12,23 @@ const MODEL = process.env.CHATBOT_MODEL || 'deepseek-chat';
 const MAX_TOKENS = Number(process.env.CHATBOT_MAX_TOKENS || 1024);
 const MAX_TOOL_HOPS = 5;
 const GUEST_HISTORY_CAP = 20;
+// Soft token budget for prior chat history fed back into the model.
+// 1 token ≈ 3-4 characters for Arabic, so 12k chars ≈ ~3k tokens.
+const HISTORY_CHAR_BUDGET = 12000;
+
+function trimHistoryByBudget(messages, budget = HISTORY_CHAR_BUDGET) {
+  // Keep the most recent turns until we fill the budget.
+  let used = 0;
+  const out = [];
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    const len = typeof m.content === 'string' ? m.content.length : 200;
+    if (used + len > budget && out.length > 0) break;
+    out.unshift(m);
+    used += len;
+  }
+  return out;
+}
 
 const PROVIDER_CONFIG = {
   deepseek: {
@@ -78,10 +95,44 @@ function guestMessageLimiter() {
 const authedLimiter = authedMessageLimiter();
 const guestLimiter = guestMessageLimiter();
 
+// Heuristic: catches the most common jailbreak phrases. Not airtight, just
+// raises the bar so a casual user can't trivially escape the scope by typing
+// "ignore previous instructions". Real defense is the limited tool surface.
+const INJECTION_PATTERNS = [
+  /ignore (all |previous |above )?(instructions|rules|prompt)/i,
+  /disregard (all |previous |above )?(instructions|rules|prompt)/i,
+  /forget (all |previous |above )?(instructions|rules|prompt)/i,
+  /system prompt/i,
+  /you are now/i,
+  /pretend (to be|you are)/i,
+  /\bjailbreak\b/i,
+  /تجاهل (التعليمات|السابق|كل)/,
+  /انس (التعليمات|كل)/,
+  /(تظاهر|تخيل) (انك|أنك)/,
+];
+
+function looksLikeInjection(text) {
+  if (!text) return false;
+  return INJECTION_PATTERNS.some((re) => re.test(text));
+}
+
+function roleHint(role) {
+  switch (role) {
+    case 'OWNER':
+      return `Audience: PROPERTY OWNER. Prioritise topics relevant to owners — listing properties, owner dashboard, wallet & withdrawals, bookings on their listings, ratings they received. They cannot book as a student.`;
+    case 'STUDENT':
+      return `Audience: STUDENT. Prioritise topics relevant to students — searching listings, booking flow, payment, refunds, their bookings, favorites, complaints.`;
+    case 'ADMIN':
+      return `Audience: ADMIN. Politely note that admin operations are done from the admin dashboard, not this chat.`;
+    default:
+      return `Audience: GUEST (not logged in). Encourage search and explain features; mention that bookings, wallet, and personal data require sign-in.`;
+  }
+}
+
 function buildSystemPrompt({ user }) {
   const userBlock = user
-    ? `User context: { name: "${user.name}", role: ${user.role}, id: "${user.id}" }`
-    : 'User context: { role: GUEST }';
+    ? `User context: { name: "${user.name}", role: ${user.role} }\n${roleHint(user.role)}`
+    : `User context: { role: GUEST }\n${roleHint(null)}`;
 
   return `You are Sakanat Assistant, an AI helper exclusively for the Sakanat student housing platform.
 
@@ -252,6 +303,17 @@ router.post(
           .json({ error: 'الرسالة طويلة جداً. الحد الأقصى 2000 حرف.' });
       }
 
+      // Cheap heuristic guard against the most common jailbreak phrasings.
+      if (looksLikeInjection(content)) {
+        return res.json({
+          sessionId: null,
+          message:
+            'أنا مساعد منصة سكنات وما بقدر أتجاهل تعليماتي الأساسية. تقدر تسألني عن العقارات، الحجز، الدفع، أو حسابك؟',
+          toolCalls: [],
+          usage: { tokensIn: 0, tokensOut: 0 },
+        });
+      }
+
       let session = null;
       let history = [];
       if (req.user) {
@@ -278,10 +340,7 @@ router.post(
 
         history = session.messages
           .filter((m) => m.role === 'user' || m.role === 'assistant')
-          .map((m) => ({
-            role: m.role,
-            content: m.content,
-          }));
+          .map((m) => ({ role: m.role, content: m.content }));
       } else if (Array.isArray(guestHistory)) {
         history = guestHistory
           .slice(-GUEST_HISTORY_CAP)
@@ -292,6 +351,7 @@ router.post(
               typeof m.content === 'string',
           );
       }
+      history = trimHistoryByBudget(history);
 
       const result = await runConversation({
         user: req.user || null,
@@ -317,6 +377,13 @@ router.post(
           data: { updatedAt: new Date() },
         });
       }
+
+      // Lightweight usage log so the operator can spot cost outliers.
+      console.log(
+        `[chat] user=${req.user?.id || 'guest'} role=${req.user?.role || 'GUEST'} ` +
+          `tokensIn=${result.usage.tokensIn} tokensOut=${result.usage.tokensOut} ` +
+          `tools=${result.toolCalls.map((t) => t.name).join(',') || '-'}`,
+      );
 
       res.json({
         sessionId: session?.id || null,
